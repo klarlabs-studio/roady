@@ -11,7 +11,12 @@ import (
 	"github.com/felixgeelhaar/roady/internal/infrastructure/config"
 	"github.com/felixgeelhaar/roady/internal/infrastructure/wiring"
 	"github.com/felixgeelhaar/roady/pkg/application"
+	"github.com/felixgeelhaar/roady/pkg/domain"
 	"github.com/felixgeelhaar/roady/pkg/domain/billing"
+	"github.com/felixgeelhaar/roady/pkg/domain/debt"
+	"github.com/felixgeelhaar/roady/pkg/domain/drift"
+	"github.com/felixgeelhaar/roady/pkg/domain/events"
+	"github.com/felixgeelhaar/roady/pkg/domain/org"
 	"github.com/felixgeelhaar/roady/pkg/domain/planning"
 	"github.com/felixgeelhaar/roady/pkg/domain/spec"
 	"github.com/felixgeelhaar/roady/pkg/domain/team"
@@ -414,6 +419,7 @@ func (s *Server) registerTools() {
 	s.mcpServer.Tool("roady_detect_drift").
 		Description("Detect discrepancies between the current Spec and Plan").
 		UIResource("ui://roady/drift").
+		OutputSchema(drift.Report{}).
 		Handler(s.handleDetectDrift)
 
 	// Tool: roady_accept_drift
@@ -456,6 +462,7 @@ func (s *Server) registerTools() {
 	s.mcpServer.Tool("roady_get_usage").
 		Description("Retrieve project usage and telemetry statistics").
 		UIResource("ui://roady/usage").
+		OutputSchema(domain.UsageStats{}).
 		Handler(s.handleGetUsage)
 
 	// Tool: roady_explain_drift
@@ -474,12 +481,14 @@ func (s *Server) registerTools() {
 	s.mcpServer.Tool("roady_forecast").
 		Description("Predict project completion based on current task velocity").
 		UIResource("ui://roady/forecast").
+		OutputSchema(forecastResp{}).
 		Handler(s.handleForecast)
 
 	// Tool: roady_org_status (Horizon 4)
 	s.mcpServer.Tool("roady_org_status").
 		Description("Get a status overview of all Roady projects in the directory tree").
 		UIResource("ui://roady/org").
+		OutputSchema(org.OrgMetrics{}).
 		Handler(s.handleOrgStatus)
 
 	// Tool: roady_git_sync (Horizon 5)
@@ -504,6 +513,7 @@ func (s *Server) registerTools() {
 	s.mcpServer.Tool("roady_deps_scan").
 		Description("Scan health status of all dependent repositories").
 		UIResource("ui://roady/deps").
+		OutputSchema(application.ScanResult{}).
 		Handler(s.handleDepsScan)
 
 	// Tool: roady_deps_graph (Horizon 5)
@@ -516,12 +526,14 @@ func (s *Server) registerTools() {
 	s.mcpServer.Tool("roady_debt_report").
 		Description("Generate comprehensive debt report with category breakdown and top debtors").
 		UIResource("ui://roady/debt").
+		OutputSchema(debt.DebtReport{}).
 		Handler(s.handleDebtReport)
 
 	// Tool: roady_debt_summary (Horizon 5)
 	s.mcpServer.Tool("roady_debt_summary").
 		Description("Quick overview of debt status including health level and top debtor").
 		UIResource("ui://roady/debt").
+		OutputSchema(application.DebtSummary{}).
 		Handler(s.handleDebtSummary)
 
 	// Tool: roady_drift_recurring (v0.10.0 - canonical name for sticky drift)
@@ -540,6 +552,7 @@ func (s *Server) registerTools() {
 	s.mcpServer.Tool("roady_debt_trend").
 		Description("Analyze drift trend over time").
 		UIResource("ui://roady/debt").
+		OutputSchema(events.DriftTrend{}).
 		Handler(s.handleDebtTrend)
 
 	// Tool: roady_org_policy (v0.7.0)
@@ -588,12 +601,14 @@ func (s *Server) registerTools() {
 	s.mcpServer.Tool("roady_suggest_priorities").
 		Description("AI-powered priority suggestions based on spec analysis and task dependencies").
 		UIResource("ui://roady/plan").
+		OutputSchema(planning.PrioritySuggestions{}).
 		Handler(s.handleSuggestPriorities)
 
 	// Tool: roady_review_spec (v0.8.0)
 	s.mcpServer.Tool("roady_review_spec").
 		Description("Perform an AI-powered quality review of the current specification, returning a score and structured findings").
 		UIResource("ui://roady/spec").
+		OutputSchema(spec.SpecReview{}).
 		Handler(s.handleReviewSpec)
 
 	// Tool: roady_assign_task (v0.8.0)
@@ -613,6 +628,7 @@ func (s *Server) registerTools() {
 	s.mcpServer.Tool("roady_cost_estimate").
 		Description("Estimate input/output tokens and USD cost for an AI operation (generate_plan, smart_decompose, review_spec, explain_drift, query) before running it.").
 		UIResource("ui://roady/cost").
+		OutputSchema(application.CostEstimate{}).
 		Handler(s.handleCostEstimate)
 
 	// Tool: roady_tasks (v0.10.0 - unified task listing)
@@ -708,12 +724,14 @@ func (s *Server) registerTools() {
 	s.mcpServer.Tool("roady_cost_report").
 		Description("Generate a cost report for time tracking").
 		UIResource("ui://roady/billing").
+		OutputSchema(billing.CostReport{}).
 		Handler(s.handleCostReport)
 
 	// Tool: roady_cost_budget
 	s.mcpServer.Tool("roady_cost_budget").
 		Description("Show budget status based on budget_hours in policy").
 		UIResource("ui://roady/billing").
+		OutputSchema(billing.BudgetStatus{}).
 		Handler(s.handleCostBudget)
 
 	// Tool: roady_rate_remove
@@ -748,35 +766,9 @@ func (s *Server) handleForecast(ctx context.Context, args ForecastArgs) (any, er
 		return "No plan found. Generate a plan first.", nil
 	}
 
-	// Build a JSON-friendly response with burndown data for the UI
-	type burndownPt struct {
-		Date      string `json:"date"`
-		Actual    int    `json:"actual"`
-		Projected int    `json:"projected"`
-	}
-	type windowPt struct {
-		Days     int     `json:"days"`
-		Velocity float64 `json:"velocity"`
-		Count    int     `json:"count"`
-	}
-	type forecastResp struct {
-		Remaining      int          `json:"remaining"`
-		Completed      int          `json:"completed"`
-		Total          int          `json:"total"`
-		Velocity       float64      `json:"velocity"`
-		EstimatedDays  float64      `json:"estimated_days"`
-		CompletionRate float64      `json:"completion_rate"`
-		Trend          string       `json:"trend"`
-		TrendSlope     float64      `json:"trend_slope"`
-		Confidence     float64      `json:"confidence"`
-		CILow          float64      `json:"ci_low"`
-		CIExpected     float64      `json:"ci_expected"`
-		CIHigh         float64      `json:"ci_high"`
-		Burndown       []burndownPt `json:"burndown"`
-		Windows        []windowPt   `json:"windows"`
-		DataPoints     int          `json:"data_points"`
-	}
-
+	// Build a JSON-friendly response with burndown data for the UI. The
+	// forecastResp/burndownPt/windowPt types are declared in output_schemas.go
+	// so roady_forecast can advertise them as its outputSchema.
 	resp := forecastResp{
 		Remaining:      forecast.RemainingTasks,
 		Completed:      forecast.CompletedTasks,
