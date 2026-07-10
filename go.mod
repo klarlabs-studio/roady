@@ -16,7 +16,7 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/xeipuuv/gojsonschema v1.2.0
 	go.klarlabs.de/fortify v1.8.1
-	go.klarlabs.de/mcp v1.21.0
+	go.klarlabs.de/mcp v1.22.0
 	go.klarlabs.de/statekit v1.8.0
 	golang.org/x/oauth2 v0.36.0
 	google.golang.org/grpc v1.82.0
