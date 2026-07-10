@@ -13,6 +13,7 @@ import (
 	"github.com/felixgeelhaar/roady/pkg/application"
 	"github.com/felixgeelhaar/roady/pkg/domain/billing"
 	"github.com/felixgeelhaar/roady/pkg/domain/planning"
+	"github.com/felixgeelhaar/roady/pkg/domain/spec"
 	"github.com/felixgeelhaar/roady/pkg/domain/team"
 	"go.klarlabs.de/mcp"
 )
@@ -380,18 +381,21 @@ func (s *Server) registerTools() {
 	s.mcpServer.Tool("roady_get_spec").
 		Description("Retrieve the current product specification").
 		UIResource("ui://roady/spec").
+		OutputSchema(spec.ProductSpec{}).
 		Handler(s.handleGetSpec)
 
 	// Tool: roady_get_plan
 	s.mcpServer.Tool("roady_get_plan").
 		Description("Retrieve the current execution plan").
 		UIResource("ui://roady/plan").
+		OutputSchema(planning.Plan{}).
 		Handler(s.handleGetPlan)
 
 	// Tool: roady_get_state
 	s.mcpServer.Tool("roady_get_state").
 		Description("Retrieve the current execution state (task statuses)").
 		UIResource("ui://roady/state").
+		OutputSchema(planning.ExecutionState{}).
 		Handler(s.handleGetState)
 
 	// Tool: roady_generate_plan (Heuristic)
@@ -602,6 +606,7 @@ func (s *Server) registerTools() {
 	s.mcpServer.Tool("roady_get_snapshot").
 		Description("Get a consistent project snapshot with progress, categorized task counts, and task lists").
 		UIResource("ui://roady/status").
+		OutputSchema(snapshotResp{}).
 		Handler(s.handleGetSnapshot)
 
 	// Tool: roady_cost_estimate (v0.10.0 - pre-flight cost projection)
@@ -1528,17 +1533,6 @@ func (s *Server) handleGetSnapshot(ctx context.Context, args GetSnapshotArgs) (a
 	snapshot, err := svc.Plan.GetProjectSnapshot(ctx)
 	if err != nil {
 		return nil, mcpErr("Failed to get project snapshot. Ensure a plan and state exist.")
-	}
-
-	type snapshotResp struct {
-		Progress      float64  `json:"progress"`
-		UnlockedTasks []string `json:"unlocked_tasks"`
-		BlockedTasks  []string `json:"blocked_tasks"`
-		InProgress    []string `json:"in_progress"`
-		Completed     []string `json:"completed"`
-		Verified      []string `json:"verified"`
-		TotalTasks    int      `json:"total_tasks"`
-		SnapshotTime  string   `json:"snapshot_time"`
 	}
 
 	totalTasks := 0
