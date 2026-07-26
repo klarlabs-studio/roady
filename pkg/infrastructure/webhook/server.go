@@ -95,23 +95,37 @@ func (s *Server) Start() error {
 	// Recent events endpoint (for debugging)
 	mux.HandleFunc("/events", s.handleEvents)
 
-	s.server = &http.Server{
+	srv := &http.Server{
 		Addr:         s.addr,
 		Handler:      mux,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
 	}
+	// Publish under the lock, then serve through the local copy. ListenAndServe
+	// blocks for the life of the server, so every caller runs Start in its own
+	// goroutine and Shutdown from another — an unguarded s.server is read and
+	// written concurrently by definition, not just under test.
+	s.mu.Lock()
+	s.server = srv
+	s.mu.Unlock()
 
 	log.Printf("Webhook server starting on %s", s.addr)
-	return s.server.ListenAndServe()
+	return srv.ListenAndServe()
 }
 
-// Shutdown gracefully shuts down the server.
+// Shutdown gracefully shuts down the server. Shutting down a server that was
+// never started is a no-op, so racing Shutdown ahead of Start returns nil
+// rather than blocking.
 func (s *Server) Shutdown(ctx context.Context) error {
-	if s.server == nil {
+	s.mu.RLock()
+	srv := s.server
+	s.mu.RUnlock()
+	if srv == nil {
 		return nil
 	}
-	return s.server.Shutdown(ctx)
+	// Shutdown outside the lock: it blocks until connections drain, and holding
+	// the mutex would stall every in-flight handler that needs it.
+	return srv.Shutdown(ctx)
 }
 
 func (s *Server) handleWebhook(provider string) http.HandlerFunc {
