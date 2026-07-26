@@ -116,27 +116,39 @@ changelog:
 # scope HOMEBREW_TAP_TOKEN — a klarlabs-studio org secret — can write to. An
 # org secret does not reach a personal repo, which answers 403: briefkasten's
 # v0.31.0 published every artifact and then failed exactly there.
-brews:
+# homebrew_casks replaces brews (deprecated in GoReleaser v2.16). Homebrew's
+# own guidance is that a cask, not a formula, is the right vehicle for a
+# pre-compiled binary -- the formula path generated something that only
+# pretended to build from source.
+homebrew_casks:
   - name: roady
     repository:
       owner: klarlabs-studio
       name: homebrew-tap
       token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
-    directory: Formula
     homepage: "https://felixgeelhaar.github.io/roady/"
     description: "A planning-first system of record for software work."
     license: "MIT"
-    install: |
-      bin.install "roady"
-      bin.install "roady-plugin-linear"
-      bin.install "roady-plugin-jira"
-      bin.install "roady-plugin-github"
-      bin.install "roady-plugin-asana"
-      bin.install "roady-plugin-notion"
-      bin.install "roady-plugin-trello"
-      bin.install "roady-plugin-mock"
-    test: |
-      system "#{bin}/roady --version"
+    binaries:
+      - roady
+      - roady-plugin-linear
+      - roady-plugin-jira
+      - roady-plugin-github
+      - roady-plugin-asana
+      - roady-plugin-notion
+      - roady-plugin-trello
+      - roady-plugin-mock
+    hooks:
+      post:
+        # The release archives are not notarized, so Gatekeeper quarantines
+        # every binary on first run. A formula was never subject to this; a cask
+        # is, so without this the CLI and all seven plugins refuse to start.
+        # Stripped across staged_path rather than per-binary because there are
+        # eight of them.
+        install: |
+          if OS.mac?
+            system_command "xattr", args: ["-dr", "com.apple.quarantine", staged_path]
+          end
 
 release:
   # A re-drive (release.yml's workflow_dispatch) must be able to reach the step
