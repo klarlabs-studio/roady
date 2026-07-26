@@ -27,9 +27,14 @@ your agent.
 ## See it in 60 seconds
 
 ```bash
-brew install felixgeelhaar/tap/roady     # or: go install github.com/felixgeelhaar/roady/cmd/roady@latest
+brew trust klarlabs-studio/tap        # first time only
+brew install --cask klarlabs-studio/tap/roady     # or: go install github.com/felixgeelhaar/roady/cmd/roady@latest
 roady demo                               # scaffolds a sample project + shows drift
 ```
+
+Homebrew refuses to load a cask from a third-party tap it has not been told
+to trust, so the first install of anything from this tap needs
+`brew trust klarlabs-studio/tap` once — per machine, not per tool.
 
 The demo creates a `roady-demo/` directory with a deliberately drifted
 spec/plan, runs `roady drift detect`, and prints the next steps. Zero
