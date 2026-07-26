@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -21,11 +22,16 @@ func TestFSWatcher_DetectsFileWrite(t *testing.T) {
 	}
 
 	var eventCount atomic.Int32
+	// lastChange is written from the watcher's callback goroutine and read here,
+	// so it needs the same protection eventCount already gets from being atomic.
+	var mu sync.Mutex
 	var lastChange ChangeEvent
 
 	w, err := NewFSWatcher(50*time.Millisecond, func(e ChangeEvent) {
 		eventCount.Add(1)
+		mu.Lock()
 		lastChange = e
+		mu.Unlock()
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -57,7 +63,10 @@ func TestFSWatcher_DetectsFileWrite(t *testing.T) {
 	if eventCount.Load() == 0 {
 		t.Error("expected at least one change event")
 	}
-	if lastChange.ChangeType == "" {
+	mu.Lock()
+	gotType := lastChange.ChangeType
+	mu.Unlock()
+	if gotType == "" {
 		t.Error("expected a non-empty change type")
 	}
 }

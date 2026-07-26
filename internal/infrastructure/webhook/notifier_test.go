@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -44,12 +45,18 @@ func TestNotifier_DeliverySuccess(t *testing.T) {
 
 func TestNotifier_HMACSignature(t *testing.T) {
 	secret := "test-secret"
+	// The handler runs on the server's goroutine and the assertions below run on
+	// the test's, so everything crossing that boundary needs a lock.
+	var mu sync.Mutex
 	var receivedSig string
 	var receivedBody []byte
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		receivedSig = r.Header.Get("X-Roady-Signature")
-		receivedBody, _ = io.ReadAll(r.Body)
+		sig := r.Header.Get("X-Roady-Signature")
+		body, _ := io.ReadAll(r.Body)
+		mu.Lock()
+		receivedSig, receivedBody = sig, body
+		mu.Unlock()
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
@@ -67,17 +74,21 @@ func TestNotifier_HMACSignature(t *testing.T) {
 
 	time.Sleep(200 * time.Millisecond)
 
-	if receivedSig == "" {
+	mu.Lock()
+	gotSig, gotBody := receivedSig, receivedBody
+	mu.Unlock()
+
+	if gotSig == "" {
 		t.Fatal("expected X-Roady-Signature header")
 	}
 
 	// Verify signature
 	mac := hmac.New(sha256.New, []byte(secret))
-	mac.Write(receivedBody)
+	mac.Write(gotBody)
 	expected := "sha256=" + hex.EncodeToString(mac.Sum(nil))
 
-	if receivedSig != expected {
-		t.Errorf("signature mismatch: got %s, want %s", receivedSig, expected)
+	if gotSig != expected {
+		t.Errorf("signature mismatch: got %s, want %s", gotSig, expected)
 	}
 }
 
@@ -158,13 +169,20 @@ func TestNotifier_EventFilter(t *testing.T) {
 }
 
 func TestPayloadFormat(t *testing.T) {
+	// Guarded for the same reason, and the decode error is carried back to the
+	// test goroutine rather than reported with t.Fatal from the handler's —
+	// t.Fatal must be called from the goroutine running the test.
+	var mu sync.Mutex
 	var receivedPayload Payload
+	var decodeErr error
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
-		if err := json.Unmarshal(body, &receivedPayload); err != nil {
-			t.Fatal(err)
-		}
+		var p Payload
+		err := json.Unmarshal(body, &p)
+		mu.Lock()
+		receivedPayload, decodeErr = p, err
+		mu.Unlock()
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
@@ -176,7 +194,14 @@ func TestPayloadFormat(t *testing.T) {
 
 	time.Sleep(200 * time.Millisecond)
 
-	if receivedPayload.EventType != "plan.created" {
-		t.Errorf("expected event_type plan.created, got %s", receivedPayload.EventType)
+	mu.Lock()
+	got, err := receivedPayload, decodeErr
+	mu.Unlock()
+
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.EventType != "plan.created" {
+		t.Errorf("expected event_type plan.created, got %s", got.EventType)
 	}
 }
