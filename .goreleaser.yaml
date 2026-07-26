@@ -112,10 +112,14 @@ changelog:
       - '^test:'
       - '^chore\(\.roady\):'
 
+# The tap is the one owned by the org that owns this repo, which is also the
+# scope HOMEBREW_TAP_TOKEN — a klarlabs-studio org secret — can write to. An
+# org secret does not reach a personal repo, which answers 403: briefkasten's
+# v0.31.0 published every artifact and then failed exactly there.
 brews:
   - name: roady
     repository:
-      owner: felixgeelhaar
+      owner: klarlabs-studio
       name: homebrew-tap
       token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
     directory: Formula
