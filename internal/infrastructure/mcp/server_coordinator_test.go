@@ -159,9 +159,9 @@ func TestHandleTasks_All(t *testing.T) {
 
 func TestHandleTasks_InvalidStatus(t *testing.T) {
 	server := setupCoordinatorTestServer(t)
-	if _, err := server.handleTasks(context.Background(), TasksArgs{Status: "bogus"}); err == nil {
-		t.Fatal("expected error for invalid status")
-	}
+	res, err := server.handleTasks(context.Background(), TasksArgs{Status: "bogus"})
+
+	assertToolError(t, res, err, "")
 }
 
 func TestServer_RegistersCanonicalAndDeprecatedToolNames(t *testing.T) {

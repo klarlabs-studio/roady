@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — MCP tool errors reach the agent
+
+Every tool reported failures as JSON-RPC protocol faults, so the library
+replaced Roady's message with `-32603 "internal error"` and logged the real
+text to stderr where no agent could see it. An agent calling a tool without a
+default rate configured was told "internal error" and had nothing to act on.
+
+Tool-execution failures are now returned the way the MCP spec intends — a
+normal result carrying `isError` with the message as readable content.
+Protocol errors are reserved for malformed requests. 112 call sites, and 18
+handlers had their return type widened to carry a result.
+
+Validated by calling all 53 tools over stdio: 53/53 function, and every
+failure message now arrives intact.
+
 ### Changed — BREAKING: Roady no longer calls language models
 
 Roady embedded provider clients and ran inference itself. An agent invoking

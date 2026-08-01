@@ -21,6 +21,7 @@ import (
 	"github.com/felixgeelhaar/roady/pkg/domain/spec"
 	"github.com/felixgeelhaar/roady/pkg/domain/team"
 	"go.klarlabs.de/mcp"
+	mcpserver "go.klarlabs.de/mcp/server"
 )
 
 // defaultHandlerTimeout is the maximum time a tool handler may run before
@@ -74,15 +75,32 @@ const maxResponseItems = 500
 
 // mcpErr returns a user-friendly error for MCP clients.
 // Internal details are omitted — only the friendly message is returned.
-func mcpErr(friendly string) error {
-	return fmt.Errorf("%s", friendly)
+// mcpErr reports a tool-execution failure in the form the MCP spec intends:
+// a normal result carrying isError, with the message as content the model can
+// read and act on.
+//
+// Returning a Go error instead makes the library treat it as a JSON-RPC
+// protocol fault — it replaces the text with "internal error" and logs the
+// real message to stderr, where an agent never sees it. Every one of Roady's
+// carefully-worded messages was being thrown away that way; an agent calling
+// a tool without a rate configured was told "internal error" and had no idea
+// what to fix. Protocol errors are for malformed requests, not for a task
+// that legitimately could not be done.
+//
+// The returned value is a result, so callers pass it as the *success* return
+// and leave the error nil.
+func mcpErr(friendly string) *mcpserver.StructuredResult {
+	return &mcpserver.StructuredResult{
+		IsError: true,
+		Content: []mcpserver.Content{{Type: "text", Text: friendly}},
+	}
 }
 
 // requirePrompt guards the prompt-building handlers. It replaces the old
 // requireAI nil-check: the provider is gone, but a services struct built
 // against an unreadable project can still arrive without a PromptService,
 // and a handler that dereferences it panics rather than answering.
-func requirePrompt(svc *wiring.AppServices) error {
+func requirePrompt(svc *wiring.AppServices) *mcpserver.StructuredResult {
 	if svc == nil || svc.Prompt == nil {
 		return mcpErr("Project services are unavailable. Ensure the path points at an initialized Roady project.")
 	}
@@ -707,11 +725,11 @@ func (s *Server) registerTools() {
 func (s *Server) handleForecast(ctx context.Context, args ForecastArgs) (any, error) {
 	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
 	if err != nil {
-		return nil, mcpErr("Failed to load project at the given path.")
+		return mcpErr("Failed to load project at the given path."), nil
 	}
 	forecast, err := svc.Forecast.GetForecast()
 	if err != nil {
-		return nil, mcpErr("Unable to generate forecast. Ensure a plan exists and tasks have been transitioned.")
+		return mcpErr("Unable to generate forecast. Ensure a plan exists and tasks have been transitioned."), nil
 	}
 	if forecast == nil {
 		return "No plan found. Generate a plan first.", nil
@@ -762,7 +780,7 @@ func (s *Server) handleOrgStatus(ctx context.Context, args GetSpecArgs) (any, er
 	}
 	metrics, err := orgSvc.AggregateMetrics()
 	if err != nil {
-		return nil, mcpErr("Failed to aggregate org metrics.")
+		return mcpErr("Failed to aggregate org metrics."), nil
 	}
 	return metrics, nil
 }
@@ -770,11 +788,11 @@ func (s *Server) handleOrgStatus(ctx context.Context, args GetSpecArgs) (any, er
 func (s *Server) handleGitSync(ctx context.Context, args GitSyncArgs) (any, error) {
 	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
 	if err != nil {
-		return nil, mcpErr("Failed to load project at the given path.")
+		return mcpErr("Failed to load project at the given path."), nil
 	}
 	results, err := svc.Git.SyncMarkers(10)
 	if err != nil {
-		return nil, mcpErr("Failed to sync git markers. Ensure you are in a git repository with commit history.")
+		return mcpErr("Failed to sync git markers. Ensure you are in a git repository with commit history."), nil
 	}
 	return results, nil
 }
@@ -782,11 +800,11 @@ func (s *Server) handleGitSync(ctx context.Context, args GitSyncArgs) (any, erro
 func (s *Server) handleSync(ctx context.Context, args SyncArgs) (any, error) {
 	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
 	if err != nil {
-		return nil, mcpErr("Failed to load project at the given path.")
+		return mcpErr("Failed to load project at the given path."), nil
 	}
 	results, err := svc.Sync.SyncWithPlugin(args.PluginPath)
 	if err != nil {
-		return nil, mcpErr("Failed to sync with plugin. Ensure the plugin binary exists and is executable.")
+		return mcpErr("Failed to sync with plugin. Ensure the plugin binary exists and is executable."), nil
 	}
 	return results, nil
 }
@@ -794,14 +812,14 @@ func (s *Server) handleSync(ctx context.Context, args SyncArgs) (any, error) {
 func (s *Server) handleExplainSpec(ctx context.Context, args ExplainSpecArgs) (any, error) {
 	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
 	if err != nil {
-		return nil, mcpErr("Failed to load project at the given path.")
+		return mcpErr("Failed to load project at the given path."), nil
 	}
-	if err := requirePrompt(svc); err != nil {
-		return nil, err
+	if bad := requirePrompt(svc); bad != nil {
+		return bad, nil
 	}
 	req, err := svc.Prompt.ExplainSpec(ctx)
 	if err != nil {
-		return nil, mcpErr(err.Error())
+		return mcpErr(err.Error()), nil
 	}
 	return req, nil
 }
@@ -809,14 +827,14 @@ func (s *Server) handleExplainSpec(ctx context.Context, args ExplainSpecArgs) (a
 func (s *Server) handleQuery(ctx context.Context, args QueryArgs) (any, error) {
 	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
 	if err != nil {
-		return nil, mcpErr("Failed to load project at the given path.")
+		return mcpErr("Failed to load project at the given path."), nil
 	}
-	if err := requirePrompt(svc); err != nil {
-		return nil, err
+	if bad := requirePrompt(svc); bad != nil {
+		return bad, nil
 	}
 	req, err := svc.Prompt.QueryProject(ctx, args.Question)
 	if err != nil {
-		return nil, mcpErr(err.Error())
+		return mcpErr(err.Error()), nil
 	}
 	return req, nil
 }
@@ -824,14 +842,14 @@ func (s *Server) handleQuery(ctx context.Context, args QueryArgs) (any, error) {
 func (s *Server) handleSuggestPriorities(ctx context.Context, args SuggestPrioritiesArgs) (any, error) {
 	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
 	if err != nil {
-		return nil, mcpErr("Failed to load project at the given path.")
+		return mcpErr("Failed to load project at the given path."), nil
 	}
-	if err := requirePrompt(svc); err != nil {
-		return nil, err
+	if bad := requirePrompt(svc); bad != nil {
+		return bad, nil
 	}
 	req, err := svc.Prompt.SuggestPriorities(ctx)
 	if err != nil {
-		return nil, mcpErr(err.Error())
+		return mcpErr(err.Error()), nil
 	}
 	return req, nil
 }
@@ -839,14 +857,14 @@ func (s *Server) handleSuggestPriorities(ctx context.Context, args SuggestPriori
 func (s *Server) handleReviewSpec(ctx context.Context, args ReviewSpecArgs) (any, error) {
 	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
 	if err != nil {
-		return nil, mcpErr("Failed to load project at the given path.")
+		return mcpErr("Failed to load project at the given path."), nil
 	}
-	if err := requirePrompt(svc); err != nil {
-		return nil, err
+	if bad := requirePrompt(svc); bad != nil {
+		return bad, nil
 	}
 	req, err := svc.Prompt.ReviewSpec(ctx)
 	if err != nil {
-		return nil, mcpErr(err.Error())
+		return mcpErr(err.Error()), nil
 	}
 	return req, nil
 }
@@ -854,29 +872,29 @@ func (s *Server) handleReviewSpec(ctx context.Context, args ReviewSpecArgs) (any
 func (s *Server) handleExplainDrift(ctx context.Context, args ExplainDriftArgs) (any, error) {
 	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
 	if err != nil {
-		return nil, mcpErr("Failed to load project at the given path.")
+		return mcpErr("Failed to load project at the given path."), nil
 	}
-	if err := requirePrompt(svc); err != nil {
-		return nil, err
+	if bad := requirePrompt(svc); bad != nil {
+		return bad, nil
 	}
 	report, err := svc.Drift.DetectDrift(ctx)
 	if err != nil {
-		return nil, mcpErr("Failed to detect drift. Ensure both spec and plan exist.")
+		return mcpErr("Failed to detect drift. Ensure both spec and plan exist."), nil
 	}
 	req, err := svc.Prompt.ExplainDrift(ctx, report)
 	if err != nil {
-		return nil, mcpErr(err.Error())
+		return mcpErr(err.Error()), nil
 	}
 	return req, nil
 }
 
-func (s *Server) handleAcceptDrift(ctx context.Context, args AcceptDriftArgs) (string, error) {
+func (s *Server) handleAcceptDrift(ctx context.Context, args AcceptDriftArgs) (any, error) {
 	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
 	if err != nil {
-		return "", mcpErr("Failed to load project at the given path.")
+		return mcpErr("Failed to load project at the given path."), nil
 	}
 	if err := svc.Drift.AcceptDrift(); err != nil {
-		return "", mcpErr("Failed to accept drift. Ensure a spec exists.")
+		return mcpErr("Failed to accept drift. Ensure a spec exists."), nil
 	}
 	return "Drift accepted and spec snapshot locked.", nil
 }
@@ -888,14 +906,14 @@ type AddFeatureArgs struct {
 	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
 }
 
-func (s *Server) handleAddFeature(ctx context.Context, args AddFeatureArgs) (string, error) {
+func (s *Server) handleAddFeature(ctx context.Context, args AddFeatureArgs) (any, error) {
 	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
 	if err != nil {
-		return "", mcpErr("Failed to load project at the given path.")
+		return mcpErr("Failed to load project at the given path."), nil
 	}
 	spec, err := svc.Spec.AddFeature(args.Title, args.Description)
 	if err != nil {
-		return "", mcpErr("Failed to add feature. Ensure the project is initialized with a valid spec.")
+		return mcpErr("Failed to add feature. Ensure the project is initialized with a valid spec."), nil
 	}
 	return fmt.Sprintf("Successfully added feature '%s'. Intent synced to docs/backlog.md. Total features: %d", args.Title, len(spec.Features)), nil
 }
@@ -903,23 +921,23 @@ func (s *Server) handleAddFeature(ctx context.Context, args AddFeatureArgs) (str
 func (s *Server) handleGetUsage(ctx context.Context, args GetUsageArgs) (any, error) {
 	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
 	if err != nil {
-		return nil, mcpErr("Failed to load project at the given path.")
+		return mcpErr("Failed to load project at the given path."), nil
 	}
 	usage, err := svc.Plan.GetUsage()
 	if err != nil {
-		return nil, mcpErr("Failed to retrieve usage data. Ensure the project is initialized.")
+		return mcpErr("Failed to retrieve usage data. Ensure the project is initialized."), nil
 	}
 	return usage, nil
 }
 
-func (s *Server) handleApprovePlan(ctx context.Context, args ApprovePlanArgs) (string, error) {
+func (s *Server) handleApprovePlan(ctx context.Context, args ApprovePlanArgs) (any, error) {
 	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
 	if err != nil {
-		return "", mcpErr("Failed to load project at the given path.")
+		return mcpErr("Failed to load project at the given path."), nil
 	}
 	err = svc.Plan.ApprovePlan()
 	if err != nil {
-		return "", mcpErr("Failed to approve plan. Ensure a plan has been generated.")
+		return mcpErr("Failed to approve plan. Ensure a plan has been generated."), nil
 	}
 	return "Plan approved successfully", nil
 }
@@ -1001,22 +1019,22 @@ type StatusArgs struct {
 	Project     string   `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
 }
 
-func (s *Server) handleAssignTask(ctx context.Context, args AssignTaskArgs) (string, error) {
+func (s *Server) handleAssignTask(ctx context.Context, args AssignTaskArgs) (any, error) {
 	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
 	if err != nil {
-		return "", mcpErr("Failed to load project at the given path.")
+		return mcpErr("Failed to load project at the given path."), nil
 	}
 	err = svc.Task.AssignTask(ctx, args.TaskID, args.Assignee)
 	if err != nil {
-		return "", mcpErr(fmt.Sprintf("Failed to assign task '%s' to '%s': %v", args.TaskID, args.Assignee, err))
+		return mcpErr(fmt.Sprintf("Failed to assign task '%s' to '%s': %v", args.TaskID, args.Assignee, err)), nil
 	}
 	return fmt.Sprintf("Task %s assigned to %s", args.TaskID, args.Assignee), nil
 }
 
-func (s *Server) handleTransitionTask(ctx context.Context, args TransitionTaskArgs) (string, error) {
+func (s *Server) handleTransitionTask(ctx context.Context, args TransitionTaskArgs) (any, error) {
 	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
 	if err != nil {
-		return "", mcpErr("Failed to load project at the given path.")
+		return mcpErr("Failed to load project at the given path."), nil
 	}
 	actor := args.Actor
 	if actor == "" {
@@ -1035,19 +1053,19 @@ func (s *Server) handleTransitionTask(ctx context.Context, args TransitionTaskAr
 
 	err = svc.Task.TransitionTask(args.TaskID, args.Event, actor, args.Evidence)
 	if err != nil {
-		return "", mcpErr(fmt.Sprintf("Failed to transition task '%s' with event '%s': %v", args.TaskID, args.Event, err))
+		return mcpErr(fmt.Sprintf("Failed to transition task '%s' with event '%s': %v", args.TaskID, args.Event, err)), nil
 	}
 	return fmt.Sprintf("Task %s transitioned with event %s successfully", args.TaskID, args.Event), nil
 }
 
-func (s *Server) handleInit(ctx context.Context, args InitArgs) (string, error) {
+func (s *Server) handleInit(ctx context.Context, args InitArgs) (any, error) {
 	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
 	if err != nil {
-		return "", mcpErr("Failed to load project at the given path.")
+		return mcpErr("Failed to load project at the given path."), nil
 	}
 	err = svc.Init.InitializeProject(args.Name)
 	if err != nil {
-		return "", mcpErr("Failed to initialize project. Check directory permissions and ensure the name is valid.")
+		return mcpErr("Failed to initialize project. Check directory permissions and ensure the name is valid."), nil
 	}
 	return fmt.Sprintf("Project %s initialized successfully", args.Name), nil
 }
@@ -1055,11 +1073,11 @@ func (s *Server) handleInit(ctx context.Context, args InitArgs) (string, error) 
 func (s *Server) handleGetSpec(ctx context.Context, args GetSpecArgs) (any, error) {
 	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
 	if err != nil {
-		return nil, mcpErr("Failed to load project at the given path.")
+		return mcpErr("Failed to load project at the given path."), nil
 	}
 	spec, err := svc.Spec.GetSpec()
 	if err != nil {
-		return nil, mcpErr("Failed to load spec. Ensure the project is initialized with 'roady init'.")
+		return mcpErr("Failed to load spec. Ensure the project is initialized with 'roady init'."), nil
 	}
 	return spec, nil
 }
@@ -1067,11 +1085,11 @@ func (s *Server) handleGetSpec(ctx context.Context, args GetSpecArgs) (any, erro
 func (s *Server) handleGetPlan(ctx context.Context, args GetPlanArgs) (any, error) {
 	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
 	if err != nil {
-		return nil, mcpErr("Failed to load project at the given path.")
+		return mcpErr("Failed to load project at the given path."), nil
 	}
 	plan, err := svc.Plan.GetPlan()
 	if err != nil {
-		return nil, mcpErr("Failed to load plan. Generate a plan first with 'roady plan generate'.")
+		return mcpErr("Failed to load plan. Generate a plan first with 'roady plan generate'."), nil
 	}
 	return plan, nil
 }
@@ -1079,35 +1097,35 @@ func (s *Server) handleGetPlan(ctx context.Context, args GetPlanArgs) (any, erro
 func (s *Server) handleGetState(ctx context.Context, args GetStateArgs) (any, error) {
 	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
 	if err != nil {
-		return nil, mcpErr("Failed to load project at the given path.")
+		return mcpErr("Failed to load project at the given path."), nil
 	}
 	state, err := svc.Plan.GetState()
 	if err != nil {
-		return nil, mcpErr("Failed to load execution state. Ensure a plan has been generated.")
+		return mcpErr("Failed to load execution state. Ensure a plan has been generated."), nil
 	}
 	return state, nil
 }
 
-func (s *Server) handleGeneratePlan(ctx context.Context, args GeneratePlanArgs) (string, error) {
+func (s *Server) handleGeneratePlan(ctx context.Context, args GeneratePlanArgs) (any, error) {
 	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
 	if err != nil {
-		return "", mcpErr("Failed to load project at the given path.")
+		return mcpErr("Failed to load project at the given path."), nil
 	}
 	plan, err := svc.Plan.GeneratePlan(ctx)
 	if err != nil {
-		return "", mcpErr("Failed to generate plan. Ensure a spec exists with at least one feature.")
+		return mcpErr("Failed to generate plan. Ensure a spec exists with at least one feature."), nil
 	}
 	return fmt.Sprintf("Plan generated with %d tasks. Plan ID: %s", len(plan.Tasks), plan.ID), nil
 }
 
-func (s *Server) handleUpdatePlan(ctx context.Context, args UpdatePlanArgs) (string, error) {
+func (s *Server) handleUpdatePlan(ctx context.Context, args UpdatePlanArgs) (any, error) {
 	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
 	if err != nil {
-		return "", mcpErr("Failed to load project at the given path.")
+		return mcpErr("Failed to load project at the given path."), nil
 	}
 	plan, err := svc.Plan.UpdatePlan(args.Tasks)
 	if err != nil {
-		return "", mcpErr("Failed to update plan. Ensure the task list is valid and a spec exists.")
+		return mcpErr("Failed to update plan. Ensure the task list is valid and a spec exists."), nil
 	}
 	return fmt.Sprintf("Plan updated with %d tasks. Plan ID: %s", len(plan.Tasks), plan.ID), nil
 }
@@ -1115,11 +1133,11 @@ func (s *Server) handleUpdatePlan(ctx context.Context, args UpdatePlanArgs) (str
 func (s *Server) handleDetectDrift(ctx context.Context, args DetectDriftArgs) (any, error) {
 	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
 	if err != nil {
-		return nil, mcpErr("Failed to load project at the given path.")
+		return mcpErr("Failed to load project at the given path."), nil
 	}
 	report, err := svc.Drift.DetectDrift(ctx)
 	if err != nil {
-		return nil, mcpErr("Failed to detect drift. Ensure both spec and plan exist.")
+		return mcpErr("Failed to detect drift. Ensure both spec and plan exist."), nil
 	}
 	return report, nil
 }
@@ -1127,11 +1145,11 @@ func (s *Server) handleDetectDrift(ctx context.Context, args DetectDriftArgs) (a
 func (s *Server) handleStatus(ctx context.Context, args StatusArgs) (any, error) {
 	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
 	if err != nil {
-		return nil, mcpErr("Failed to load project at the given path.")
+		return mcpErr("Failed to load project at the given path."), nil
 	}
 	plan, err := svc.Plan.GetPlan()
 	if err != nil {
-		return nil, mcpErr("Failed to load plan. Generate a plan first with 'roady plan generate'.")
+		return mcpErr("Failed to load plan. Generate a plan first with 'roady plan generate'."), nil
 	}
 	if plan == nil {
 		return "No plan found. Run roady_generate_plan first.", nil
@@ -1139,7 +1157,7 @@ func (s *Server) handleStatus(ctx context.Context, args StatusArgs) (any, error)
 
 	state, err := svc.Plan.GetState()
 	if err != nil {
-		return nil, mcpErr("Failed to load execution state. Ensure a plan has been generated.")
+		return mcpErr("Failed to load execution state. Ensure a plan has been generated."), nil
 	}
 	if state == nil {
 		return "No execution state found.", nil
@@ -1255,7 +1273,7 @@ func (s *Server) handleStatus(ctx context.Context, args StatusArgs) (any, error)
 
 		jsonBytes, err := json.Marshal(output)
 		if err != nil {
-			return nil, mcpErr("Failed to format status output.")
+			return mcpErr("Failed to format status output."), nil
 		}
 		return string(jsonBytes), nil
 	}
@@ -1318,11 +1336,11 @@ func containsPriority(priorities []planning.TaskPriority, p planning.TaskPriorit
 func (s *Server) handleCheckPolicy(ctx context.Context, args CheckPolicyArgs) (any, error) {
 	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
 	if err != nil {
-		return nil, mcpErr("Failed to load project at the given path.")
+		return mcpErr("Failed to load project at the given path."), nil
 	}
 	vioations, err := svc.Policy.CheckCompliance()
 	if err != nil {
-		return nil, mcpErr("Failed to check policy compliance. Ensure a policy.yaml and plan exist.")
+		return mcpErr("Failed to check policy compliance. Ensure a policy.yaml and plan exist."), nil
 	}
 	if len(vioations) == 0 {
 		return "No policy violations found.", nil
@@ -1391,7 +1409,7 @@ func (s *Server) ServeGRPC(ctx context.Context, addr string) error {
 func (s *Server) handleDepsList(ctx context.Context, args GetSpecArgs) (any, error) {
 	deps, err := s.depSvc.ListDependencies()
 	if err != nil {
-		return nil, mcpErr("Failed to list dependencies. Ensure .roady/deps.yaml exists.")
+		return mcpErr("Failed to list dependencies. Ensure .roady/deps.yaml exists."), nil
 	}
 	return deps, nil
 }
@@ -1399,7 +1417,7 @@ func (s *Server) handleDepsList(ctx context.Context, args GetSpecArgs) (any, err
 func (s *Server) handleDepsScan(ctx context.Context, args GetSpecArgs) (any, error) {
 	result, err := s.depSvc.ScanDependentRepos(nil)
 	if err != nil {
-		return nil, mcpErr("Failed to scan dependent repositories. Check that dependency paths are valid.")
+		return mcpErr("Failed to scan dependent repositories. Check that dependency paths are valid."), nil
 	}
 	return result, nil
 }
@@ -1411,7 +1429,7 @@ type DepsGraphArgs struct {
 func (s *Server) handleDepsGraph(ctx context.Context, args DepsGraphArgs) (any, error) {
 	summary, err := s.depSvc.GetDependencySummary()
 	if err != nil {
-		return nil, mcpErr("Failed to get dependency summary. Ensure .roady/deps.yaml exists.")
+		return mcpErr("Failed to get dependency summary. Ensure .roady/deps.yaml exists."), nil
 	}
 
 	response := map[string]any{
@@ -1421,7 +1439,7 @@ func (s *Server) handleDepsGraph(ctx context.Context, args DepsGraphArgs) (any, 
 	if args.CheckCycles {
 		hasCycle, err := s.depSvc.CheckForCycles()
 		if err != nil {
-			return nil, mcpErr("Failed to check for dependency cycles.")
+			return mcpErr("Failed to check for dependency cycles."), nil
 		}
 		response["has_cycle"] = hasCycle
 	}
@@ -1434,7 +1452,7 @@ func (s *Server) handleDepsGraph(ctx context.Context, args DepsGraphArgs) (any, 
 func (s *Server) handleDebtReport(ctx context.Context, args GetSpecArgs) (any, error) {
 	report, err := s.debtSvc.GetDebtReport(ctx)
 	if err != nil {
-		return nil, mcpErr("Failed to generate debt report. Ensure drift detection has been run.")
+		return mcpErr("Failed to generate debt report. Ensure drift detection has been run."), nil
 	}
 	return report, nil
 }
@@ -1442,7 +1460,7 @@ func (s *Server) handleDebtReport(ctx context.Context, args GetSpecArgs) (any, e
 func (s *Server) handleDebtSummary(ctx context.Context, args GetSpecArgs) (any, error) {
 	summary, err := s.debtSvc.GetDebtSummary(ctx)
 	if err != nil {
-		return nil, mcpErr("Failed to get debt summary. Ensure drift detection has been run.")
+		return mcpErr("Failed to get debt summary. Ensure drift detection has been run."), nil
 	}
 	return summary, nil
 }
@@ -1450,7 +1468,7 @@ func (s *Server) handleDebtSummary(ctx context.Context, args GetSpecArgs) (any, 
 func (s *Server) handleStickyDrift(ctx context.Context, args GetSpecArgs) (any, error) {
 	items, err := s.debtSvc.GetStickyDrift()
 	if err != nil {
-		return nil, mcpErr("Failed to get sticky drift items. Ensure drift history exists.")
+		return mcpErr("Failed to get sticky drift items. Ensure drift history exists."), nil
 	}
 	return items, nil
 }
@@ -1466,7 +1484,7 @@ func (s *Server) handleDebtTrend(ctx context.Context, args DebtTrendArgs) (any, 
 	}
 	trend, err := s.debtSvc.GetDriftTrend(days)
 	if err != nil {
-		return nil, mcpErr("Failed to get debt trend. Ensure drift history exists.")
+		return mcpErr("Failed to get debt trend. Ensure drift history exists."), nil
 	}
 	return trend, nil
 }
@@ -1476,11 +1494,11 @@ func (s *Server) handleDebtTrend(ctx context.Context, args DebtTrendArgs) (any, 
 func (s *Server) handleGetSnapshot(ctx context.Context, args GetSnapshotArgs) (any, error) {
 	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
 	if err != nil {
-		return nil, mcpErr("Failed to load project at the given path.")
+		return mcpErr("Failed to load project at the given path."), nil
 	}
 	snapshot, err := svc.Plan.GetProjectSnapshot(ctx)
 	if err != nil {
-		return nil, mcpErr("Failed to get project snapshot. Ensure a plan and state exist.")
+		return mcpErr("Failed to get project snapshot. Ensure a plan and state exist."), nil
 	}
 
 	totalTasks := 0
@@ -1506,7 +1524,7 @@ func (s *Server) handleGetSnapshot(ctx context.Context, args GetSnapshotArgs) (a
 func (s *Server) handleTasks(ctx context.Context, args TasksArgs) (any, error) {
 	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
 	if err != nil {
-		return nil, mcpErr("Failed to load project at the given path.")
+		return mcpErr("Failed to load project at the given path."), nil
 	}
 
 	status := args.Status
@@ -1518,39 +1536,39 @@ func (s *Server) handleTasks(ctx context.Context, args TasksArgs) (any, error) {
 	case "ready":
 		tasks, err := svc.Plan.GetReadyTasks(ctx)
 		if err != nil {
-			return nil, mcpErr("Failed to get ready tasks. Ensure a plan and state exist.")
+			return mcpErr("Failed to get ready tasks. Ensure a plan and state exist."), nil
 		}
 		return filterByAssignee(tasks, args.Assignee), nil
 	case "in_progress":
 		tasks, err := svc.Plan.GetInProgressTasks(ctx)
 		if err != nil {
-			return nil, mcpErr("Failed to get in-progress tasks. Ensure a plan and state exist.")
+			return mcpErr("Failed to get in-progress tasks. Ensure a plan and state exist."), nil
 		}
 		return filterByAssignee(tasks, args.Assignee), nil
 	case "blocked":
 		tasks, err := svc.Plan.GetBlockedTasks(ctx)
 		if err != nil {
-			return nil, mcpErr("Failed to get blocked tasks. Ensure a plan and state exist.")
+			return mcpErr("Failed to get blocked tasks. Ensure a plan and state exist."), nil
 		}
 		return filterByAssignee(tasks, args.Assignee), nil
 	case "unassigned":
 		tasks, err := svc.Plan.GetTasksByOwner(ctx, "")
 		if err != nil {
-			return nil, mcpErr("Failed to get unassigned tasks. Ensure a plan and state exist.")
+			return mcpErr("Failed to get unassigned tasks. Ensure a plan and state exist."), nil
 		}
 		return tasks, nil
 	case "all":
 		ready, err := svc.Plan.GetReadyTasks(ctx)
 		if err != nil {
-			return nil, mcpErr("Failed to load tasks. Ensure a plan and state exist.")
+			return mcpErr("Failed to load tasks. Ensure a plan and state exist."), nil
 		}
 		inProgress, err := svc.Plan.GetInProgressTasks(ctx)
 		if err != nil {
-			return nil, mcpErr("Failed to load tasks. Ensure a plan and state exist.")
+			return mcpErr("Failed to load tasks. Ensure a plan and state exist."), nil
 		}
 		blocked, err := svc.Plan.GetBlockedTasks(ctx)
 		if err != nil {
-			return nil, mcpErr("Failed to load tasks. Ensure a plan and state exist.")
+			return mcpErr("Failed to load tasks. Ensure a plan and state exist."), nil
 		}
 		return map[string]any{
 			"ready":       filterByAssignee(ready, args.Assignee),
@@ -1558,7 +1576,7 @@ func (s *Server) handleTasks(ctx context.Context, args TasksArgs) (any, error) {
 			"blocked":     filterByAssignee(blocked, args.Assignee),
 		}, nil
 	default:
-		return nil, mcpErr("Invalid status. Use ready, in_progress, blocked, unassigned, or all.")
+		return mcpErr("Invalid status. Use ready, in_progress, blocked, unassigned, or all."), nil
 	}
 }
 
@@ -1600,7 +1618,7 @@ func (s *Server) handleWorkspacePush(ctx context.Context, args WorkspacePushArgs
 	if args.ProjectPath != "" && args.ProjectPath != s.root {
 		overrideSvc, err := s.servicesForPath(args.ProjectPath, args.Project)
 		if err != nil {
-			return nil, mcpErr("Failed to load project at the given path.")
+			return mcpErr("Failed to load project at the given path."), nil
 		}
 		root = args.ProjectPath
 		auditSvc = overrideSvc.Audit
@@ -1608,7 +1626,7 @@ func (s *Server) handleWorkspacePush(ctx context.Context, args WorkspacePushArgs
 	svc := application.NewWorkspaceSyncService(root, auditSvc)
 	result, err := svc.Push(ctx)
 	if err != nil {
-		return nil, mcpErr(fmt.Sprintf("workspace push failed: %s", err))
+		return mcpErr(fmt.Sprintf("workspace push failed: %s", err)), nil
 	}
 	return result, nil
 }
@@ -1619,7 +1637,7 @@ func (s *Server) handleWorkspacePull(ctx context.Context, args WorkspacePullArgs
 	if args.ProjectPath != "" && args.ProjectPath != s.root {
 		overrideSvc, err := s.servicesForPath(args.ProjectPath, args.Project)
 		if err != nil {
-			return nil, mcpErr("Failed to load project at the given path.")
+			return mcpErr("Failed to load project at the given path."), nil
 		}
 		root = args.ProjectPath
 		auditSvc = overrideSvc.Audit
@@ -1627,7 +1645,7 @@ func (s *Server) handleWorkspacePull(ctx context.Context, args WorkspacePullArgs
 	svc := application.NewWorkspaceSyncService(root, auditSvc)
 	result, err := svc.Pull(ctx)
 	if err != nil {
-		return nil, mcpErr(fmt.Sprintf("workspace pull failed: %s", err))
+		return mcpErr(fmt.Sprintf("workspace pull failed: %s", err)), nil
 	}
 	return result, nil
 }
@@ -1637,14 +1655,14 @@ func (s *Server) handleWorkspacePull(ctx context.Context, args WorkspacePullArgs
 func (s *Server) handleSmartDecompose(ctx context.Context, args SmartDecomposeArgs) (any, error) {
 	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
 	if err != nil {
-		return nil, mcpErr("Failed to load project at the given path.")
+		return mcpErr("Failed to load project at the given path."), nil
 	}
-	if err := requirePrompt(svc); err != nil {
-		return nil, err
+	if bad := requirePrompt(svc); bad != nil {
+		return bad, nil
 	}
 	req, err := svc.Prompt.DecomposeSpec(ctx)
 	if err != nil {
-		return nil, mcpErr(err.Error())
+		return mcpErr(err.Error()), nil
 	}
 	return req, nil
 }
@@ -1667,42 +1685,42 @@ type TeamRemoveArgs struct {
 func (s *Server) handleTeamList(ctx context.Context, args GetSpecArgs) (any, error) {
 	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
 	if err != nil {
-		return nil, mcpErr("Failed to load project at the given path.")
+		return mcpErr("Failed to load project at the given path."), nil
 	}
 	cfg, err := svc.Team.ListMembers()
 	if err != nil {
-		return nil, mcpErr("failed to list team members")
+		return mcpErr("failed to list team members"), nil
 	}
 	return cfg, nil
 }
 
-func (s *Server) handleTeamAdd(ctx context.Context, args TeamAddArgs) (string, error) {
+func (s *Server) handleTeamAdd(ctx context.Context, args TeamAddArgs) (any, error) {
 	if args.Name == "" {
-		return "", mcpErr("name is required")
+		return mcpErr("name is required"), nil
 	}
 	if args.Role == "" {
-		return "", mcpErr("role is required")
+		return mcpErr("role is required"), nil
 	}
 	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
 	if err != nil {
-		return "", mcpErr("Failed to load project at the given path.")
+		return mcpErr("Failed to load project at the given path."), nil
 	}
 	if err := svc.Team.AddMember(args.Name, teamRole(args.Role)); err != nil {
-		return "", mcpErr(fmt.Sprintf("failed to add member: %s", err))
+		return mcpErr(fmt.Sprintf("failed to add member: %s", err)), nil
 	}
 	return fmt.Sprintf("Member %s added with role %s", args.Name, args.Role), nil
 }
 
-func (s *Server) handleTeamRemove(ctx context.Context, args TeamRemoveArgs) (string, error) {
+func (s *Server) handleTeamRemove(ctx context.Context, args TeamRemoveArgs) (any, error) {
 	if args.Name == "" {
-		return "", mcpErr("name is required")
+		return mcpErr("name is required"), nil
 	}
 	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
 	if err != nil {
-		return "", mcpErr("Failed to load project at the given path.")
+		return mcpErr("Failed to load project at the given path."), nil
 	}
 	if err := svc.Team.RemoveMember(args.Name); err != nil {
-		return "", mcpErr(fmt.Sprintf("failed to remove member: %s", err))
+		return mcpErr(fmt.Sprintf("failed to remove member: %s", err)), nil
 	}
 	return fmt.Sprintf("Member %s removed", args.Name), nil
 }
@@ -1715,11 +1733,11 @@ type RateListArgs struct {
 func (s *Server) handleRateList(ctx context.Context, args RateListArgs) (any, error) {
 	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
 	if err != nil {
-		return nil, mcpErr("Failed to load project at the given path.")
+		return mcpErr("Failed to load project at the given path."), nil
 	}
 	config, err := svc.Billing.ListRates()
 	if err != nil {
-		return nil, mcpErr(fmt.Sprintf("failed to list rates: %s", err))
+		return mcpErr(fmt.Sprintf("failed to list rates: %s", err)), nil
 	}
 	return config, nil
 }
@@ -1733,13 +1751,13 @@ type RateAddArgs struct {
 	Project     string  `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
 }
 
-func (s *Server) handleRateAdd(ctx context.Context, args RateAddArgs) (string, error) {
+func (s *Server) handleRateAdd(ctx context.Context, args RateAddArgs) (any, error) {
 	if args.ID == "" || args.Name == "" {
-		return "", mcpErr("id and name are required")
+		return mcpErr("id and name are required"), nil
 	}
 	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
 	if err != nil {
-		return "", mcpErr("Failed to load project at the given path.")
+		return mcpErr("Failed to load project at the given path."), nil
 	}
 	rate := billing.Rate{
 		ID:         args.ID,
@@ -1748,7 +1766,7 @@ func (s *Server) handleRateAdd(ctx context.Context, args RateAddArgs) (string, e
 		IsDefault:  args.IsDefault,
 	}
 	if err := svc.Billing.AddRate(rate); err != nil {
-		return "", mcpErr(fmt.Sprintf("failed to add rate: %s", err))
+		return mcpErr(fmt.Sprintf("failed to add rate: %s", err)), nil
 	}
 	return fmt.Sprintf("Rate %s added: %s - $%.2f/hr", args.ID, args.Name, args.HourlyRate), nil
 }
@@ -1762,16 +1780,16 @@ type TaskLogTimeArgs struct {
 	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
 }
 
-func (s *Server) handleTaskLogTime(ctx context.Context, args TaskLogTimeArgs) (string, error) {
+func (s *Server) handleTaskLogTime(ctx context.Context, args TaskLogTimeArgs) (any, error) {
 	if args.TaskID == "" || args.Minutes <= 0 {
-		return "", mcpErr("task_id and minutes are required")
+		return mcpErr("task_id and minutes are required"), nil
 	}
 	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
 	if err != nil {
-		return "", mcpErr("Failed to load project at the given path.")
+		return mcpErr("Failed to load project at the given path."), nil
 	}
 	if err := svc.Billing.LogTime(args.TaskID, args.RateID, args.Minutes, args.Description); err != nil {
-		return "", mcpErr(fmt.Sprintf("failed to log time: %s", err))
+		return mcpErr(fmt.Sprintf("failed to log time: %s", err)), nil
 	}
 	return fmt.Sprintf("Logged %d minutes to task %s", args.Minutes, args.TaskID), nil
 }
@@ -1787,7 +1805,7 @@ type CostReportArgs struct {
 func (s *Server) handleCostReport(ctx context.Context, args CostReportArgs) (any, error) {
 	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
 	if err != nil {
-		return nil, mcpErr("Failed to load project at the given path.")
+		return mcpErr("Failed to load project at the given path."), nil
 	}
 	opts := application.CostReportOpts{
 		TaskID: args.TaskID,
@@ -1796,7 +1814,7 @@ func (s *Server) handleCostReport(ctx context.Context, args CostReportArgs) (any
 	}
 	report, err := svc.Billing.GetCostReport(opts)
 	if err != nil {
-		return nil, mcpErr(fmt.Sprintf("failed to generate cost report: %s", err))
+		return mcpErr(fmt.Sprintf("failed to generate cost report: %s", err)), nil
 	}
 	if report == nil {
 		return "No time entries found", nil
@@ -1812,11 +1830,11 @@ type CostBudgetArgs struct {
 func (s *Server) handleCostBudget(ctx context.Context, args CostBudgetArgs) (any, error) {
 	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
 	if err != nil {
-		return nil, mcpErr("Failed to load project at the given path.")
+		return mcpErr("Failed to load project at the given path."), nil
 	}
 	status, err := svc.Billing.GetBudgetStatus()
 	if err != nil {
-		return nil, mcpErr(fmt.Sprintf("failed to get budget status: %s", err))
+		return mcpErr(fmt.Sprintf("failed to get budget status: %s", err)), nil
 	}
 	if status == nil {
 		return "No budget configured. Set budget_hours in policy.yaml.", nil
@@ -1830,16 +1848,16 @@ type RateRemoveArgs struct {
 	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
 }
 
-func (s *Server) handleRateRemove(ctx context.Context, args RateRemoveArgs) (string, error) {
+func (s *Server) handleRateRemove(ctx context.Context, args RateRemoveArgs) (any, error) {
 	if args.ID == "" {
-		return "", mcpErr("rate id is required")
+		return mcpErr("rate id is required"), nil
 	}
 	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
 	if err != nil {
-		return "", mcpErr("Failed to load project at the given path.")
+		return mcpErr("Failed to load project at the given path."), nil
 	}
 	if err := svc.Billing.RemoveRate(args.ID); err != nil {
-		return "", mcpErr(fmt.Sprintf("failed to remove rate: %s", err))
+		return mcpErr(fmt.Sprintf("failed to remove rate: %s", err)), nil
 	}
 	return fmt.Sprintf("Rate %s removed", args.ID), nil
 }
@@ -1850,16 +1868,16 @@ type RateSetDefaultArgs struct {
 	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
 }
 
-func (s *Server) handleRateSetDefault(ctx context.Context, args RateSetDefaultArgs) (string, error) {
+func (s *Server) handleRateSetDefault(ctx context.Context, args RateSetDefaultArgs) (any, error) {
 	if args.ID == "" {
-		return "", mcpErr("rate id is required")
+		return mcpErr("rate id is required"), nil
 	}
 	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
 	if err != nil {
-		return "", mcpErr("Failed to load project at the given path.")
+		return mcpErr("Failed to load project at the given path."), nil
 	}
 	if err := svc.Billing.SetDefaultRate(args.ID); err != nil {
-		return "", mcpErr(fmt.Sprintf("failed to set default rate: %s", err))
+		return mcpErr(fmt.Sprintf("failed to set default rate: %s", err)), nil
 	}
 	return fmt.Sprintf("Rate %s set as default", args.ID), nil
 }
@@ -1872,19 +1890,19 @@ type RateTaxArgs struct {
 	Project     string  `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
 }
 
-func (s *Server) handleRateTax(ctx context.Context, args RateTaxArgs) (string, error) {
+func (s *Server) handleRateTax(ctx context.Context, args RateTaxArgs) (any, error) {
 	if args.Name == "" {
-		return "", mcpErr("tax name is required")
+		return mcpErr("tax name is required"), nil
 	}
 	if args.Percent < 0 || args.Percent > 100 {
-		return "", mcpErr("tax percent must be between 0 and 100")
+		return mcpErr("tax percent must be between 0 and 100"), nil
 	}
 	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
 	if err != nil {
-		return "", mcpErr("Failed to load project at the given path.")
+		return mcpErr("Failed to load project at the given path."), nil
 	}
 	if err := svc.Billing.SetTax(args.Name, args.Percent, args.Included); err != nil {
-		return "", mcpErr(fmt.Sprintf("failed to set tax: %s", err))
+		return mcpErr(fmt.Sprintf("failed to set tax: %s", err)), nil
 	}
 	return fmt.Sprintf("Tax configured: %s at %.1f%%", args.Name, args.Percent), nil
 }
