@@ -83,6 +83,8 @@ func buildServices(workspace *Workspace) (*AppServices, error) {
 	planSvc := application.NewPlanService(workspace.Repo, auditSvc)
 	taskSvc := application.NewTaskService(workspace.Repo, auditSvc, policySvc)
 	driftSvc := application.NewDriftService(workspace.Repo, auditSvc, storage.NewCodebaseInspector(), policySvc)
+	// Staleness detection needs to know how far the repository has moved.
+	driftSvc.SetActivityInspector(storage.NewGitActivityInspector(workspace.Repo.Root()))
 	debtSvc := application.NewDebtService(driftSvc, auditSvc)
 
 	// Create velocity projection for forecasting and hydrate from stored events

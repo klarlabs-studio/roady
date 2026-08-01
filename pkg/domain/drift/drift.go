@@ -22,6 +22,7 @@ const (
 	CategoryDebt           DriftCategory = "DEBT"           // Known alignment issue that hasn't been resolved
 	CategoryViolation      DriftCategory = "VIOLATION"      // Policy violation
 	CategoryImplementation DriftCategory = "IMPLEMENTATION" // Code reality doesn't match state
+	CategoryStale          DriftCategory = "STALE"          // The artifact is internally consistent but the repository has moved past it
 )
 
 type Severity string

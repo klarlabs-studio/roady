@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — staleness drift
+
+`roady drift detect` now reports a plan the repository has left behind.
+
+Every other check compares Roady's own artifacts against each other, so a
+plan nobody edits stays internally consistent forever while the code moves
+on. Roady's own repository demonstrated the blind spot: 55 commits and seven
+releases past a plan marked 113/113 done, spec still titled "v0.11.0", and
+drift detection reported *"No drift detected. Project is in a healthy
+state."*
+
+- New `drift.CategoryStale` and `DriftDetector.DetectStalenessDrift`.
+- Judged by commits rather than file timestamps, since a fresh clone
+  rewrites mtimes and would report every checkout as drift. Commits touching
+  `.roady/` are excluded, so a project cannot stay "fresh" by only editing
+  its own bookkeeping.
+- Severity scales with divergence; a quiet repository is never stale, and
+  when git is unavailable the check stays silent rather than guessing.
+
 ## [0.15.0] - 2026-08-01
 
 Roady stops calling language models, and MCP tool failures become readable

@@ -7,7 +7,24 @@ import (
 
 	"github.com/felixgeelhaar/roady/pkg/domain"
 	"github.com/felixgeelhaar/roady/pkg/domain/drift"
+	"github.com/felixgeelhaar/roady/pkg/domain/planning"
 )
+
+// RepoActivityInspector reports how far the repository has moved since a
+// point in time. Injected so the domain stays free of git.
+type RepoActivityInspector interface {
+	ActivitySince(since time.Time) drift.RepoActivity
+}
+
+// planUpdatedAt is the reference point for staleness. A plan with no
+// timestamp yields the zero time, which the inspector reports as unavailable
+// rather than as infinitely stale.
+func planUpdatedAt(plan *planning.Plan) time.Time {
+	if plan == nil {
+		return time.Time{}
+	}
+	return plan.UpdatedAt
+}
 
 type DriftService struct {
 	repo      domain.WorkspaceRepository
@@ -15,6 +32,16 @@ type DriftService struct {
 	inspector drift.CodeInspector
 	policy    *PolicyService
 	detector  *drift.DriftDetector
+
+	// activity is optional; a nil inspector skips the staleness check
+	// rather than reporting a plan as stale on no evidence.
+	activity RepoActivityInspector
+}
+
+// SetActivityInspector supplies the repository-movement signal used for
+// staleness detection.
+func (s *DriftService) SetActivityInspector(a RepoActivityInspector) {
+	s.activity = a
 }
 
 func NewDriftService(repo domain.WorkspaceRepository, audit domain.AuditLogger, inspector drift.CodeInspector, policy *PolicyService) *DriftService {
@@ -67,6 +94,15 @@ func (s *DriftService) DetectDrift(ctx context.Context) (*drift.Report, error) {
 	// 1. Plan vs Spec
 	if planIssues := s.detector.DetectPlanDrift(spec, plan); len(planIssues) > 0 {
 		report.Issues = append(report.Issues, planIssues...)
+	}
+
+	// 1b. Staleness — the plan itself falling behind the repository.
+	// Every other check compares Roady's artifacts against each other, so a
+	// plan nobody edits stays internally consistent while the code moves on.
+	if s.activity != nil {
+		if staleIssues := s.detector.DetectStalenessDrift(plan, s.activity.ActivitySince(planUpdatedAt(plan)), time.Now()); len(staleIssues) > 0 {
+			report.Issues = append(report.Issues, staleIssues...)
+		}
 	}
 
 	// 2. Code vs State (Implementation Drift)
