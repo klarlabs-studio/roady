@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.1] - 2026-08-01
+
+Patch release so the published tag sits on a commit with green CI. No
+behaviour change for anyone using the CLI or MCP server.
+
+### Fixed
+
+- `AuditTrailService.BuildTrail` dereferenced the event-sourced audit
+  service unconditionally, while `NewAuditTrailService` documents every
+  collaborator except plan as optional — passing nil panicked. Both audit
+  implementations now reduce to a normalised entry shape, so a nil
+  event-sourced service falls back to the plain `AuditService`, which holds
+  the same events. The CLI always passed a non-nil service, so this was
+  unreachable from the shipped binaries.
+- `.gitignore`'s bare `dist/` rule matched
+  `internal/infrastructure/mcp/dist/`, silently dropping new MCP App
+  artifacts from the index. This is why `ui://roady/billing` shipped
+  registered but missing.
+
+### Added
+
+- Test coverage for the service entry points and the four new command
+  runners, restoring the coverage policy gate (application 83.2%,
+  infrastructure 77.2%).
+
 ## [0.14.0] - 2026-08-01
 
 Coordination and stakeholder reporting without a UI, agent-traceable audit
