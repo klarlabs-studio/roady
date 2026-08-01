@@ -189,7 +189,11 @@ func outputStatusJSON(productSpec *spec.ProductSpec, plan *planning.Plan, state 
 }
 
 func outputStatusText(cmd *cobra.Command, productSpec *spec.ProductSpec, plan *planning.Plan, state *planning.ExecutionState, driftCount int) error {
-	fmt.Printf("Project: %s (v%s)\n", productSpec.Title, productSpec.Version)
+	if productSpec.Version != "" {
+		fmt.Printf("Project: %s (v%s)\n", productSpec.Title, productSpec.Version)
+	} else {
+		fmt.Printf("Project: %s\n", productSpec.Title)
+	}
 	fmt.Printf("Spec features: %d\n", len(productSpec.Features))
 
 	if plan == nil {

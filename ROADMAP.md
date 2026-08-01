@@ -9,7 +9,13 @@ intended **open-core boundary** for a future hosted product.
 
 ---
 
-## Now (v0.16.0 — shipped)
+## Now (v0.17.0 — shipped)
+
+- **`roady_audit_trail` over MCP** — the evidence trail was CLI-only, so
+  the agents the GRC work targets could not ask "which agent worked on
+  this, and what proves it" without shelling out. MCP schema 3.1.0.
+
+## Earlier (v0.16.0 — shipped)
 
 - **Staleness drift** — `roady drift detect` reports a plan the repository
   has left behind, judged by commit volume rather than file timestamps.

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-08-01
+
+Audit trails become answerable by the agents they were built for.
+
 ### Added
 
 - MCP tool `roady_audit_trail`. The evidence trail was CLI-only, so the agents
@@ -16,6 +20,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `sdk.Client.AuditTrail` exposes it to SDK consumers.
 - `AuditTrailService` is wired into `AppServices` rather than constructed
   inline by the CLI, so both surfaces share one instance.
+
+### Fixed
+
+- `roady status` printed `(v)` for a project whose spec carries no version,
+  and would render a non-numeric version as `vplanned`. The parenthetical is
+  now omitted when there is no version to show.
 
 ## [0.16.0] - 2026-08-01
 

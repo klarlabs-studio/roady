@@ -1,6 +1,6 @@
 {
   "project_id": "test-refactor",
-  "version": 115,
+  "version": 116,
   "task_states": {
     "task-dispatch-contract": {
       "status": "pending",
