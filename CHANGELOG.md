@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — the audit chain could not verify its own history
+
+Dogfooding `roady audit verify` on Roady's own repository found 105 integrity
+violations in a log that had never been reported as broken. None were
+tampering. Three separate causes:
+
+- **Two hash functions wrote to one log.** `events.BaseEvent` hashes Type and
+  AggregateID; `domain.Event` hashes Action. Any event carrying an aggregate
+  ID verified under one and failed under the other. Verification now accepts
+  either scheme.
+- **A shell script appended raw JSON.** `scripts/release.sh` wrote entries
+  with no hash and no `prev_hash` straight into the chained log — 12 of them
+  over several months. It no longer does, and unhashed entries are reported
+  as *outside the chain* rather than as tampering.
+- **The hash algorithm changed under existing events.** Commit `fe1c290`
+  folded `canonicalJSON` into the digest, so every earlier event with
+  non-trivial metadata stopped reproducing its hash. 73 entries are affected
+  and cannot be cryptographically verified.
+
+Events now carry `hash_algo`, so the next algorithm change is recognised
+rather than mistaken for an attack, and verification reports *cannot verify*
+for an unknown algorithm. `docs/audit-grc.md` states plainly that pre-change
+history is unverifiable, instead of implying the whole trail is sound.
+
 ### Added — staleness drift
 
 `roady drift detect` now reports a plan the repository has left behind.

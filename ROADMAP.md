@@ -62,7 +62,7 @@ intended **open-core boundary** for a future hosted product.
 - `roady demo` for <1s aha; `roady init --interactive` default in TTY;
   empty-state ladder on `roady status`
 
-## Next (v0.15.x)
+## Next (v0.16.x)
 
 - **Cross-project task dependencies** — `@project:task-id` syntax in
   `DependsOn` so an org-level plan can express "feature-payments task
@@ -75,7 +75,7 @@ intended **open-core boundary** for a future hosted product.
 - **Spec-to-PR loop**: CI integration that auto-detects drift on PR
   merge and either accepts or opens a follow-up issue.
 
-## Soon (v0.14+)
+## Soon (v0.17+)
 
 - **Cross-repo planning**: a single `.roady/` workspace can declare
   member repos, share spec context, and aggregate plan state.
@@ -84,11 +84,10 @@ intended **open-core boundary** for a future hosted product.
 
 - **Plugin marketplace** for syncers and notifiers, opinionated quality
   bar (signed binaries, contract tests must pass).
-- **Native source citations** through providers that surface them
-  (Gemini grounding metadata, Anthropic citation API once stable).
-- **Drift detection over code semantics**, not just structure — diff
-  the implemented behaviour against the spec's natural-language
-  requirement using a constrained AI checker.
+- **Semantic drift prompts** — a `drift.semantic` prompt request that
+  hands the caller the implemented behaviour alongside the spec's
+  natural-language requirement, so their model can judge whether the two
+  still agree. Roady frames the question; it does not answer it.
 
 ---
 

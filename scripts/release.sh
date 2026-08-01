@@ -9,17 +9,20 @@ COVER_PROFILE="coverage.out"
 EVENTS_FILE=".roady/events.jsonl"
 mkdir -p $(dirname "$COVER_HISTORY")
 
-# Helper to log governance events
+# Governance events are NOT appended here.
+#
+# This script used to write raw JSON straight into .roady/events.jsonl. That
+# log is hash-chained: every entry commits to its predecessor, which is what
+# makes it tamper-evident. Entries appended by hand carry no hash and no
+# prev_hash, so they sit outside the chain and `roady audit verify` reports
+# them — indistinguishable, at a glance, from actual tampering. Twelve such
+# entries accumulated in this repository before anyone noticed.
+#
+# Anything that needs to be in the audit log must go through roady, which
+# chains it. A release is already recorded by its git tag and its GitHub
+# release; it does not need a second, weaker record here.
 log_event() {
-  local action="$1"
-  local actor="${2:-release-script}"
-  local metadata="${3:-{}}"
-  local timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-  local id=$(uuidgen 2>/dev/null || cat /proc/sys/kernel/random/uuid 2>/dev/null || echo "evt-$(date +%s)")
-
-  if [ -f "$EVENTS_FILE" ]; then
-    echo "{\"id\":\"$id\",\"timestamp\":\"$timestamp\",\"action\":\"$action\",\"actor\":\"$actor\",\"metadata\":$metadata}" >> "$EVENTS_FILE"
-  fi
+  : # intentionally a no-op; see above
 }
 
 echo "=== Roady Release Pipeline ==="

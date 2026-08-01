@@ -43,6 +43,7 @@ func (s *AuditService) Log(action string, actor string, metadata map[string]any)
 	}
 
 	event := domain.Event{
+		HashAlgo:  domain.HashAlgoCurrent,
 		ID:        uuid.New().String(),
 		Timestamp: time.Now(),
 		Action:    action,
@@ -108,10 +109,33 @@ func (s *AuditService) VerifyIntegrity() ([]string, error) {
 	for i := range events {
 		e := events[i]
 
-		// 1. Self-hash. Covers content and parentage together.
-		if e.Hash != e.CalculateHash() {
+		// 1. An entry with no hash was never in the chain. That is a
+		// different fact from a hash that does not match, and conflating
+		// them reads as tampering when the real cause is usually something
+		// appending to the log without going through Roady.
+		if e.Hash == "" {
 			violations = append(violations, fmt.Sprintf(
-				"Event %d (%s): Content hash mismatch. Possible tampering.", i, e.ID))
+				"Event %d (%s): recorded without a hash, so it is outside the chain. Something appended to events.jsonl directly instead of through roady.",
+				i, orUnidentified(e.ID)))
+			continue
+		}
+
+		// 2. An entry stamped with an algorithm this build does not know
+		// cannot be checked. Report that plainly instead of calling it
+		// tampering.
+		if !e.Verifiable() {
+			violations = append(violations, fmt.Sprintf(
+				"Event %d (%s): written with hash algorithm %q, which this build cannot verify. Upgrade roady or treat this entry as unverified.",
+				i, e.ID, e.HashAlgo))
+			continue
+		}
+
+		// 3. Self-hash. Covers content and parentage together. Either
+		// writer's scheme is accepted — see Event.HashMatches.
+		if !e.HashMatches() {
+			violations = append(violations, fmt.Sprintf(
+				"Event %d (%s): content hash does not reproduce. Either the entry was altered, or it predates a change to the hash algorithm (see docs/audit-grc.md).",
+				i, e.ID))
 			continue
 		}
 
@@ -125,6 +149,15 @@ func (s *AuditService) VerifyIntegrity() ([]string, error) {
 	}
 
 	return violations, nil
+}
+
+// orUnidentified names an entry that arrived without an ID, which is itself
+// a sign it did not come from Roady.
+func orUnidentified(id string) string {
+	if id == "" {
+		return "no id"
+	}
+	return id
 }
 
 // shortHash trims a hash for human-readable findings while staying long

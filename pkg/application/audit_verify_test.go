@@ -95,7 +95,7 @@ func TestVerifyIntegrityStillDetectsContentTampering(t *testing.T) {
 	if len(problems) == 0 {
 		t.Fatal("altering an event must be detected")
 	}
-	if !strings.Contains(strings.Join(problems, " "), "Content hash mismatch") {
+	if !strings.Contains(strings.Join(problems, " "), "content hash does not reproduce") {
 		t.Errorf("expected a content hash finding, got %v", problems)
 	}
 }
@@ -144,3 +144,60 @@ func TestVerifyIntegrityEmptyLog(t *testing.T) {
 		t.Errorf("an empty log has nothing to violate, got %v", p)
 	}
 }
+
+func TestVerifyIntegrityDistinguishesUnhashedFromTampered(t *testing.T) {
+	events := linked("alice", 2, "")
+	// Something appended straight to events.jsonl: no hash, no chain.
+	events = append(events, domain.Event{
+		ID: "manual-1", Timestamp: time.Now(), Action: "release", Actor: "script",
+	})
+
+	problems := verify(t, events)
+
+	joined := strings.Join(problems, " ")
+	if !strings.Contains(joined, "outside the chain") {
+		t.Errorf("an unhashed entry should be named as outside the chain, got %v", problems)
+	}
+	if strings.Contains(joined, "altered") {
+		t.Error("an unhashed entry is not evidence of tampering and must not be reported as such")
+	}
+}
+
+func TestVerifyIntegrityReportsUnknownAlgorithmAsUnverifiable(t *testing.T) {
+	events := linked("alice", 2, "")
+	events[1].HashAlgo = "sha3-future-v9"
+
+	problems := verify(t, events)
+
+	joined := strings.Join(problems, " ")
+	if !strings.Contains(joined, "cannot verify") {
+		t.Errorf("expected an unverifiable finding, got %v", problems)
+	}
+	// A future algorithm is not an attack.
+	if strings.Contains(joined, "altered") {
+		t.Error("an unknown algorithm must not be reported as tampering")
+	}
+}
+
+func TestNewEventsCarryTheCurrentAlgorithm(t *testing.T) {
+	repo := &recordingAuditRepo{}
+	svc := NewAuditService(repo)
+
+	if err := svc.Log("task.started", "alice", map[string]any{"task_id": "t1"}); err != nil {
+		t.Fatalf("Log: %v", err)
+	}
+	if repo.last.HashAlgo != domain.HashAlgoCurrent {
+		t.Errorf("HashAlgo = %q, want %q", repo.last.HashAlgo, domain.HashAlgoCurrent)
+	}
+	if !repo.last.HashMatches() {
+		t.Error("a freshly written event must verify against its own hash")
+	}
+}
+
+type recordingAuditRepo struct {
+	domainWorkspaceRepo
+	last domain.Event
+}
+
+func (r *recordingAuditRepo) LoadEvents() ([]domain.Event, error) { return nil, nil }
+func (r *recordingAuditRepo) RecordEvent(e domain.Event) error    { r.last = e; return nil }

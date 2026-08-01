@@ -1,6 +1,6 @@
 {
   "project_id": "test-refactor",
-  "version": 110,
+  "version": 111,
   "task_states": {
     "task-agg-coordinator": {
       "status": "done",
@@ -371,6 +371,16 @@
       "owner": "felixgeelhaar",
       "elapsed_minutes": 0
     },
+    "task-dispatch-contract": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-dispatch-hook": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
     "task-drift-history": {
       "status": "done",
       "path": "",
@@ -593,6 +603,11 @@
       "owner": "felixgeelhaar",
       "elapsed_minutes": 0
     },
+    "task-patch-prompt": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
     "task-plugin-contracts": {
       "status": "done",
       "path": "",
@@ -715,6 +730,16 @@
       "completed_at": "2026-05-03T13:13:34.312114+02:00",
       "elapsed_minutes": 1
     },
+    "task-pr-drift-gate": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-pr-followup": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
     "task-pv-cli": {
       "status": "done",
       "path": "",
@@ -827,6 +852,31 @@
       "status": "done",
       "path": "",
       "owner": "felixgeelhaar",
+      "elapsed_minutes": 0
+    },
+    "task-xdep-ready": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-xdep-syntax": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-xdep-validation": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-xrepo-aggregate": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-xrepo-members": {
+      "status": "pending",
+      "path": "",
       "elapsed_minutes": 0
     }
   },

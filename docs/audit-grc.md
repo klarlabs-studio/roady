@@ -60,6 +60,37 @@ Over MCP, `roady_transition_task` accepts `session_id` and `agent` per call.
 A caller-supplied value always wins over the ambient process identity, because
 an agent forwarding the run that spawned it knows more than the server does.
 
+## When verification reports a problem
+
+`roady audit verify` distinguishes three things that all used to read as
+"possible tampering":
+
+| Finding | Means |
+| --- | --- |
+| `content hash does not reproduce` | The entry was altered — **or** it predates a change to the hash algorithm. See below. |
+| `outside the chain` | The entry has no hash at all, so it was never chained. Something appended to `events.jsonl` directly instead of going through Roady. |
+| `cannot verify` | The entry was written by a Roady version using a hash algorithm this build does not know. Not an attack. |
+
+### Historical entries may be unverifiable
+
+The hash algorithm changed once, in commit `fe1c290`, which folded
+`canonicalJSON` into the digest. **Every event written before that commit
+whose metadata is non-trivial no longer reproduces its recorded hash.** They
+were not altered; the algorithm moved under them.
+
+This went unnoticed for months because a mismatch was reported as possible
+tampering with no way to tell the two apart. Roady's own repository carries
+73 such entries.
+
+Events are now stamped with `hash_algo`, so a future change is recognised
+rather than mistaken for an attack. Entries written before versioning carry
+no stamp and are checked against the current algorithm on a best-effort
+basis.
+
+**What this means for a trail you show an auditor:** entries from before the
+algorithm change cannot be cryptographically verified. Say so, rather than
+presenting the trail as fully verified.
+
 ## Coverage limits
 
 Events written before this feature shipped carry no agent or session. Trails

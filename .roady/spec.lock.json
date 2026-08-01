@@ -1,1291 +1,133 @@
 {
-  "id": "horizons-8",
-  "title": "Roady v0.11.0: Positioning \u0026 Narrative",
-  "description": "Roady planning system roadmap:\n- v0.5.0 (complete): Horizons 5 \u0026 6 — predictive analytics, domain hardening, event sourcing.\n- v0.6.0 (complete): Multi-repo org dashboard, plugin contracts, notification webhooks, fsnotify watch,\n  coordinator integration into CLI/MCP with snapshot and task queries.\n- v0.7.0 (complete): Org policy inheritance, cross-project drift, plugin registry and health,\n  Slack/realtime notifications, watch auto-sync and patterns.\n- v0.8.0 (complete): Developer experience polish, API/SDK stability, multi-user collaboration,\n  AI-powered workflows, interactive D3 MCP app visualizations.\n- v0.9.0 (complete): Expert-review-driven refinements — sharpen onboarding, reduce CLI\n  cognitive load, ship a pre-seeded demo, fix empty-state UX.\n- v0.10.0 (complete): AI quality and telemetry — eval harness over the planning\n  pipeline (heuristic + AI mock + drift corpus), Task.Origin provenance, source-doc\n  citations through spec analyze, CompletionResponse confidence + sources +\n  streaming OnToken contract, MCP tool consolidation (roady_tasks +\n  roady_cost_estimate), naming standardisation aliases, roady notify namespace\n  unification, AI command progress feedback with SIGINT cancellation.\n- v0.11.0 (complete): Positioning and narrative cleanup — single ICP picked\n  (devs using AI coding agents), category named (\"Planning memory for AI\n  coding agents\"), README hero rewritten, feature museum moved to\n  docs/advanced.md, docs/vs.md competitive comparison + docs/positioning.md\n  one-pager + ROADMAP.md sketch shipped, Astro website hero / definition /\n  features sections realigned to match.\n",
+  "id": "roadmap-v016",
+  "title": "Roady v0.16.0: Agent Handoff \u0026 Cross-Project Planning",
+  "description": "Roady planning system roadmap:\n- v0.5.0 (complete): Horizons 5 \u0026 6 — predictive analytics, domain hardening, event sourcing.\n- v0.6.0 (complete): Multi-repo org dashboard, plugin contracts, notification webhooks, fsnotify watch,\n  coordinator integration into CLI/MCP with snapshot and task queries.\n- v0.7.0 (complete): Org policy inheritance, cross-project drift, plugin registry and health,\n  Slack/realtime notifications, watch auto-sync and patterns.\n- v0.8.0 (complete): Developer experience polish, API/SDK stability, multi-user collaboration,\n  AI-powered workflows, interactive D3 MCP app visualizations.\n- v0.9.0 (complete): Expert-review-driven refinements — sharpen onboarding, reduce CLI\n  cognitive load, ship a pre-seeded demo, fix empty-state UX.\n- v0.10.0 (complete): AI quality and telemetry — eval harness over the planning\n  pipeline (heuristic + AI mock + drift corpus), Task.Origin provenance, source-doc\n  citations through spec analyze, CompletionResponse confidence + sources +\n  streaming OnToken contract, MCP tool consolidation (roady_tasks +\n  roady_cost_estimate), naming standardisation aliases, roady notify namespace\n  unification, AI command progress feedback with SIGINT cancellation.\n- v0.11.0 (complete): Positioning and narrative cleanup — single ICP picked\n  (devs using AI coding agents), category named (\"Planning memory for AI\n  coding agents\"), README hero rewritten, feature museum moved to\n  docs/advanced.md, docs/vs.md competitive comparison + docs/positioning.md\n  one-pager + ROADMAP.md sketch shipped, Astro website hero / definition /\n  features sections realigned to match.\n    - v0.12.0 (complete): Live Kanban dashboard, cross-project board, SSE updates,\n      dashboard auth token.\n    - v0.13.x (complete): Release pipeline — dedicated release workflow, cask\n      publishing, cleared goreleaser deprecations.\n    - v0.14.0 (complete): Coordination and stakeholder reporting without a UI —\n      owner-scoped task queries, per-owner WIP limits, enforceable team roles,\n      `roady report`, `roady notify digest`, agent/session provenance on every\n      event, `roady audit trail`, bidirectional tracker sync, parallel-safe\n      event logs with `roady state rebuild`. Web dashboard removed.\n    - v0.15.0 (complete): Roady stopped calling language models. Provider clients\n      removed; the model-assisted operations return assembled prompts plus the\n      tool that accepts the result. MCP tool failures became readable results\n      rather than masked protocol faults. MCP schema 3.0.0.\n    - v0.16.0 (planned): the features below.\n",
   "features": [
     {
-      "id": "predictive-velocity",
-      "title": "Predictive Velocity Analytics",
-      "description": "Enhanced forecasting with multi-window analysis, trends, and confidence intervals.\n",
+      "id": "cross-project-deps",
+      "title": "Cross-project task dependencies",
+      "description": "An org-level plan can express that a task in one sub-project waits on a task in another.",
       "requirements": [
         {
-          "id": "pv-types",
-          "title": "Create velocity analytics types",
-          "description": "Create pkg/domain/analytics/velocity.go with VelocityTrend, ConfidenceInterval, BurndownPoint types",
+          "id": "xdep-syntax",
+          "title": "Parse @project:task-id in DependsOn",
+          "description": "DependsOn accepts @project:task-id and resolves it to the named sub-project.",
           "priority": "high",
-          "estimate": "",
-          "depends_on": [],
+          "estimate": "1d",
+          "depends_on": null,
           "source": {}
         },
         {
-          "id": "pv-projection",
-          "title": "Implement ExtendedVelocityProjection",
-          "description": "Multi-window velocity projection with 7/14/30 day analysis windows",
+          "id": "xdep-validation",
+          "title": "Validate cross-project DAGs",
+          "description": "Cycle detection and readiness checks span sub-projects, so a cross-project cycle is refused.",
           "priority": "high",
-          "estimate": "",
-          "depends_on": [
-            "pv-types"
-          ],
+          "estimate": "1d",
+          "depends_on": null,
           "source": {}
         },
         {
-          "id": "pv-service",
-          "title": "Create ForecastService",
-          "description": "Implement GetForecast(), GetVelocityTrend(), GetBurndown() methods",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [
-            "pv-projection"
-          ],
-          "source": {}
-        },
-        {
-          "id": "pv-cli",
-          "title": "Update CLI forecast command",
-          "description": "Add --detailed, --burndown, --trend flags to forecast command",
+          "id": "xdep-ready",
+          "title": "Readiness honours cross-project edges",
+          "description": "A task blocked by another project is not reported ready, in CLI and MCP alike.",
           "priority": "medium",
-          "estimate": "",
-          "depends_on": [
-            "pv-service"
-          ],
-          "source": {}
-        },
-        {
-          "id": "pv-mcp",
-          "title": "Add MCP tools",
-          "description": "Add roady_velocity_trend, roady_burndown MCP tools",
-          "priority": "medium",
-          "estimate": "",
-          "depends_on": [
-            "pv-service"
-          ],
+          "estimate": "4h",
+          "depends_on": null,
           "source": {}
         }
       ],
       "source": {}
     },
     {
-      "id": "dependency-graph",
-      "title": "Cross-repo Dependency Graph",
-      "description": "Track dependencies between repos, detect drift in dependent services.\n",
+      "id": "subagent-dispatch",
+      "title": "Per-task subagent dispatch",
+      "description": "roady task start can hand a ready task to a subagent with its spec source attached and a deterministic completion hook.",
       "requirements": [
         {
-          "id": "dep-types",
-          "title": "Create dependency types",
-          "description": "Create pkg/domain/dependency/graph.go with RepoDependency, DependencyGraph, RepoHealth types",
+          "id": "dispatch-contract",
+          "title": "Define the dispatch contract",
+          "description": "A task handed to a subagent carries its spec citation, acceptance criteria, and the tool to report completion through.",
           "priority": "high",
-          "estimate": "",
-          "depends_on": [],
+          "estimate": "1d",
+          "depends_on": null,
           "source": {}
         },
         {
-          "id": "dep-resolver",
-          "title": "Implement DependencyResolver",
-          "description": "Parse dependencies from spec.yaml configuration",
+          "id": "dispatch-hook",
+          "title": "Deterministic completion hook",
+          "description": "A dispatched task completes through a recorded transition, so the audit trail attributes the work to that agent and session.",
           "priority": "high",
-          "estimate": "",
-          "depends_on": [
-            "dep-types"
-          ],
-          "source": {}
-        },
-        {
-          "id": "dep-storage",
-          "title": "Create dependency storage",
-          "description": "Persist dependencies to .roady/dependencies.json",
-          "priority": "medium",
-          "estimate": "",
-          "depends_on": [
-            "dep-types"
-          ],
-          "source": {}
-        },
-        {
-          "id": "dep-service",
-          "title": "Implement DependencyService",
-          "description": "Create GetDependencyGraph(), ScanDependentRepos() methods",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [
-            "dep-resolver",
-            "dep-storage"
-          ],
-          "source": {}
-        },
-        {
-          "id": "dep-cli",
-          "title": "Add deps CLI commands",
-          "description": "Implement deps list/add/scan/graph subcommands",
-          "priority": "medium",
-          "estimate": "",
-          "depends_on": [
-            "dep-service"
-          ],
-          "source": {}
-        },
-        {
-          "id": "dep-mcp",
-          "title": "Add deps MCP tools",
-          "description": "Add roady_deps_list, roady_deps_scan MCP tools",
-          "priority": "medium",
-          "estimate": "",
-          "depends_on": [
-            "dep-service"
-          ],
+          "estimate": "1d",
+          "depends_on": null,
           "source": {}
         }
       ],
       "source": {}
     },
     {
-      "id": "planning-debt",
-      "title": "Planning Debt Analysis",
-      "description": "Track recurring drift patterns, calculate debt scores, identify sticky issues.\n",
+      "id": "spec-to-pr",
+      "title": "Spec-to-PR loop",
+      "description": "CI detects drift on PR merge and either accepts it or opens a follow-up issue.",
       "requirements": [
         {
-          "id": "debt-types",
-          "title": "Create debt types",
-          "description": "Create pkg/domain/debt/debt.go with DebtItem, DebtScore, DebtReport types",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [],
-          "source": {}
-        },
-        {
-          "id": "debt-projection",
-          "title": "Implement DriftHistoryProjection",
-          "description": "Track drift detection history over time from events",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [
-            "debt-types"
-          ],
-          "source": {}
-        },
-        {
-          "id": "debt-service",
-          "title": "Create DebtService",
-          "description": "Implement GetDebtReport(), GetStickyDrift() methods",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [
-            "debt-projection"
-          ],
-          "source": {}
-        },
-        {
-          "id": "debt-cli",
-          "title": "Add debt CLI commands",
-          "description": "Implement debt report/score/sticky subcommands",
+          "id": "pr-drift-gate",
+          "title": "Drift gate for CI",
+          "description": "A documented CI job runs drift detect on merge and fails or reports based on severity.",
           "priority": "medium",
-          "estimate": "",
-          "depends_on": [
-            "debt-service"
-          ],
+          "estimate": "4h",
+          "depends_on": null,
           "source": {}
         },
         {
-          "id": "drift-history",
-          "title": "Add drift history command",
-          "description": "Add drift history subcommand to show drift over time",
+          "id": "pr-followup",
+          "title": "Open a follow-up for unaccepted drift",
+          "description": "Drift left unaccepted after merge becomes a tracked issue rather than a silent divergence.",
           "priority": "medium",
-          "estimate": "",
-          "depends_on": [
-            "debt-projection"
-          ],
-          "source": {}
-        },
-        {
-          "id": "debt-mcp",
-          "title": "Add debt MCP tools",
-          "description": "Add roady_debt_report, roady_sticky_drift MCP tools",
-          "priority": "medium",
-          "estimate": "",
-          "depends_on": [
-            "debt-service"
-          ],
+          "estimate": "1d",
+          "depends_on": null,
           "source": {}
         }
       ],
       "source": {}
     },
     {
-      "id": "value-objects",
-      "title": "Value Object Ubiquity",
-      "description": "Convert string aliases to full value objects with validation and behavior.\n",
+      "id": "drift-patch-prompt",
+      "title": "Drift explainer follow-ups",
+      "description": "Drift explanation extends to a prompt that asks for a PR-ready diff, consistent with Roady running no inference itself.",
       "requirements": [
         {
-          "id": "vo-status",
-          "title": "Create TaskStatus value object",
-          "description": "Implement TaskStatus VO with CanTransitionTo(), ValidTransitions(), IsFinal()",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [],
-          "source": {}
-        },
-        {
-          "id": "vo-priority",
-          "title": "Create TaskPriority value object",
-          "description": "Implement TaskPriority VO with Compare(), IsHigherThan()",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [],
-          "source": {}
-        },
-        {
-          "id": "vo-approval",
-          "title": "Create ApprovalStatus value object",
-          "description": "Implement ApprovalStatus VO with validation",
+          "id": "patch-prompt",
+          "title": "Emit an explain-and-patch prompt",
+          "description": "roady drift explain can emit a request whose expected format is a patch, with the write-back tool named.",
           "priority": "medium",
-          "estimate": "",
-          "depends_on": [],
-          "source": {}
-        },
-        {
-          "id": "vo-integrate",
-          "title": "Update domain to use VOs",
-          "description": "Update plan.go and state.go to use new value objects",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [
-            "vo-status",
-            "vo-priority",
-            "vo-approval"
-          ],
-          "source": {}
-        },
-        {
-          "id": "vo-fsm",
-          "title": "Refactor task_fsm.go",
-          "description": "Delegate transitions to TaskStatus VO methods",
-          "priority": "medium",
-          "estimate": "",
-          "depends_on": [
-            "vo-status",
-            "vo-integrate"
-          ],
+          "estimate": "1d",
+          "depends_on": null,
           "source": {}
         }
       ],
       "source": {}
     },
     {
-      "id": "domain-events",
-      "title": "Internal Domain Events",
-      "description": "Auto-triggered side effects when domain events occur.\n",
+      "id": "cross-repo-planning",
+      "title": "Cross-repo planning",
+      "description": "A single .roady/ workspace declares member repos, shares spec context, and aggregates plan state.",
       "requirements": [
         {
-          "id": "evt-dispatcher",
-          "title": "Create EventDispatcher",
-          "description": "Create pkg/domain/events/dispatcher.go with handler registration",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [],
-          "source": {}
-        },
-        {
-          "id": "evt-handlers",
-          "title": "Implement domain event handlers",
-          "description": "Create DependencyUnlockHandler, DriftWarningHandler, StateProjectionHandler",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [
-            "evt-dispatcher"
-          ],
-          "source": {}
-        },
-        {
-          "id": "evt-notifiers",
-          "title": "Create notifier interfaces",
-          "description": "Define notifier interfaces for external notifications",
-          "priority": "medium",
-          "estimate": "",
-          "depends_on": [
-            "evt-dispatcher"
-          ],
-          "source": {}
-        },
-        {
-          "id": "evt-integrate",
-          "title": "Integrate dispatcher with audit service",
-          "description": "Wire dispatcher into EventSourcedAuditService.Log()",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [
-            "evt-handlers"
-          ],
-          "source": {}
-        },
-        {
-          "id": "evt-production-wiring",
-          "title": "Wire domain events into production",
-          "description": "Replace AuditService with EventSourcedAuditService in BuildAppServices.\nCreate FileEventStore + InMemoryEventPublisher, register LoggingHandler,\nDriftWarningHandler, TaskTransitionHandler on EventDispatcher, subscribe\nvelocity projection to live events. Update InitService and DebtService\nto accept domain.AuditLogger interface.\n",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [
-            "evt-integrate"
-          ],
-          "source": {}
-        }
-      ],
-      "source": {}
-    },
-    {
-      "id": "aggregate-consolidation",
-      "title": "Aggregate Consolidation",
-      "description": "Coordinate Plan and ExecutionState with transactional boundaries.\n",
-      "requirements": [
-        {
-          "id": "agg-coordinator",
-          "title": "Create Project Coordinator",
-          "description": "Create pkg/domain/project/coordinator.go with atomic operations",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [],
-          "source": {}
-        },
-        {
-          "id": "agg-operations",
-          "title": "Implement atomic operations",
-          "description": "Implement ApprovePlan(), StartTask(), CompleteTask() methods",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [
-            "agg-coordinator"
-          ],
-          "source": {}
-        },
-        {
-          "id": "agg-snapshot",
-          "title": "Create ProjectSnapshot",
-          "description": "Create consistent read model with plan + state + progress",
-          "priority": "medium",
-          "estimate": "",
-          "depends_on": [
-            "agg-coordinator"
-          ],
-          "source": {}
-        },
-        {
-          "id": "agg-integrate",
-          "title": "Update application services",
-          "description": "Update TaskService and PlanService to use coordinator",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [
-            "agg-operations",
-            "agg-snapshot"
-          ],
-          "source": {}
-        }
-      ],
-      "source": {}
-    },
-    {
-      "id": "interactive-d3-mcp-app-visualizations",
-      "title": "Interactive D3 MCP App Visualizations",
-      "description": "Rich, browser-based D3.js charts embedded in all MCP apps. A shared d3-charts.ts library provides 6 reusable chart functions (donut, force-directed graph, arc gauge, horizontal bars, line chart, collapsible tree) used across 10 apps: status (donut), plan (force DAG), state (donut + swimlanes), drift (severity bars), debt (gauge + donut + bars + line), deps (force network), usage (token gauge), spec (feature tree), policy (compliance gauge), and git-sync (timeline). All charts include hover tooltips, click-to-filter, drag, and zoom interactions.",
-      "requirements": [
-        {
-          "id": "d3-org-charts",
-          "title": "Add D3 charts to org dashboard app",
-          "description": "Add donut chart for project status breakdown and horizontal bars for cross-project progress in org.ts",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [],
-          "source": {}
-        },
-        {
-          "id": "d3-forecast-refactor",
-          "title": "Refactor forecast app to use shared d3-charts",
-          "description": "Replace custom burndown/velocity D3 code in forecast.ts with renderLineChart from d3-charts.ts where applicable",
-          "priority": "medium",
-          "estimate": "",
-          "depends_on": [],
-          "source": {}
-        },
-        {
-          "id": "d3-git-sync-refactor",
-          "title": "Refactor git-sync timeline to use shared d3-charts",
-          "description": "Evaluate if git-sync timeline can use shared library or keep custom (document decision)",
+          "id": "xrepo-members",
+          "title": "Declare member repositories",
+          "description": "A workspace lists member repos and resolves their .roady/ directories.",
           "priority": "low",
-          "estimate": "",
-          "depends_on": [],
+          "estimate": "1d",
+          "depends_on": null,
           "source": {}
         },
         {
-          "id": "d3-sync-charts",
-          "title": "Add D3 status visualization to sync app",
-          "description": "Add status badge donut or horizontal bars showing sync results in sync.ts",
-          "priority": "medium",
-          "estimate": "",
-          "depends_on": [],
-          "source": {}
-        },
-        {
-          "id": "d3-interaction-polish",
-          "title": "Polish chart interactions across all apps",
-          "description": "Ensure consistent hover tooltips, click-to-filter, and zoom behavior across all D3 charts",
-          "priority": "medium",
-          "estimate": "",
-          "depends_on": [
-            "d3-org-charts",
-            "d3-forecast-refactor",
-            "d3-sync-charts"
-          ],
-          "source": {}
-        }
-      ],
-      "source": {}
-    },
-    {
-      "id": "multi-repo-org",
-      "title": "Multi-Repo Organization Dashboard",
-      "description": "Org-level dashboard aggregating status across multiple Roady projects.\nShared policies, cross-project drift detection, and unified reporting.\n",
-      "requirements": [
-        {
-          "id": "org-dashboard",
-          "title": "Implement org-level dashboard",
-          "description": "Aggregate project statuses from multiple .roady directories into a unified view",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [],
-          "source": {}
-        },
-        {
-          "id": "org-shared-policies",
-          "title": "Shared policy inheritance",
-          "description": "Allow org-level policy.yaml that child projects inherit and can override",
-          "priority": "medium",
-          "estimate": "",
-          "depends_on": [
-            "org-dashboard"
-          ],
-          "source": {}
-        },
-        {
-          "id": "org-cross-drift",
-          "title": "Cross-project drift detection",
-          "description": "Detect drift patterns spanning multiple repositories",
-          "priority": "medium",
-          "estimate": "",
-          "depends_on": [
-            "org-dashboard"
-          ],
-          "source": {}
-        }
-      ],
-      "source": {}
-    },
-    {
-      "id": "plugin-hardening",
-      "title": "Plugin System Hardening",
-      "description": "Contract testing, plugin registry with versioning, and health monitoring\nfor the HashiCorp go-plugin based syncer system.\n",
-      "requirements": [
-        {
-          "id": "plugin-contracts",
-          "title": "Plugin contract testing",
-          "description": "Automated contract tests ensuring plugins conform to Syncer interface semantics",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [],
-          "source": {}
-        },
-        {
-          "id": "plugin-registry",
-          "title": "Plugin registry with versioning",
-          "description": "Maintain a registry of available plugins with version compatibility checking",
-          "priority": "medium",
-          "estimate": "",
-          "depends_on": [
-            "plugin-contracts"
-          ],
-          "source": {}
-        },
-        {
-          "id": "plugin-health",
-          "title": "Plugin health monitoring",
-          "description": "Runtime health checks and graceful degradation for loaded plugins",
-          "priority": "medium",
-          "estimate": "",
-          "depends_on": [
-            "plugin-contracts"
-          ],
-          "source": {}
-        }
-      ],
-      "source": {}
-    },
-    {
-      "id": "notification-integration",
-      "title": "Notification Integration",
-      "description": "Webhook reliability, Slack/Discord/Teams integration, and realtime\nupdate delivery for domain events.\n",
-      "requirements": [
-        {
-          "id": "notif-webhooks",
-          "title": "Reliable webhook delivery",
-          "description": "At-least-once webhook delivery with retry and dead-letter queue",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [],
-          "source": {}
-        },
-        {
-          "id": "notif-slack",
-          "title": "Pluggable messaging adapters",
-          "description": "Adapter interface for team messaging platforms (Slack, Discord, Teams) with channel routing and mention configuration",
-          "priority": "medium",
-          "estimate": "",
-          "depends_on": [
-            "notif-webhooks"
-          ],
-          "source": {}
-        },
-        {
-          "id": "notif-realtime",
-          "title": "Realtime event streaming",
-          "description": "SSE or WebSocket push for live project state updates",
-          "priority": "medium",
-          "estimate": "",
-          "depends_on": [],
-          "source": {}
-        }
-      ],
-      "source": {}
-    },
-    {
-      "id": "watch-enhancement",
-      "title": "Watch Mode Enhancement",
-      "description": "Replace polling with fsnotify-based file watching, auto-sync workflows,\nand selective watch patterns for efficient continuous monitoring.\n",
-      "requirements": [
-        {
-          "id": "watch-fsnotify",
-          "title": "fsnotify-based file watching",
-          "description": "Replace polling with efficient OS-level file notifications",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [],
-          "source": {}
-        },
-        {
-          "id": "watch-auto-sync",
-          "title": "Auto-sync workflows",
-          "description": "Automatically trigger drift detection and plan reconciliation on file changes",
-          "priority": "medium",
-          "estimate": "",
-          "depends_on": [
-            "watch-fsnotify"
-          ],
-          "source": {}
-        },
-        {
-          "id": "watch-patterns",
-          "title": "Selective watch patterns",
-          "description": "Configurable glob patterns to watch specific files or directories",
+          "id": "xrepo-aggregate",
+          "title": "Aggregate plan state across members",
+          "description": "Status, report, and drift span every member repo in one view.",
           "priority": "low",
-          "estimate": "",
-          "depends_on": [
-            "watch-fsnotify"
-          ],
-          "source": {}
-        }
-      ],
-      "source": {}
-    },
-    {
-      "id": "developer-experience",
-      "title": "Developer Experience",
-      "description": "Shell completions, interactive config wizard, structured error messages,\nand guided onboarding for new users.\n",
-      "requirements": [
-        {
-          "id": "dx-shell-completions",
-          "title": "Shell completions for bash/zsh/fish/powershell",
-          "description": "Cobra shell completions for bash, zsh, fish, and powershell",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [],
-          "source": {}
-        },
-        {
-          "id": "dx-error-messages",
-          "title": "Structured CLI error types with hints",
-          "description": "Structured CLI error types with actionable hints and suggestions",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [],
-          "source": {}
-        },
-        {
-          "id": "dx-config-wizard",
-          "title": "Interactive config wizard",
-          "description": "Interactive roady config wizard for ai.yaml and policy.yaml setup",
-          "priority": "medium",
-          "estimate": "",
-          "depends_on": [
-            "dx-error-messages"
-          ],
-          "source": {}
-        },
-        {
-          "id": "dx-onboarding",
-          "title": "Guided onboarding flow",
-          "description": "Guided init flow with templates and first-plan walkthrough",
-          "priority": "medium",
-          "estimate": "",
-          "depends_on": [
-            "dx-config-wizard",
-            "dx-shell-completions"
-          ],
-          "source": {}
-        }
-      ],
-      "source": {}
-    },
-    {
-      "id": "api-sdk-stability",
-      "title": "API \u0026 SDK Stability",
-      "description": "Versioned MCP schema, public Go SDK client, OpenAPI spec generation,\nand typed client helpers for SDK consumers.\n",
-      "requirements": [
-        {
-          "id": "sdk-mcp-schema",
-          "title": "Versioned MCP tool schema",
-          "description": "Versioned MCP tool schema with backward-compatible evolution",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [],
-          "source": {}
-        },
-        {
-          "id": "sdk-go-client",
-          "title": "Public Go SDK client package",
-          "description": "Public Go client package wrapping MCP JSON-RPC calls",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [],
-          "source": {}
-        },
-        {
-          "id": "sdk-openapi",
-          "title": "OpenAPI 3.0 spec generation",
-          "description": "OpenAPI 3.0 spec generation from MCP tool registrations",
-          "priority": "medium",
-          "estimate": "",
-          "depends_on": [
-            "sdk-mcp-schema"
-          ],
-          "source": {}
-        },
-        {
-          "id": "sdk-client-helpers",
-          "title": "Typed SDK request/response helpers",
-          "description": "Typed request/response helpers for SDK consumers",
-          "priority": "medium",
-          "estimate": "",
-          "depends_on": [
-            "sdk-go-client"
-          ],
-          "source": {}
-        }
-      ],
-      "source": {}
-    },
-    {
-      "id": "multi-user-collaboration",
-      "title": "Multi-User Collaboration",
-      "description": "Task assignment, team roles, optimistic locking for concurrency,\nand remote workspace sync for shared project state.\n",
-      "requirements": [
-        {
-          "id": "collab-task-assignment",
-          "title": "Task assignment with Assignee field",
-          "description": "Add Assignee field to Task, assign/unassign via CLI and MCP",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [],
-          "source": {}
-        },
-        {
-          "id": "collab-team-roles",
-          "title": "Role-based access (team.yaml)",
-          "description": "Role-based access control in .roady/team.yaml",
-          "priority": "medium",
-          "estimate": "",
-          "depends_on": [
-            "collab-task-assignment"
-          ],
-          "source": {}
-        },
-        {
-          "id": "collab-conflict-resolution",
-          "title": "Optimistic locking for concurrency",
-          "description": "Optimistic locking for concurrent state modifications",
-          "priority": "medium",
-          "estimate": "",
-          "depends_on": [
-            "collab-task-assignment"
-          ],
-          "source": {}
-        },
-        {
-          "id": "collab-shared-workspaces",
-          "title": "Remote workspace sync",
-          "description": "Remote workspace sync for shared project state",
-          "priority": "low",
-          "estimate": "",
-          "depends_on": [
-            "collab-conflict-resolution",
-            "collab-team-roles"
-          ],
-          "source": {}
-        }
-      ],
-      "source": {}
-    },
-    {
-      "id": "expert-review-refinements",
-      "title": "Expert Review Refinements (v0.9.0)",
-      "description": "Cross-functional UX/Product/AI/GTM review identified four high-leverage,\nnon-breaking refinements to sharpen the new-user activation moment and\nreduce CLI cognitive load. Defers breaking changes (MCP tool consolidation,\nprovider interface refactor, eval harness) to a separate v0.10.0 release.\n",
-      "requirements": [
-        {
-          "id": "err-cli-help-groups",
-          "title": "Group CLI --help output by user intent",
-          "description": "Reorder Cobra command listing in `roady --help` into groups\n(Get Started, Track \u0026 Report, Integrate, Admin) using cobra\ncommand groups so the golden path surfaces above the noise.\nPure presentation, no API breakage.\n",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [],
-          "source": {}
-        },
-        {
-          "id": "err-init-interactive-default",
-          "title": "Make `roady init` interactive by default",
-          "description": "When `roady init` runs without --template or in a TTY, default\nto the existing wizard flow. Add --non-interactive flag for CI.\nPrints next-step CTA on completion (run `roady setup \u003ctool\u003e`).\n",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [],
-          "source": {}
-        },
-        {
-          "id": "err-demo-command",
-          "title": "Add `roady demo` command",
-          "description": "New top-level command that scaffolds a pre-seeded .roady/ with\nan intentional spec/plan/state divergence and runs drift detect\nso a new user sees the product's core value in \u003c60 seconds with\nzero prerequisites. Exits cleanly, suggests `roady drift accept`.\n",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [],
-          "source": {}
-        },
-        {
-          "id": "err-status-empty-state-cta",
-          "title": "Empty-state CTAs on `roady status`",
-          "description": "When `roady status` runs against an uninitialized or empty\nproject, replace the bare warning with an actionable next-step\nladder: init -\u003e spec analyze -\u003e plan generate -\u003e task ready.\nDetects which step is missing and points there.\n",
-          "priority": "medium",
-          "estimate": "",
-          "depends_on": [
-            "err-init-interactive-default"
-          ],
-          "source": {}
-        }
-      ],
-      "source": {}
-    },
-    {
-      "id": "ai-quality-telemetry",
-      "title": "AI Quality \u0026 Telemetry (v0.10.0)",
-      "description": "Foundational quality bar for Roady's AI features. Adds a regression\neval harness over the planning pipeline so model swaps and prompt\nedits surface measurable behavior changes instead of silent drift.\nNon-breaking; complements but does not replace the heuristic plan\ngenerator.\n",
-      "requirements": [
-        {
-          "id": "aqt-eval-fixtures",
-          "title": "Eval fixture corpus for spec -\u003e plan",
-          "description": "Add an `evals/fixtures/` directory with 2-3 representative spec\ninputs (small CLI, web API, multi-feature) and corresponding\ngolden plan structures (task IDs + dependency edges) used to\nanchor regression tests for the heuristic and AI planners.\n",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [],
-          "source": {}
-        },
-        {
-          "id": "aqt-eval-runner",
-          "title": "Eval runner test harness",
-          "description": "Add `evals/runner_test.go` that loads each fixture, invokes the\nheuristic PlanService against it, and asserts the produced task\nIDs and dependency closure match the golden. Runs under standard\n`go test ./evals/...` and is wired into CI naturally.\n",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [
-            "aqt-eval-fixtures"
-          ],
-          "source": {}
-        },
-        {
-          "id": "aqt-eval-readme",
-          "title": "Eval harness documentation",
-          "description": "Document how to add a new fixture, how to update goldens after\nan intentional planner change, and the policy for AI-provider\nevals (mock provider in CI, optional matrix run locally).\n",
-          "priority": "medium",
-          "estimate": "",
-          "depends_on": [
-            "aqt-eval-runner"
-          ],
-          "source": {}
-        },
-        {
-          "id": "aqt-task-origin",
-          "title": "Task.Origin provenance field",
-          "description": "Add an Origin field on planning.Task (\"heuristic\" | \"ai\" | \"human\")\nwith a default of \"heuristic\" so existing data stays valid. The\nheuristic planner tags every task it emits as \"heuristic\"; the AI\nplanning service tags AI-produced tasks as \"ai\". Status/plan\nreadouts surface the origin so reviewers can scrutinise AI tasks.\n",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [],
-          "source": {}
-        },
-        {
-          "id": "aqt-completion-confidence",
-          "title": "CompletionResponse confidence and source refs",
-          "description": "Extend ai.CompletionResponse with optional Confidence (0..1) and\nSourceRefs ([]SourceRef{Doc, Span}) fields. Provider impls fill\nthese where supported; callers may ignore. Non-breaking — additive\nstruct fields only.\n",
-          "priority": "medium",
-          "estimate": "",
-          "depends_on": [],
-          "source": {}
-        },
-        {
-          "id": "aqt-mcp-tasks-namespace",
-          "title": "Consolidate task-listing MCP tools into roady_tasks",
-          "description": "Add a parameterised roady_tasks MCP tool that supersedes\nroady_get_ready_tasks / roady_get_in_progress_tasks /\nroady_get_blocked_tasks. Take a status enum parameter\n(ready|in_progress|blocked|all). Keep the legacy tools registered\nas deprecation aliases that delegate to the new handler so agents\nalready coded against them keep working.\n",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [],
-          "source": {}
-        },
-        {
-          "id": "aqt-cost-estimate",
-          "title": "Pre-flight roady_cost_estimate MCP tool",
-          "description": "Add an MCP tool that estimates input/output tokens and USD cost\nfor the planned AI operations (generate_plan, smart_decompose,\nreview_spec, explain_drift, query) before they run. Estimates use\ncurrent spec size, the configured AI provider, and a model\npricing table for common providers (Anthropic, OpenAI, Gemini,\nOllama). Lets agents and humans decide whether to proceed before\nburning tokens.\n",
-          "priority": "medium",
-          "estimate": "",
-          "depends_on": [
-            "aqt-completion-confidence"
-          ],
-          "source": {}
-        },
-        {
-          "id": "aqt-mcp-naming-aliases",
-          "title": "Standardise MCP tool names with deprecation aliases",
-          "description": "Add canonical aliases for two off-pattern tool names while\nkeeping the originals registered. roady_smart_decompose gets a\nroady_plan_decompose alias. roady_sticky_drift gets a\nroady_drift_recurring alias. Both legacy names get a DEPRECATED\nmarker in their description. Pure additive change.\n",
-          "priority": "medium",
-          "estimate": "",
-          "depends_on": [
-            "aqt-mcp-tasks-namespace"
-          ],
-          "source": {}
-        },
-        {
-          "id": "aqt-notify-namespace",
-          "title": "Unify outbound notifications under roady notify",
-          "description": "Add a top-level roady notify command with add/list/test/remove\nsubcommands that share the messaging-adapter implementation\ntoday fragmented across roady messaging and roady webhook notif.\nExisting commands stay registered as deprecation aliases that\nprint a one-line migration hint and delegate to the same\nhandlers. No data migration; both legacy paths keep working.\n",
-          "priority": "medium",
-          "estimate": "",
-          "depends_on": [
-            "aqt-mcp-naming-aliases"
-          ],
-          "source": {}
-        },
-        {
-          "id": "aqt-eval-ai-matrix",
-          "title": "Eval matrix over AI planner with programmable mock provider",
-          "description": "Extend evals/ to cover the AI planning pipeline (DecomposeSpec)\nusing a programmable mock provider that returns canned JSON.\nAssert tasks parse, the Origin field is set to \"ai\", required\nfields populate, and feature coverage is preserved. Lays the\ngroundwork for an opt-in real-provider matrix gated on a build\ntag so CI never spends tokens.\n",
-          "priority": "medium",
-          "estimate": "",
-          "depends_on": [
-            "aqt-task-origin",
-            "aqt-eval-runner"
-          ],
-          "source": {}
-        },
-        {
-          "id": "aqt-eval-drift-corpus",
-          "title": "Drift detector precision and recall corpus",
-          "description": "Add a synthetic-divergence corpus to evals/. Each scenario\nstages a spec/plan/state trio with a known mismatch (intent\ndrift via lock divergence, plan drift via missing requirement,\nno drift in the healthy baseline). The runner asserts the\nDriftService report contains exactly the expected issue\ncategories — locking down precision (no false positives on\nhealthy state) and recall (all known mismatches surface).\n",
-          "priority": "medium",
-          "estimate": "",
-          "depends_on": [
-            "aqt-eval-runner"
-          ],
-          "source": {}
-        },
-        {
-          "id": "aqt-source-citations",
-          "title": "Wire source-doc citations through spec analyze to tasks",
-          "description": "Add an optional Source{Doc,Line} on spec.Feature and spec.Requirement\ncaptured during AnalyzeDirectory parsing (markdown file path +\nheading line number). Heuristic planner copies the originating\nfeature's Source onto each emitted task so the plan carries\ntraceability back to the doc that motivated it. Status output\nshows a \"from doc:line\" annotation when present.\n",
-          "priority": "medium",
-          "estimate": "",
-          "depends_on": [
-            "aqt-task-origin"
-          ],
-          "source": {}
-        },
-        {
-          "id": "aqt-ai-progress-cancel",
-          "title": "AI command progress feedback and clean cancellation",
-          "description": "Wrap each AI-backed CLI invocation (plan generate --ai, plan\nsmart-decompose, plan prioritize, drift explain, query) in a\nshared helper that prints an elapsed-time tick every few\nseconds while the provider is working and translates SIGINT\ninto a context cancellation so users can abort runaway calls\nwithout leaking the request. Doherty Threshold mitigation;\nno provider interface change.\n",
-          "priority": "medium",
-          "estimate": "",
-          "depends_on": [],
-          "source": {}
-        },
-        {
-          "id": "aqt-streaming-contract",
-          "title": "OnToken streaming callback on CompletionRequest",
-          "description": "Add an optional OnToken func(chunk string) field on\nai.CompletionRequest so streaming-capable providers can emit\ntoken chunks as they arrive. Non-streaming providers ignore\nthe field; existing callers are unaffected (additive only).\nAdd a streaming-capable mock provider used by tests to lock\nthe contract. Real per-provider SSE wiring lands separately.\n",
-          "priority": "medium",
-          "estimate": "",
-          "depends_on": [
-            "aqt-completion-confidence"
-          ],
-          "source": {}
-        },
-        {
-          "id": "aqt-mcp-streaming-bridge",
-          "title": "Bridge AI streaming to MCP progress notifications",
-          "description": "Wire an MCP-side helper that, when a ProgressToken is supplied\non the request context, installs an OnToken callback (via\nai.WithOnToken) that forwards each streamed chunk as an MCP\nprogress notification. Apply to every AI-backed MCP handler:\nexplain_drift, explain_spec, query, suggest_priorities,\nreview_spec, smart_decompose. Clients that subscribe to the\nprogress token see token-by-token output; clients that don't\nsee no behavioural change.\n",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [
-            "aqt-streaming-end-to-end"
-          ],
-          "source": {}
-        },
-        {
-          "id": "aqt-eval-ai-build-tag",
-          "title": "EVAL_AI build-tag harness for opt-in real-provider matrix",
-          "description": "Add a //go:build evals_ai gated test file that exercises the\nreal Anthropic / OpenAI / Gemini / Ollama providers against a\nshared spec when the corresponding API key env vars are set.\nDocumented in evals/README. Default builds skip it; opt-in\nwith `go test -tags evals_ai ./evals/...` for local validation.\n",
-          "priority": "medium",
-          "estimate": "",
-          "depends_on": [
-            "aqt-eval-ai-matrix"
-          ],
-          "source": {}
-        },
-        {
-          "id": "aqt-ai-task-source-population",
-          "title": "AI tasks inherit source citations from spec features",
-          "description": "Today the heuristic planner copies spec.Feature.Source / spec.Requirement.Source\nonto each emitted task, but tasks produced by the AI planner\n(DecomposeSpec) never carry Source because the JSON the model\nreturns has no source field. Post-process the AI task list and\nbackfill TaskSource by looking up the originating Feature (and\noptionally Requirement) by ID. Same goes for the coverage\nfallback path. Result: every task in the plan, regardless of\norigin, carries provenance back to the doc that motivated it.\n",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [
-            "aqt-source-citations",
-            "aqt-task-origin"
-          ],
-          "source": {}
-        },
-        {
-          "id": "aqt-streaming-end-to-end",
-          "title": "Real provider streaming wired end-to-end",
-          "description": "Replace the contract-only streaming with real implementations:\n(a) Anthropic SSE messages endpoint with content_block_delta\nparsing, (b) OpenAI Chat Completions SSE delta parsing,\n(c) Gemini streamGenerateContent with alt=sse, (d) Ollama\nNDJSON Stream:true. Each provider emits via OnToken when set,\nfalls back to its existing buffered behaviour otherwise, and\npopulates Confidence from the natural stop signal where one\nexists. Wire ai.WithOnToken / OnTokenFromContext through\nAIPlanningService so a single CLI/MCP layer setter rides\nthrough all nine AI call sites. CLI withAIProgress installs\nthe sink, prints streamed tokens to stderr, and steps the\nelapsed-time ticker out of the way once tokens flow. Locked\nby httptest-backed unit tests for each provider plus an\nevals/streaming_runner_test end-to-end check.\n",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [
-            "aqt-streaming-contract",
-            "aqt-ai-progress-cancel"
-          ],
-          "source": {}
-        }
-      ],
-      "source": {}
-    },
-    {
-      "id": "positioning-narrative",
-      "title": "Positioning \u0026 Narrative (v0.11.0)",
-      "description": "Cross-functional GTM consensus: pick a single ICP, name the\ncategory, cut the feature museum from the surface area visible\nto first-time visitors. Driven by Dunford / Bush / Lochhead\nframings from the v0.10 expert review.\n",
-      "requirements": [
-        {
-          "id": "pos-doc",
-          "title": "One-page positioning doc",
-          "description": "Add docs/positioning.md following Dunford's \"Obviously\nAwesome\" template: alternative-of, unique attributes, value\nthose deliver, who cares most, market category.\n",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [],
-          "source": {}
-        },
-        {
-          "id": "pos-readme-hero",
-          "title": "Rewrite README hero around chosen ICP and category",
-          "description": "Replace the feature-museum README with one sentence + one\nworkflow. Move advanced features behind a single\n\"Everything else\" link to docs/advanced.md so power users\ncan still find them.\n",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [
-            "pos-doc"
-          ],
-          "source": {}
-        },
-        {
-          "id": "pos-advanced-doc",
-          "title": "docs/advanced.md catalogues displaced features",
-          "description": "Receive the bullets cut from README so existing users keep\ndiscoverability. Group by audience: solo dev, small team,\norg / enterprise.\n",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [
-            "pos-readme-hero"
-          ],
-          "source": {}
-        },
-        {
-          "id": "pos-vs-doc",
-          "title": "docs/vs.md competitive comparison",
-          "description": "Opinionated table comparing Roady to Cursor rules, Claude.md,\nspec-kit, Backlog.md, Linear, GitHub Projects. Triangulates\nvalue the Dunford way.\n",
-          "priority": "medium",
-          "estimate": "",
-          "depends_on": [
-            "pos-doc"
-          ],
-          "source": {}
-        },
-        {
-          "id": "pos-roadmap-paid-wedge",
-          "title": "ROADMAP.md sketches the paid wedge",
-          "description": "Public roadmap line for Roady Cloud (hosted MCP, multi-repo\norg dashboard, audit retention, SOC2). Signals seriousness\nwithout committing scope; collects waitlist signal later.\n",
-          "priority": "medium",
-          "estimate": "",
-          "depends_on": [
-            "pos-doc"
-          ],
-          "source": {}
-        },
-        {
-          "id": "pos-website-align",
-          "title": "Align Astro website hero with new positioning",
-          "description": "Update website/src/pages/index.astro (or equivalent hero\ncomponent) so the public site mirrors the README positioning:\nsingle-sentence value prop, single ICP framing, category name\npresent in hero, trim feature avalanche on the home page.\n",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [
-            "pos-doc"
-          ],
-          "source": {}
-        },
-        {
-          "id": "pos-website-integrations-reframe",
-          "title": "Reframe IntegrationsSection so it does not contradict ICP",
-          "description": "ICP excludes hand-managed Jira shops yet website front-pages\nLinear/Jira \"Official Plugins\". Either delete from index or\nreframe as \"Bring your existing tracker along\" sub-section so\nthe AI-native dev does not bounce.\n",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [
-            "pos-website-align"
-          ],
-          "source": {}
-        },
-        {
-          "id": "pos-website-commands-trim",
-          "title": "Trim CommandsSection to the actual workflow",
-          "description": "7 groups x ~28 commands defeats the README cleanup two\nsections later. Replace with the 5-step workflow snippet\nthat mirrors README and link out to docs/advanced.md for\nthe rest.\n",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [
-            "pos-website-align"
-          ],
-          "source": {}
-        },
-        {
-          "id": "pos-website-mcp-refresh",
-          "title": "Refresh MCPSection to canonical v0.10 tool names",
-          "description": "Replace deprecated tool names (roady_smart_decompose,\nroady_get_*_tasks) with canonical (roady_plan_decompose,\nroady_drift_recurring, roady_tasks). Add roady_cost_estimate.\nFix the AI Interaction example. Collapse the D3 viz sub-block.\n",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [
-            "pos-website-align"
-          ],
-          "source": {}
-        },
-        {
-          "id": "pos-website-hero-cta",
-          "title": "Hero primary CTA + Roady Cloud waitlist capture",
-          "description": "Replace the three GitHub-leaking Quick Links with one primary\non-site CTA (anchor to actual-workflow section) and one\nsecondary email capture for the Roady Cloud waitlist that the\nROADMAP teases. Stop leaking visitors before the value prop\nsinks in.\n",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [
-            "pos-website-align"
-          ],
-          "source": {}
-        },
-        {
-          "id": "pos-validated-against",
-          "title": "Mark category claim as hypothesis until tested",
-          "description": "Add an explicit \"Validated against\" line to docs/positioning.md\nso the team treats \"planning memory for AI coding agents\" as a\nhypothesis until tested in r/ClaudeAI / r/cursor / MCP Discord\nwith the ICP. Anti-self-deception guard.\n",
-          "priority": "medium",
-          "estimate": "",
-          "depends_on": [
-            "pos-doc"
-          ],
-          "source": {}
-        },
-        {
-          "id": "pos-synthetic-interview",
-          "title": "Synthetic ICP interview + internet research findings",
-          "description": "Run web research across r/ClaudeAI, dev.to, Medium, IBM, Wire,\nStack Overflow on (a) phrases the ICP uses for the pain Roady\nsolves and (b) the competitor ecosystem (CLAUDE.md, AGENTS.md,\nspec-kit, Backlog.md, mcp-memory-service, BMAD). Synthesise a\nsynthetic interview with a representative ICP persona grounded\nin the verbatim language found. Write findings to\ndocs/positioning.md \"Validated against\" so future copy is\ninformed by actual vocabulary.\n",
-          "priority": "medium",
-          "estimate": "",
-          "depends_on": [
-            "pos-validated-against"
-          ],
-          "source": {}
-        },
-        {
-          "id": "pos-v010-release",
-          "title": "Cut and publish the v0.10.0 GitHub release",
-          "description": "Tag v0.10.0 from current main, draft release notes summarising\nv0.9 + v0.10 features, push tag so the existing GoReleaser CI\nworkflow builds binaries and attaches them to the release, then\nverify the release page renders correctly.\n",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [],
-          "source": {}
-        }
-      ],
-      "source": {}
-    },
-    {
-      "id": "launch-readiness",
-      "title": "Pre-launch infra hardening (v0.11.x)",
-      "description": "Close the gaps surfaced by the \"is roady ready for the world?\"\naudit so the project survives the first wave of public scrutiny\nwithout embarrassing infra failures.\n",
-      "requirements": [
-        {
-          "id": "lr-goreleaser-plugins",
-          "title": "Attach plugin archives to GitHub releases",
-          "description": "Update .goreleaser.yaml so the plugin builds (linear / jira /\ngithub / asana / notion / trello / mock) emit archives that\nland on the release page next to the main roady binary.\nPlugin users currently hit a dead end on the release page.\n",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [],
-          "source": {}
-        },
-        {
-          "id": "lr-ci-lint-gate",
-          "title": "Add golangci-lint gate to CI",
-          "description": "Append a golangci-lint step to .github/workflows/ci.yml so\nfuture contributions cannot regress lint silently. Use the\nrepo's .golangci.yml (v2 config). Fail the workflow on new\nissues.\n",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [],
-          "source": {}
-        },
-        {
-          "id": "lr-release-smoke-test",
-          "title": "Release smoke-test in CI",
-          "description": "After goreleaser publishes, download the linux/amd64 archive\nfrom the just-cut release, extract, run `roady --version`\nand `roady demo`, fail the workflow if either errors. Catches\nbroken artifacts before users do.\n",
-          "priority": "medium",
-          "estimate": "",
-          "depends_on": [
-            "lr-goreleaser-plugins"
-          ],
-          "source": {}
-        },
-        {
-          "id": "lr-waitlist-honest",
-          "title": "Make Cloud waitlist form honest",
-          "description": "Today the form stores emails in localStorage only — collects\nno signal. Replace with a mailto: fallback or a real backend\nendpoint, OR remove the form entirely until Cloud has an\nalpha date. Pick one; the form-without-backend pattern is\ndishonest.\n",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [],
-          "source": {}
-        },
-        {
-          "id": "lr-website-deploy",
-          "title": "Wire automated website deploy via GitHub Pages",
-          "description": "Today the Astro site builds cleanly but has no deploy\npipeline. Add a Pages workflow that builds website/ on every\nmain push and publishes to gh-pages so the public site stays\nin sync with the README and docs.\n",
-          "priority": "medium",
-          "estimate": "",
-          "depends_on": [],
-          "source": {}
-        },
-        {
-          "id": "lr-changelog",
-          "title": "Add CHANGELOG.md with goreleaser-driven generation",
-          "description": "Source readers currently have no version diff outside of\nthe GitHub releases page. Add CHANGELOG.md and configure\ngoreleaser to write it on each tag.\n",
-          "priority": "medium",
-          "estimate": "",
-          "depends_on": [],
-          "source": {}
-        },
-        {
-          "id": "lr-icp-research-round-2",
-          "title": "Round 2 web research + synthetic interviews",
-          "description": "Stress-test the refined positioning (\"drift-aware planning\nfor AI coding agents\") with two more synthetic ICP personas\n(not just \"Sam\"): an indie dev shipping multiple side\nprojects with Cursor and a startup CTO running a small team\non Claude Code. Mine actual phrasing across r/cursor and\nHackerNews threads. Update docs/positioning.md.\n",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [],
-          "source": {}
-        },
-        {
-          "id": "lr-document-launch-prereqs",
-          "title": "Document HOMEBREW_TAP_GITHUB_TOKEN + Pages enablement",
-          "description": "Add a launch-prereqs section to CONTRIBUTING.md or the README\nwith the exact GitHub repo settings the maintainer must\nenable: HOMEBREW_TAP_GITHUB_TOKEN secret, GitHub Pages\nsource. Cannot be set via code; needs maintainer action.\n",
-          "priority": "medium",
-          "estimate": "",
-          "depends_on": [],
-          "source": {}
-        },
-        {
-          "id": "lr-ci-gofmt",
-          "title": "Enable gofmt in golangci-lint config",
-          "description": "Add gofmt (or gofumpt) to the enabled linters list in\n.golangci.yml so format drift cannot regress past CI.\n",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [],
-          "source": {}
-        },
-        {
-          "id": "lr-ci-coverctl",
-          "title": "Wire coverctl coverage gate into CI",
-          "description": "Install coverctl in the build job (go install\ngithub.com/felixgeelhaar/coverctl/cmd/coverctl@latest), run\n`coverctl check --from-profile -p coverage.out` after the\nexisting test step so the coverage thresholds in\n.coverctl.yaml actually gate merges.\n",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [],
-          "source": {}
-        },
-        {
-          "id": "lr-ci-remove-verdict",
-          "title": "Remove deprecated verdict step from CI",
-          "description": "verdict is deprecated; the existing step is a no-op anyway\n(continue-on-error + binary likely missing on runners).\nDelete the step; nox stays a local-pre-commit advisory\nbecause the nox binary is not publicly distributed.\n",
-          "priority": "medium",
-          "estimate": "",
-          "depends_on": [],
-          "source": {}
-        }
-      ],
-      "source": {}
-    },
-    {
-      "id": "ai-powered-workflows",
-      "title": "AI-Powered Workflows",
-      "description": "AI spec review, auto-prioritization, smart decomposition,\nand natural language query interface for project status.\n",
-      "requirements": [
-        {
-          "id": "ai-spec-review",
-          "title": "AI spec quality review",
-          "description": "AI spec quality review with completeness scoring",
-          "priority": "high",
-          "estimate": "",
-          "depends_on": [],
-          "source": {}
-        },
-        {
-          "id": "ai-auto-prioritize",
-          "title": "AI priority suggestions",
-          "description": "AI task priority suggestions from spec and dependency analysis",
-          "priority": "medium",
-          "estimate": "",
-          "depends_on": [
-            "ai-spec-review"
-          ],
-          "source": {}
-        },
-        {
-          "id": "ai-smart-decompose",
-          "title": "Context-aware task decomposition",
-          "description": "Context-aware decomposition using codebase analysis",
-          "priority": "medium",
-          "estimate": "",
-          "depends_on": [
-            "ai-auto-prioritize"
-          ],
-          "source": {}
-        },
-        {
-          "id": "ai-natural-language",
-          "title": "Natural language query interface",
-          "description": "Natural language query interface for project status",
-          "priority": "low",
-          "estimate": "",
-          "depends_on": [
-            "ai-spec-review"
-          ],
+          "estimate": "2d",
+          "depends_on": null,
           "source": {}
         }
       ],
@@ -1310,5 +152,5 @@
       "description": "All new CLI commands should have corresponding MCP tools"
     }
   ],
-  "version": "0.11.0"
+  "version": "0.16.0"
 }
