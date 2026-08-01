@@ -70,6 +70,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `roady notify digest` — push a summary to a channel
   - `roady dashboard` — the interactive TUI, unchanged
 
+### Added — parallel collaboration
+
+- `roady audit verify` treats the event log as a hash-linked graph instead
+  of a strict sequence. Two people appending concurrently produced branches
+  that union-merge cleanly but failed verification, which made parallel work
+  impossible. Nothing is given up: each event's hash already covers its own
+  content and its parent reference, so tampering and reparenting are still
+  caught, and a removed event still leaves a dangling parent.
+- `.gitattributes` marks `events.jsonl` `merge=union` so git merges it
+  instead of conflicting.
+- `LoadEvents` deduplicates by event ID so a line reproduced by a union
+  merge cannot double-count in velocity, cost, or task projections.
+  Verification reads the raw log via `LoadEventsRaw` and still reports
+  duplicates.
+- `roady state rebuild [--dry-run]` reconstructs `state.json` by replaying
+  the log. `state.json` is a whole-file document and still conflicts in git;
+  it is derived data, so the resolution is to keep either side and replay.
+  The replay is idempotent and order-independent.
+
 ### Changed — MCP agent experience
 
 - Every MCP tool now carries behaviour annotations (`readOnlyHint`,

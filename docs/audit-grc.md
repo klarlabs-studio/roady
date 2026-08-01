@@ -66,3 +66,36 @@ Events written before this feature shipped carry no agent or session. Trails
 count those and report them as a finding rather than implying full coverage —
 **this gap is not retroactively fixable**, so the sooner provenance capture is
 running, the more history is attributable.
+
+## Working in parallel
+
+`events.jsonl` is append-only and marked `merge=union` in `.gitattributes`,
+so two collaborators appending concurrently merge without conflict.
+Verification treats the log as a hash-linked **graph** rather than a strict
+sequence: branches that forked from a shared parent and merged still verify.
+
+What that still proves, unchanged:
+
+- **Content tampering** is caught, because each event's hash covers its own
+  content *and* its parent reference. Altering a field or reparenting an
+  event breaks that event's hash.
+- **Deletion** is caught, because a removed event leaves its child's parent
+  reference dangling.
+- **Duplication** is reported, because verification reads the raw log while
+  everything else reads a deduplicated view.
+
+What relaxing strict order gives up: a total ordering across concurrent
+writers. Roady never claimed one, and requiring it made parallel work
+impossible.
+
+`state.json` is a whole-file document and *will* still conflict. It is
+derived data, so resolve it by replaying the log:
+
+```bash
+git checkout --ours .roady/state.json
+roady state rebuild --dry-run    # see what the log says
+roady state rebuild
+```
+
+The replay is idempotent and order-independent, so both sides of a merge
+produce the same result.
