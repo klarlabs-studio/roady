@@ -476,6 +476,46 @@ func (c *Client) StickyDrift(ctx context.Context) (string, error) {
 	return textResult(res)
 }
 
+// AuditTrailQuery selects the subject of an evidence trail. Exactly one of
+// TaskID, Agent, or Session identifies it; TaskID combined with Agent narrows
+// to what that agent did to that task.
+type AuditTrailQuery struct {
+	TaskID  string
+	Agent   string
+	Session string
+	// Since accepts a relative window ("7d", "2w") or an absolute date
+	// ("2026-07-01"). Empty means the whole history.
+	Since string
+}
+
+// AuditTrail returns the evidence trail for a task, agent, or session:
+// chain-integrity status, findings, the task's evidence and spec citation,
+// who acted, and every recorded event.
+//
+// The trail attests to a tamper-evident record of what was asserted, not to
+// who acted — actor and agent are caller-supplied and unauthenticated.
+func (c *Client) AuditTrail(ctx context.Context, q AuditTrailQuery) (string, error) {
+	args := map[string]any{}
+	if q.TaskID != "" {
+		args["task_id"] = q.TaskID
+	}
+	if q.Agent != "" {
+		args["agent"] = q.Agent
+	}
+	if q.Session != "" {
+		args["session_id"] = q.Session
+	}
+	if q.Since != "" {
+		args["since"] = q.Since
+	}
+
+	res, err := c.call(ctx, "roady_audit_trail", args)
+	if err != nil {
+		return "", err
+	}
+	return textResult(res)
+}
+
 // DebtTrend analyzes drift trend over the given number of days.
 func (c *Client) DebtTrend(ctx context.Context, days int) (string, error) {
 	args := map[string]any{}

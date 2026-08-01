@@ -48,6 +48,7 @@ var toolBehaviours = map[string]toolBehaviour{
 	"roady_debt_summary":     {readOnly: true, idempotent: true},
 	"roady_debt_trend":       {readOnly: true, idempotent: true},
 	"roady_drift_recurring":  {readOnly: true, idempotent: true},
+	"roady_audit_trail":      {readOnly: true, idempotent: true},
 	"roady_deps_list":        {readOnly: true, idempotent: true},
 	"roady_deps_graph":       {readOnly: true, idempotent: true},
 	"roady_forecast":         {readOnly: true, idempotent: true},

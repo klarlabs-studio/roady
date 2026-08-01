@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- MCP tool `roady_audit_trail`. The evidence trail was CLI-only, so the agents
+  the GRC work was built for could not ask for one without shelling out.
+  Accepts `task_id`, `agent`, and `session_id` (combinable) plus a `since`
+  window. MCP schema is now 3.1.0.
+- `sdk.Client.AuditTrail` exposes it to SDK consumers.
+- `AuditTrailService` is wired into `AppServices` rather than constructed
+  inline by the CLI, so both surfaces share one instance.
+
 ## [0.16.0] - 2026-08-01
 
 Found by running Roady against itself. Every item here was invisible to a

@@ -6,6 +6,25 @@
 - **Minor** (1.x.0): New optional fields (`omitempty`), new tools, fields deprecated
 - **Major** (x.0.0): Required fields added/removed, tool signatures changed
 
+## v3.1.0 — Audit trails over MCP
+
+**Minor** per the rules above: a new tool, no existing signature changed.
+
+### Added
+
+- `roady_audit_trail` — the evidence trail was CLI-only, which left the
+  agents the feature was built for unable to ask "which agent worked on this,
+  and what proves it". Takes `task_id`, `agent`, or `session_id` (combinable),
+  plus an optional `since` window. Returns chain-integrity status, findings,
+  the task's evidence and `doc:line` spec citation, who acted, and every
+  recorded event.
+
+  Read-only, idempotent, closed-world. It attests to a tamper-evident record
+  of what was *asserted*, not to who acted — actor and agent are
+  caller-supplied and unauthenticated. See `docs/audit-grc.md`.
+
+54 tools in this version.
+
 ## v3.0.0 — No inference, and errors that reach the agent
 
 **Major** per the rules above: a tool was removed and six changed their

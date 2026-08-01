@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -350,6 +351,18 @@ type TasksArgs struct {
 	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
 }
 
+// AuditTrailArgs selects what to build an evidence trail about. Exactly one
+// of TaskID, Agent, or Session identifies the subject; combining TaskID with
+// Agent narrows to what that agent did to that task.
+type AuditTrailArgs struct {
+	TaskID      string `json:"task_id,omitempty" jsonschema:"description=Build the trail for this task."`
+	Agent       string `json:"agent,omitempty" jsonschema:"description=Only include events from this agent (e.g. claude-code)."`
+	Session     string `json:"session_id,omitempty" jsonschema:"description=Only include events from this session ID."`
+	Since       string `json:"since,omitempty" jsonschema:"description=Only include events since this point: 7d, 2w, or an absolute date like 2026-07-01."`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+}
+
 // CostEstimateArgs are the inputs for roady_cost_estimate. Operation defaults
 // to generate_plan when omitted; project_path is server root unless
 // overridden.
@@ -546,6 +559,12 @@ func (s *Server) registerTools() {
 		Description("Return drift items that have remained unresolved for more than 7 days. Canonical name; supersedes roady_sticky_drift.").
 		UIResource("ui://roady/debt").
 		Handler(s.handleStickyDrift)
+
+	// Tool: roady_audit_trail
+	s.tool("roady_audit_trail").
+		Description("Evidence trail for a task, agent, or session: hash-chain integrity, findings, the task's evidence and its doc:line spec citation, who acted, and every recorded event. Attests to a tamper-evident record of what was asserted, not to who acted -- actor and agent are caller-supplied and unauthenticated.").
+		UIResource("ui://roady/status").
+		Handler(s.handleAuditTrail)
 
 	// Tool: roady_debt_trend (Horizon 5)
 	s.tool("roady_debt_trend").
@@ -1463,6 +1482,70 @@ func (s *Server) handleDebtSummary(ctx context.Context, args GetSpecArgs) (any, 
 		return mcpErr("Failed to get debt summary. Ensure drift detection has been run."), nil
 	}
 	return summary, nil
+}
+
+// handleAuditTrail answers "which agent worked on this, and what proves it".
+// The trail was CLI-only until now, which left the agents this feature was
+// built for unable to ask.
+func (s *Server) handleAuditTrail(ctx context.Context, args AuditTrailArgs) (any, error) {
+	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
+	if err != nil {
+		return mcpErr("Failed to load project at the given path."), nil
+	}
+	if svc.AuditTrail == nil {
+		return mcpErr("Audit trail is unavailable. Ensure the path points at an initialized Roady project."), nil
+	}
+
+	if args.TaskID == "" && args.Agent == "" && args.Session == "" {
+		return mcpErr("Specify task_id, agent, or session_id to identify the subject of the trail."), nil
+	}
+
+	since, err := parseTrailSince(args.Since)
+	if err != nil {
+		return mcpErr(err.Error()), nil
+	}
+
+	trail, err := svc.AuditTrail.BuildTrail(ctx, application.TrailQuery{
+		TaskID:    args.TaskID,
+		Agent:     args.Agent,
+		SessionID: args.Session,
+		Since:     since,
+	})
+	if err != nil {
+		return mcpErr(fmt.Sprintf("Failed to build the audit trail: %s", err)), nil
+	}
+	return trail, nil
+}
+
+// parseTrailSince accepts a relative window (7d, 2w) or an absolute date.
+// Empty means the whole history.
+func parseTrailSince(value string) (time.Time, error) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return time.Time{}, nil
+	}
+
+	now := time.Now()
+	if n, ok := strings.CutSuffix(value, "d"); ok {
+		days, convErr := strconv.Atoi(n)
+		if convErr != nil || days <= 0 {
+			return time.Time{}, fmt.Errorf("invalid since %q: expected a form like 7d, 2w, or 2026-07-01", value)
+		}
+		return now.AddDate(0, 0, -days), nil
+	}
+	if n, ok := strings.CutSuffix(value, "w"); ok {
+		weeks, convErr := strconv.Atoi(n)
+		if convErr != nil || weeks <= 0 {
+			return time.Time{}, fmt.Errorf("invalid since %q: expected a form like 7d, 2w, or 2026-07-01", value)
+		}
+		return now.AddDate(0, 0, -weeks*7), nil
+	}
+
+	parsed, parseErr := time.Parse("2006-01-02", value)
+	if parseErr != nil {
+		return time.Time{}, fmt.Errorf("invalid since %q: expected a form like 7d, 2w, or 2026-07-01", value)
+	}
+	return parsed, nil
 }
 
 func (s *Server) handleStickyDrift(ctx context.Context, args GetSpecArgs) (any, error) {

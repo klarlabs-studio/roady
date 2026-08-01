@@ -28,8 +28,9 @@ type AppServices struct {
 	Debt       *application.DebtService // Debt analysis service (Horizon 5)
 	Plugin     *application.PluginService
 	Team       *application.TeamService
-	Report     *application.ReportService // Stakeholder progress reports
-	Prompt     *application.PromptService // Builds model prompts; Roady runs no inference
+	Report     *application.ReportService     // Stakeholder progress reports
+	Prompt     *application.PromptService     // Builds model prompts; Roady runs no inference
+	AuditTrail *application.AuditTrailService // Evidence trails for GRC review
 	Publisher  *storage.InMemoryEventPublisher
 }
 
@@ -141,6 +142,7 @@ func buildServices(workspace *Workspace) (*AppServices, error) {
 		Team:       application.NewTeamService(workspace.Repo, auditSvc),
 		Report:     application.NewReportService(planSvc, forecastSvc, driftSvc, debtSvc, auditSvc),
 		Prompt:     application.NewPromptService(workspace.Repo),
+		AuditTrail: application.NewAuditTrailService(auditSvc, workspace.Audit, planSvc, workspace.Repo),
 		Publisher:  publisher,
 	}
 

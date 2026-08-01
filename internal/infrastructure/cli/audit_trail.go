@@ -64,14 +64,7 @@ func runAuditTrail(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	svc := application.NewAuditTrailService(
-		services.Audit,
-		services.Workspace.Audit,
-		services.Plan,
-		services.Workspace.Repo,
-	)
-
-	trail, err := svc.BuildTrail(cmd.Context(), application.TrailQuery{
+	trail, err := services.AuditTrail.BuildTrail(cmd.Context(), application.TrailQuery{
 		TaskID:    taskID,
 		Agent:     trailAgent,
 		SessionID: trailSession,
