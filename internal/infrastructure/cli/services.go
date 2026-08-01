@@ -18,7 +18,10 @@ func loadServicesForProject(root, project string) (*wiring.AppServices, error) {
 		return nil, fmt.Errorf("failed to build services: %w", loadErr)
 	}
 	if loadErr != nil {
-		fmt.Printf("Warning: %v\n", loadErr)
+		// Warnings go to stderr so they never corrupt machine-readable
+		// stdout — `roady report > status.md` and every `--json` flag
+		// depend on stdout carrying the payload alone.
+		fmt.Fprintf(os.Stderr, "Warning: %v\n", loadErr)
 	}
 	return services, nil
 }
