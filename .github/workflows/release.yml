@@ -18,11 +18,6 @@ jobs:
       # Widened here and only here: goreleaser creates the GitHub release and
       # uploads its assets.
       contents: write
-    env:
-      # checkout@v4 / setup-go@v5 / goreleaser-action@v6 still default to Node
-      # 20, which GitHub removes from runners 2026-09-16. Force Node 24 now so
-      # the workflow does not break when the runner drops it.
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
