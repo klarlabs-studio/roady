@@ -70,6 +70,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `roady notify digest` — push a summary to a channel
   - `roady dashboard` — the interactive TUI, unchanged
 
+### Changed — MCP agent experience
+
+- Every MCP tool now carries behaviour annotations (`readOnlyHint`,
+  `destructiveHint`, `idempotentHint`, `openWorldHint`). None did before,
+  and the spec's defaults are pessimistic — an unannotated tool is assumed
+  not read-only and potentially destructive, so ~30 pure read tools were
+  telling every client that reading a plan might destroy something.
+  Classification is accurate rather than convenient: the AI tools are
+  deliberately *not* marked read-only because they record token usage to
+  the audit log, and plan generation / drift acceptance are marked
+  destructive because they overwrite state that cannot be recovered.
+- Tests fail the build if a tool is registered without a classification,
+  if a classification outlives its tool, or if the judgement calls above
+  are reversed.
+
+### Removed — BREAKING (MCP)
+
+- The five deprecated tool aliases from v0.10.0 are gone:
+  `roady_get_ready_tasks`, `roady_get_blocked_tasks`,
+  `roady_get_in_progress_tasks` (use `roady_tasks` with `status`),
+  `roady_sticky_drift` (use `roady_drift_recurring`), and
+  `roady_smart_decompose` (use `roady_plan_decompose`).
+  Tool definitions cost context in every agent session: the surface was
+  ~11,000 tokens, of which these five were ~900. Duplicate tools also
+  degrade tool-selection accuracy. Now 54 tools, ~10,200 tokens.
+  `pkg/sdk` is repointed at the canonical tools; its method signatures are
+  unchanged, so SDK consumers need no edit.
+
 ### Added — bidirectional tracker sync
 
 - `roady sync` now writes Roady's status back to the external tracker.

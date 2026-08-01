@@ -373,241 +373,235 @@ type SyncArgs struct {
 
 func (s *Server) registerTools() {
 	// Tool: roady_init
-	s.mcpServer.Tool("roady_init").
+	s.tool("roady_init").
 		Description("Initialize a new roady project in the current directory").
 		UIResource("ui://roady/init").
 		Handler(s.handleInit)
 
 	// Tool: roady_get_spec
-	s.mcpServer.Tool("roady_get_spec").
+	s.tool("roady_get_spec").
 		Description("Retrieve the current product specification").
 		UIResource("ui://roady/spec").
 		Handler(s.handleGetSpec)
 
 	// Tool: roady_get_plan
-	s.mcpServer.Tool("roady_get_plan").
+	s.tool("roady_get_plan").
 		Description("Retrieve the current execution plan").
 		UIResource("ui://roady/plan").
 		Handler(s.handleGetPlan)
 
 	// Tool: roady_get_state
-	s.mcpServer.Tool("roady_get_state").
+	s.tool("roady_get_state").
 		Description("Retrieve the current execution state (task statuses)").
 		UIResource("ui://roady/state").
 		Handler(s.handleGetState)
 
 	// Tool: roady_generate_plan (Heuristic)
-	s.mcpServer.Tool("roady_generate_plan").
+	s.tool("roady_generate_plan").
 		Description("Generate a basic plan from the spec using 1:1 heuristic (resets custom tasks unless they match features)").
 		UIResource("ui://roady/plan").
 		Handler(s.handleGeneratePlan)
 
 	// Tool: roady_update_plan (Smart Injection)
-	s.mcpServer.Tool("roady_update_plan").
+	s.tool("roady_update_plan").
 		Description("Update the plan with a specific list of tasks (Smart Injection). Use this to propose complex architectures.").
 		UIResource("ui://roady/plan").
 		Handler(s.handleUpdatePlan)
 
 	// Tool: roady_detect_drift
-	s.mcpServer.Tool("roady_detect_drift").
+	s.tool("roady_detect_drift").
 		Description("Detect discrepancies between the current Spec and Plan").
 		UIResource("ui://roady/drift").
 		Handler(s.handleDetectDrift)
 
 	// Tool: roady_accept_drift
-	s.mcpServer.Tool("roady_accept_drift").
+	s.tool("roady_accept_drift").
 		Description("Accept the current drift by locking the spec snapshot").
 		UIResource("ui://roady/drift").
 		Handler(s.handleAcceptDrift)
 
 	// Tool: roady_status
-	s.mcpServer.Tool("roady_status").
+	s.tool("roady_status").
 		Description("Get a high-level summary of the project status").
 		UIResource("ui://roady/status").
 		Handler(s.handleStatus)
 
 	// Tool: roady_check_policy
-	s.mcpServer.Tool("roady_check_policy").
+	s.tool("roady_check_policy").
 		Description("Check if the current plan complies with execution policies (e.g., WIP limits)").
 		UIResource("ui://roady/policy").
 		Handler(s.handleCheckPolicy)
 
 	// Tool: roady_transition_task
-	s.mcpServer.Tool("roady_transition_task").
+	s.tool("roady_transition_task").
 		Description("Transition a task to a new state (e.g., start, complete, block, stop)").
 		UIResource("ui://roady/state").
 		Handler(s.handleTransitionTask)
 
 	// Tool: roady_explain_spec
-	s.mcpServer.Tool("roady_explain_spec").
+	s.tool("roady_explain_spec").
 		Description("Provide an AI-generated architectural walkthrough of the current specification").
 		UIResource("ui://roady/spec").
 		Handler(s.handleExplainSpec)
 
 	// Tool: roady_approve_plan
-	s.mcpServer.Tool("roady_approve_plan").
+	s.tool("roady_approve_plan").
 		Description("Approve the current plan for execution").
 		UIResource("ui://roady/plan").
 		Handler(s.handleApprovePlan)
 
 	// Tool: roady_get_usage
-	s.mcpServer.Tool("roady_get_usage").
+	s.tool("roady_get_usage").
 		Description("Retrieve project usage and telemetry statistics").
 		UIResource("ui://roady/usage").
 		Handler(s.handleGetUsage)
 
 	// Tool: roady_explain_drift
-	s.mcpServer.Tool("roady_explain_drift").
+	s.tool("roady_explain_drift").
 		Description("Provide an AI-generated explanation and resolution steps for current project drift").
 		UIResource("ui://roady/drift").
 		Handler(s.handleExplainDrift)
 
 	// Tool: roady_add_feature
-	s.mcpServer.Tool("roady_add_feature").
+	s.tool("roady_add_feature").
 		Description("Add a new feature to the product specification and sync to docs/backlog.md").
 		UIResource("ui://roady/spec").
 		Handler(s.handleAddFeature)
 
 	// Tool: roady_forecast (Horizon 5)
-	s.mcpServer.Tool("roady_forecast").
+	s.tool("roady_forecast").
 		Description("Predict project completion based on current task velocity").
 		UIResource("ui://roady/forecast").
 		Handler(s.handleForecast)
 
 	// Tool: roady_org_status (Horizon 4)
-	s.mcpServer.Tool("roady_org_status").
+	s.tool("roady_org_status").
 		Description("Get a status overview of all Roady projects in the directory tree").
 		UIResource("ui://roady/org").
 		Handler(s.handleOrgStatus)
 
 	// Tool: roady_git_sync (Horizon 5)
-	s.mcpServer.Tool("roady_git_sync").
+	s.tool("roady_git_sync").
 		Description("Synchronize task statuses by scanning git commit messages for markers").
 		UIResource("ui://roady/git-sync").
 		Handler(s.handleGitSync)
 
 	// Tool: roady_sync (External Plugins)
-	s.mcpServer.Tool("roady_sync").
+	s.tool("roady_sync").
 		Description("Sync the plan with an external system via a plugin binary").
 		UIResource("ui://roady/sync").
 		Handler(s.handleSync)
 
 	// Tool: roady_deps_list (Horizon 5)
-	s.mcpServer.Tool("roady_deps_list").
+	s.tool("roady_deps_list").
 		Description("List all cross-repository dependencies").
 		UIResource("ui://roady/deps").
 		Handler(s.handleDepsList)
 
 	// Tool: roady_deps_scan (Horizon 5)
-	s.mcpServer.Tool("roady_deps_scan").
+	s.tool("roady_deps_scan").
 		Description("Scan health status of all dependent repositories").
 		UIResource("ui://roady/deps").
 		Handler(s.handleDepsScan)
 
 	// Tool: roady_deps_graph (Horizon 5)
-	s.mcpServer.Tool("roady_deps_graph").
+	s.tool("roady_deps_graph").
 		Description("Get dependency graph summary with optional cycle detection").
 		UIResource("ui://roady/deps").
 		Handler(s.handleDepsGraph)
 
 	// Tool: roady_debt_report (Horizon 5)
-	s.mcpServer.Tool("roady_debt_report").
+	s.tool("roady_debt_report").
 		Description("Generate comprehensive debt report with category breakdown and top debtors").
 		UIResource("ui://roady/debt").
 		Handler(s.handleDebtReport)
 
 	// Tool: roady_debt_summary (Horizon 5)
-	s.mcpServer.Tool("roady_debt_summary").
+	s.tool("roady_debt_summary").
 		Description("Quick overview of debt status including health level and top debtor").
 		UIResource("ui://roady/debt").
 		Handler(s.handleDebtSummary)
 
 	// Tool: roady_drift_recurring (v0.10.0 - canonical name for sticky drift)
-	s.mcpServer.Tool("roady_drift_recurring").
+	s.tool("roady_drift_recurring").
 		Description("Return drift items that have remained unresolved for more than 7 days. Canonical name; supersedes roady_sticky_drift.").
 		UIResource("ui://roady/debt").
 		Handler(s.handleStickyDrift)
 
-	// Tool: roady_sticky_drift (deprecated; use roady_drift_recurring)
-	s.mcpServer.Tool("roady_sticky_drift").
-		Description("DEPRECATED: use roady_drift_recurring. Returns sticky debt items unresolved for more than 7 days.").
-		UIResource("ui://roady/debt").
-		Handler(s.handleStickyDrift)
-
 	// Tool: roady_debt_trend (Horizon 5)
-	s.mcpServer.Tool("roady_debt_trend").
+	s.tool("roady_debt_trend").
 		Description("Analyze drift trend over time").
 		UIResource("ui://roady/debt").
 		Handler(s.handleDebtTrend)
 
 	// Tool: roady_org_policy (v0.7.0)
-	s.mcpServer.Tool("roady_org_policy").
+	s.tool("roady_org_policy").
 		Description("Get merged policy for a project (org defaults + project overrides)").
 		UIResource("ui://roady/org").
 		Handler(s.handleOrgPolicy)
 
 	// Tool: roady_org_detect_drift (v0.7.0)
-	s.mcpServer.Tool("roady_org_detect_drift").
+	s.tool("roady_org_detect_drift").
 		Description("Detect drift across all projects in the directory tree").
 		UIResource("ui://roady/org").
 		Handler(s.handleOrgDetectDrift)
 
 	// Tool: roady_plugin_list (v0.7.0)
-	s.mcpServer.Tool("roady_plugin_list").
+	s.tool("roady_plugin_list").
 		Description("List all registered plugins with their status").
 		UIResource("ui://roady/plugins").
 		Handler(s.handlePluginList)
 
 	// Tool: roady_plugin_validate (v0.7.0)
-	s.mcpServer.Tool("roady_plugin_validate").
+	s.tool("roady_plugin_validate").
 		Description("Validate a registered plugin by loading and initializing it").
 		UIResource("ui://roady/plugins").
 		Handler(s.handlePluginValidate)
 
 	// Tool: roady_plugin_status (v0.7.0)
-	s.mcpServer.Tool("roady_plugin_status").
+	s.tool("roady_plugin_status").
 		Description("Check health status of one or all plugins").
 		UIResource("ui://roady/plugins").
 		Handler(s.handlePluginStatus)
 
 	// Tool: roady_messaging_list (v0.7.0)
-	s.mcpServer.Tool("roady_messaging_list").
+	s.tool("roady_messaging_list").
 		Description("List configured messaging adapters").
 		UIResource("ui://roady/messaging").
 		Handler(s.handleMessagingList)
 
 	// Tool: roady_query (v0.8.0)
-	s.mcpServer.Tool("roady_query").
+	s.tool("roady_query").
 		Description("Ask a natural language question about the project and get an AI-generated answer").
 		UIResource("ui://roady/status").
 		Handler(s.handleQuery)
 
 	// Tool: roady_suggest_priorities (v0.8.0)
-	s.mcpServer.Tool("roady_suggest_priorities").
+	s.tool("roady_suggest_priorities").
 		Description("AI-powered priority suggestions based on spec analysis and task dependencies").
 		UIResource("ui://roady/plan").
 		Handler(s.handleSuggestPriorities)
 
 	// Tool: roady_review_spec (v0.8.0)
-	s.mcpServer.Tool("roady_review_spec").
+	s.tool("roady_review_spec").
 		Description("Perform an AI-powered quality review of the current specification, returning a score and structured findings").
 		UIResource("ui://roady/spec").
 		Handler(s.handleReviewSpec)
 
 	// Tool: roady_assign_task (v0.8.0)
-	s.mcpServer.Tool("roady_assign_task").
+	s.tool("roady_assign_task").
 		Description("Assign a task to a person or agent without changing its status").
 		UIResource("ui://roady/state").
 		Handler(s.handleAssignTask)
 
 	// Tool: roady_get_snapshot (v0.6.0 - Coordinator)
-	s.mcpServer.Tool("roady_get_snapshot").
+	s.tool("roady_get_snapshot").
 		Description("Get a consistent project snapshot with progress, categorized task counts, and task lists").
 		UIResource("ui://roady/status").
 		Handler(s.handleGetSnapshot)
 
 	// Tool: roady_cost_estimate (v0.10.0 - pre-flight cost projection)
-	s.mcpServer.Tool("roady_cost_estimate").
+	s.tool("roady_cost_estimate").
 		Description("Estimate input/output tokens and USD cost for an AI operation (generate_plan, smart_decompose, review_spec, explain_drift, query) before running it.").
 		UIResource("ui://roady/cost").
 		Handler(s.handleCostEstimate)
@@ -617,116 +611,92 @@ func (s *Server) registerTools() {
 	// roady_get_in_progress_tasks. Takes a status enum (ready, in_progress,
 	// blocked, all). The legacy tools below remain registered as deprecation
 	// aliases that delegate to the same handler.
-	s.mcpServer.Tool("roady_tasks").
+	s.tool("roady_tasks").
 		Description("List tasks by status. Pass status=ready (default), in_progress, blocked, or all. Supersedes roady_get_*_tasks.").
 		UIResource("ui://roady/status").
 		Handler(s.handleTasks)
 
-	// Tool: roady_get_ready_tasks (deprecated; use roady_tasks status=ready)
-	s.mcpServer.Tool("roady_get_ready_tasks").
-		Description("DEPRECATED: use roady_tasks with status=ready. Returns tasks that are ready to start.").
-		UIResource("ui://roady/status").
-		Handler(s.handleGetReadyTasks)
-
-	// Tool: roady_get_blocked_tasks (deprecated; use roady_tasks status=blocked)
-	s.mcpServer.Tool("roady_get_blocked_tasks").
-		Description("DEPRECATED: use roady_tasks with status=blocked. Returns blocked tasks.").
-		UIResource("ui://roady/status").
-		Handler(s.handleGetBlockedTasks)
-
-	// Tool: roady_get_in_progress_tasks (deprecated; use roady_tasks status=in_progress)
-	s.mcpServer.Tool("roady_get_in_progress_tasks").
-		Description("DEPRECATED: use roady_tasks with status=in_progress. Returns in-progress tasks.").
-		UIResource("ui://roady/status").
-		Handler(s.handleGetInProgressTasks)
-
 	// Tool: roady_workspace_push (v0.8.0)
-	s.mcpServer.Tool("roady_workspace_push").
+	s.tool("roady_workspace_push").
 		Description("Commit and push .roady/ workspace state to git remote").
 		UIResource("ui://roady/workspace").
 		Handler(s.handleWorkspacePush)
 
 	// Tool: roady_workspace_pull (v0.8.0)
-	s.mcpServer.Tool("roady_workspace_pull").
+	s.tool("roady_workspace_pull").
 		Description("Pull remote .roady/ workspace changes and merge with conflict detection").
 		UIResource("ui://roady/workspace").
 		Handler(s.handleWorkspacePull)
 
 	// Tool: roady_plan_decompose (v0.10.0 - canonical name)
-	s.mcpServer.Tool("roady_plan_decompose").
+	s.tool("roady_plan_decompose").
 		Description("AI-powered context-aware task decomposition using codebase structure analysis. Canonical name; supersedes roady_smart_decompose.").
 		UIResource("ui://roady/plan").
 		Handler(s.handleSmartDecompose)
 
-	// Tool: roady_smart_decompose (deprecated; use roady_plan_decompose)
-	s.mcpServer.Tool("roady_smart_decompose").
-		Description("DEPRECATED: use roady_plan_decompose. AI-powered context-aware task decomposition.").
-		UIResource("ui://roady/plan").
-		Handler(s.handleSmartDecompose)
-
 	// Tool: roady_team_list (v0.8.0)
-	s.mcpServer.Tool("roady_team_list").
+	s.tool("roady_team_list").
 		Description("List all team members and their roles").
 		UIResource("ui://roady/team").
 		Handler(s.handleTeamList)
 
 	// Tool: roady_team_add (v0.8.0)
-	s.mcpServer.Tool("roady_team_add").
+	s.tool("roady_team_add").
 		Description("Add or update a team member with a role (admin, member, viewer)").
 		UIResource("ui://roady/team").
 		Handler(s.handleTeamAdd)
 
 	// Tool: roady_team_remove (v0.8.0)
-	s.mcpServer.Tool("roady_team_remove").
+	s.tool("roady_team_remove").
 		Description("Remove a team member").
 		UIResource("ui://roady/team").
 		Handler(s.handleTeamRemove)
 
 	// Billing tools
 	// Tool: roady_rate_list
-	s.mcpServer.Tool("roady_rate_list").
+	s.tool("roady_rate_list").
 		Description("List all billing rates").
 		UIResource("ui://roady/billing").
 		Handler(s.handleRateList)
 
 	// Tool: roady_rate_add
-	s.mcpServer.Tool("roady_rate_add").
+	s.tool("roady_rate_add").
 		Description("Add a new billing rate").
 		UIResource("ui://roady/billing").
 		Handler(s.handleRateAdd)
 
 	// Tool: roady_task_log_time
-	s.mcpServer.Tool("roady_task_log_time").
+	s.tool("roady_task_log_time").
 		Description("Log time to a task for billing").
 		UIResource("ui://roady/billing").
 		Handler(s.handleTaskLogTime)
 
 	// Tool: roady_cost_report
-	s.mcpServer.Tool("roady_cost_report").
+	s.tool("roady_cost_report").
 		Description("Generate a cost report for time tracking").
 		UIResource("ui://roady/billing").
 		Handler(s.handleCostReport)
 
 	// Tool: roady_cost_budget
-	s.mcpServer.Tool("roady_cost_budget").
+	s.tool("roady_cost_budget").
 		Description("Show budget status based on budget_hours in policy").
 		UIResource("ui://roady/billing").
 		Handler(s.handleCostBudget)
 
 	// Tool: roady_rate_remove
-	s.mcpServer.Tool("roady_rate_remove").
+	s.tool("roady_rate_remove").
 		Description("Remove a billing rate").
 		UIResource("ui://roady/billing").
 		Handler(s.handleRateRemove)
 
 	// Tool: roady_rate_set_default
-	s.mcpServer.Tool("roady_rate_set_default").
+	s.tool("roady_rate_set_default").
 		Description("Set the default billing rate").
 		UIResource("ui://roady/billing").
 		Handler(s.handleRateSetDefault)
 
 	// Tool: roady_rate_tax
-	s.mcpServer.Tool("roady_rate_tax").
+	s.tool("roady_rate_tax").
 		Description("Configure tax settings for billing").
 		UIResource("ui://roady/billing").
 		Handler(s.handleRateTax)

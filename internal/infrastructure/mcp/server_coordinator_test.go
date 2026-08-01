@@ -176,15 +176,10 @@ func TestServer_RegistersCanonicalAndDeprecatedToolNames(t *testing.T) {
 	expected := []string{
 		// Canonical task-listing tool plus its three deprecation aliases.
 		"roady_tasks",
-		"roady_get_ready_tasks",
-		"roady_get_blocked_tasks",
-		"roady_get_in_progress_tasks",
 		// Canonical decompose + deprecation alias.
 		"roady_plan_decompose",
-		"roady_smart_decompose",
 		// Canonical recurring-drift + deprecation alias.
 		"roady_drift_recurring",
-		"roady_sticky_drift",
 		// Cost estimator (new in v0.10).
 		"roady_cost_estimate",
 	}
