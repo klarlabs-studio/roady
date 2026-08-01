@@ -71,6 +71,12 @@ func (a *SlackAdapter) Send(ctx context.Context, event *events.BaseEvent) error 
 }
 
 func formatSlackMessage(event *events.BaseEvent) string {
+	// A digest carries its own prerendered body; per-event formatting would
+	// throw away the summary it exists to deliver.
+	if summary, ok := event.Metadata["summary"].(string); ok && summary != "" {
+		return summary
+	}
+
 	switch event.Type {
 	case events.EventTypeTaskStarted:
 		return fmt.Sprintf(":arrow_forward: Task started: %s", event.AggregateID())
