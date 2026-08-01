@@ -5,19 +5,15 @@ import (
 	"os"
 	"testing"
 
-	"github.com/felixgeelhaar/roady/internal/infrastructure/config"
 	"github.com/felixgeelhaar/roady/pkg/domain"
 	"github.com/felixgeelhaar/roady/pkg/domain/planning"
 	"github.com/felixgeelhaar/roady/pkg/domain/spec"
 	"github.com/felixgeelhaar/roady/pkg/storage"
 )
 
-func initMockAIConfig(root string) error {
-	roadyDir := root + "/.roady"
-	if err := os.MkdirAll(roadyDir, 0755); err != nil {
-		return err
-	}
-	return config.SaveAIConfig(root, &config.AIConfig{Provider: "mock", Model: "test"})
+// initProjectDir creates the .roady directory a handler expects to find.
+func initProjectDir(root string) error {
+	return os.MkdirAll(root+"/.roady", 0755)
 }
 
 func TestServer_HandleOrgPolicy(t *testing.T) {
@@ -26,7 +22,7 @@ func TestServer_HandleOrgPolicy(t *testing.T) {
 	if err := repo.Initialize(); err != nil {
 		t.Fatalf("initialize repo: %v", err)
 	}
-	if err := initMockAIConfig(root); err != nil {
+	if err := initProjectDir(root); err != nil {
 		t.Fatalf("init mock AI config: %v", err)
 	}
 
@@ -55,7 +51,7 @@ func TestServer_HandleOrgPolicyWithPath(t *testing.T) {
 	if err := repo.Initialize(); err != nil {
 		t.Fatalf("initialize repo: %v", err)
 	}
-	if err := initMockAIConfig(root); err != nil {
+	if err := initProjectDir(root); err != nil {
 		t.Fatalf("init mock AI config: %v", err)
 	}
 
@@ -84,7 +80,7 @@ func TestServer_HandleOrgDetectDrift(t *testing.T) {
 	if err := repo.Initialize(); err != nil {
 		t.Fatalf("initialize repo: %v", err)
 	}
-	if err := initMockAIConfig(root); err != nil {
+	if err := initProjectDir(root); err != nil {
 		t.Fatalf("init mock AI config: %v", err)
 	}
 
@@ -111,7 +107,7 @@ func TestServer_HandlePluginList(t *testing.T) {
 	if err := repo.Initialize(); err != nil {
 		t.Fatalf("initialize repo: %v", err)
 	}
-	if err := initMockAIConfig(root); err != nil {
+	if err := initProjectDir(root); err != nil {
 		t.Fatalf("init mock AI config: %v", err)
 	}
 
@@ -138,7 +134,7 @@ func TestServer_HandlePluginValidate(t *testing.T) {
 	if err := repo.Initialize(); err != nil {
 		t.Fatalf("initialize repo: %v", err)
 	}
-	if err := initMockAIConfig(root); err != nil {
+	if err := initProjectDir(root); err != nil {
 		t.Fatalf("init mock AI config: %v", err)
 	}
 
@@ -160,7 +156,7 @@ func TestServer_HandlePluginStatus(t *testing.T) {
 	if err := repo.Initialize(); err != nil {
 		t.Fatalf("initialize repo: %v", err)
 	}
-	if err := initMockAIConfig(root); err != nil {
+	if err := initProjectDir(root); err != nil {
 		t.Fatalf("init mock AI config: %v", err)
 	}
 
@@ -192,7 +188,7 @@ func TestServer_HandleMessagingList(t *testing.T) {
 	if err := repo.Initialize(); err != nil {
 		t.Fatalf("initialize repo: %v", err)
 	}
-	if err := initMockAIConfig(root); err != nil {
+	if err := initProjectDir(root); err != nil {
 		t.Fatalf("init mock AI config: %v", err)
 	}
 
@@ -219,7 +215,7 @@ func TestServer_HandleTeamList(t *testing.T) {
 	if err := repo.Initialize(); err != nil {
 		t.Fatalf("initialize repo: %v", err)
 	}
-	if err := initMockAIConfig(root); err != nil {
+	if err := initProjectDir(root); err != nil {
 		t.Fatalf("init mock AI config: %v", err)
 	}
 
@@ -246,7 +242,7 @@ func TestServer_HandleTeamAdd(t *testing.T) {
 	if err := repo.Initialize(); err != nil {
 		t.Fatalf("initialize repo: %v", err)
 	}
-	if err := initMockAIConfig(root); err != nil {
+	if err := initProjectDir(root); err != nil {
 		t.Fatalf("init mock AI config: %v", err)
 	}
 
@@ -275,7 +271,7 @@ func TestServer_HandleTeamAdd_Validation(t *testing.T) {
 	if err := repo.Initialize(); err != nil {
 		t.Fatalf("initialize repo: %v", err)
 	}
-	if err := initMockAIConfig(root); err != nil {
+	if err := initProjectDir(root); err != nil {
 		t.Fatalf("init mock AI config: %v", err)
 	}
 
@@ -305,7 +301,7 @@ func TestServer_HandleTeamRemove(t *testing.T) {
 	if err := repo.Initialize(); err != nil {
 		t.Fatalf("initialize repo: %v", err)
 	}
-	if err := initMockAIConfig(root); err != nil {
+	if err := initProjectDir(root); err != nil {
 		t.Fatalf("init mock AI config: %v", err)
 	}
 
@@ -338,7 +334,7 @@ func TestServer_HandleTeamRemove_Validation(t *testing.T) {
 	if err := repo.Initialize(); err != nil {
 		t.Fatalf("initialize repo: %v", err)
 	}
-	if err := initMockAIConfig(root); err != nil {
+	if err := initProjectDir(root); err != nil {
 		t.Fatalf("init mock AI config: %v", err)
 	}
 
@@ -361,7 +357,7 @@ func TestServer_HandleRateList(t *testing.T) {
 	if err := repo.Initialize(); err != nil {
 		t.Fatalf("initialize repo: %v", err)
 	}
-	if err := initMockAIConfig(root); err != nil {
+	if err := initProjectDir(root); err != nil {
 		t.Fatalf("init mock AI config: %v", err)
 	}
 
@@ -388,7 +384,7 @@ func TestServer_HandleRateAdd(t *testing.T) {
 	if err := repo.Initialize(); err != nil {
 		t.Fatalf("initialize repo: %v", err)
 	}
-	if err := initMockAIConfig(root); err != nil {
+	if err := initProjectDir(root); err != nil {
 		t.Fatalf("init mock AI config: %v", err)
 	}
 
@@ -422,7 +418,7 @@ func TestServer_HandleRateAdd_Validation(t *testing.T) {
 	if err := repo.Initialize(); err != nil {
 		t.Fatalf("initialize repo: %v", err)
 	}
-	if err := initMockAIConfig(root); err != nil {
+	if err := initProjectDir(root); err != nil {
 		t.Fatalf("init mock AI config: %v", err)
 	}
 
@@ -458,7 +454,7 @@ func TestServer_HandleRateRemove(t *testing.T) {
 	if err := repo.Initialize(); err != nil {
 		t.Fatalf("initialize repo: %v", err)
 	}
-	if err := initMockAIConfig(root); err != nil {
+	if err := initProjectDir(root); err != nil {
 		t.Fatalf("init mock AI config: %v", err)
 	}
 
@@ -495,7 +491,7 @@ func TestServer_HandleRateRemove_Validation(t *testing.T) {
 	if err := repo.Initialize(); err != nil {
 		t.Fatalf("initialize repo: %v", err)
 	}
-	if err := initMockAIConfig(root); err != nil {
+	if err := initProjectDir(root); err != nil {
 		t.Fatalf("init mock AI config: %v", err)
 	}
 
@@ -518,7 +514,7 @@ func TestServer_HandleRateSetDefault(t *testing.T) {
 	if err := repo.Initialize(); err != nil {
 		t.Fatalf("initialize repo: %v", err)
 	}
-	if err := initMockAIConfig(root); err != nil {
+	if err := initProjectDir(root); err != nil {
 		t.Fatalf("init mock AI config: %v", err)
 	}
 
@@ -555,7 +551,7 @@ func TestServer_HandleRateSetDefault_Validation(t *testing.T) {
 	if err := repo.Initialize(); err != nil {
 		t.Fatalf("initialize repo: %v", err)
 	}
-	if err := initMockAIConfig(root); err != nil {
+	if err := initProjectDir(root); err != nil {
 		t.Fatalf("init mock AI config: %v", err)
 	}
 
@@ -578,7 +574,7 @@ func TestServer_HandleRateTax(t *testing.T) {
 	if err := repo.Initialize(); err != nil {
 		t.Fatalf("initialize repo: %v", err)
 	}
-	if err := initMockAIConfig(root); err != nil {
+	if err := initProjectDir(root); err != nil {
 		t.Fatalf("init mock AI config: %v", err)
 	}
 
@@ -611,7 +607,7 @@ func TestServer_HandleRateTax_Validation(t *testing.T) {
 	if err := repo.Initialize(); err != nil {
 		t.Fatalf("initialize repo: %v", err)
 	}
-	if err := initMockAIConfig(root); err != nil {
+	if err := initProjectDir(root); err != nil {
 		t.Fatalf("init mock AI config: %v", err)
 	}
 
@@ -655,7 +651,7 @@ func TestServer_HandleTaskLogTime(t *testing.T) {
 	if err := repo.Initialize(); err != nil {
 		t.Fatalf("initialize repo: %v", err)
 	}
-	if err := initMockAIConfig(root); err != nil {
+	if err := initProjectDir(root); err != nil {
 		t.Fatalf("init mock AI config: %v", err)
 	}
 
@@ -697,7 +693,7 @@ func TestServer_HandleTaskLogTime_Validation(t *testing.T) {
 	if err := repo.Initialize(); err != nil {
 		t.Fatalf("initialize repo: %v", err)
 	}
-	if err := initMockAIConfig(root); err != nil {
+	if err := initProjectDir(root); err != nil {
 		t.Fatalf("init mock AI config: %v", err)
 	}
 
@@ -741,7 +737,7 @@ func TestServer_HandleCostReport(t *testing.T) {
 	if err := repo.Initialize(); err != nil {
 		t.Fatalf("initialize repo: %v", err)
 	}
-	if err := initMockAIConfig(root); err != nil {
+	if err := initProjectDir(root); err != nil {
 		t.Fatalf("init mock AI config: %v", err)
 	}
 
@@ -772,7 +768,7 @@ func TestServer_HandleCostBudget(t *testing.T) {
 	if err := repo.Initialize(); err != nil {
 		t.Fatalf("initialize repo: %v", err)
 	}
-	if err := initMockAIConfig(root); err != nil {
+	if err := initProjectDir(root); err != nil {
 		t.Fatalf("init mock AI config: %v", err)
 	}
 
@@ -799,7 +795,7 @@ func TestServer_HandleAssignTask(t *testing.T) {
 	if err := repo.Initialize(); err != nil {
 		t.Fatalf("initialize repo: %v", err)
 	}
-	if err := initMockAIConfig(root); err != nil {
+	if err := initProjectDir(root); err != nil {
 		t.Fatalf("init mock AI config: %v", err)
 	}
 
@@ -856,7 +852,7 @@ func TestServer_HandleSync_Error(t *testing.T) {
 	if err := repo.Initialize(); err != nil {
 		t.Fatalf("initialize repo: %v", err)
 	}
-	if err := initMockAIConfig(root); err != nil {
+	if err := initProjectDir(root); err != nil {
 		t.Fatalf("init mock AI config: %v", err)
 	}
 
@@ -879,7 +875,7 @@ func TestServer_HandleWorkspacePushPull_Error(t *testing.T) {
 	if err := repo.Initialize(); err != nil {
 		t.Fatalf("initialize repo: %v", err)
 	}
-	if err := initMockAIConfig(root); err != nil {
+	if err := initProjectDir(root); err != nil {
 		t.Fatalf("init mock AI config: %v", err)
 	}
 

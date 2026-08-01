@@ -5,8 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-
-	"github.com/felixgeelhaar/roady/internal/infrastructure/config"
 )
 
 func captureStdout(t *testing.T, fn func()) string {
@@ -47,12 +45,6 @@ func withTempDir(t *testing.T) (string, func()) {
 		_ = os.Chdir(old)
 		_ = os.RemoveAll(dir)
 		t.Fatalf("mkdir .roady: %v", err)
-	}
-
-	if err := config.SaveAIConfig(".", &config.AIConfig{Provider: "mock", Model: "test"}); err != nil {
-		_ = os.Chdir(old)
-		_ = os.RemoveAll(dir)
-		t.Fatalf("save mock AI config: %v", err)
 	}
 
 	return dir, func() {

@@ -38,7 +38,7 @@ type jsonRPCResponse struct {
 func TestMCPHTTPTransport(t *testing.T) {
 	tempDir := t.TempDir()
 
-	if err := initMockAIConfig(tempDir); err != nil {
+	if err := initProjectDir(tempDir); err != nil {
 		t.Fatalf("init mock AI config: %v", err)
 	}
 
@@ -164,7 +164,7 @@ func TestMCPStdioTransport(t *testing.T) {
 func TestMCPWebSocketTransport(t *testing.T) {
 	tempDir := t.TempDir()
 
-	if err := initMockAIConfig(tempDir); err != nil {
+	if err := initProjectDir(tempDir); err != nil {
 		t.Fatalf("init mock AI config: %v", err)
 	}
 

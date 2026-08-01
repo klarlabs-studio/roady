@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/felixgeelhaar/roady/internal/infrastructure/config"
 	"github.com/felixgeelhaar/roady/internal/infrastructure/wiring"
 	"github.com/felixgeelhaar/roady/pkg/domain"
 	"github.com/spf13/cobra"
@@ -32,39 +31,7 @@ var configWizardCmd = &cobra.Command{
 		reader := bufio.NewReader(os.Stdin)
 
 		fmt.Println("\n--- Roady Configuration Wizard ---")
-		fmt.Println("This wizard helps you configure AI provider and project policy settings.")
-		fmt.Println()
-
-		// --- AI Configuration ---
-		fmt.Println("=== AI Provider Configuration (ai.yaml) ===")
-
-		existing, _ := config.LoadAIConfig(cwd)
-		if existing == nil {
-			existing = &config.AIConfig{}
-		}
-
-		provider := prompt(reader, "AI Provider (ollama, openai, anthropic, gemini)", existing.Provider)
-		model := prompt(reader, "Model name", existing.Model)
-		maxRetriesStr := prompt(reader, "Max retries", intOrDefault(existing.MaxRetries, "2"))
-		retryDelayStr := prompt(reader, "Retry delay (ms)", intOrDefault(existing.RetryDelayMs, "1000"))
-		timeoutStr := prompt(reader, "Timeout (sec)", intOrDefault(existing.TimeoutSec, "300"))
-
-		maxRetries, _ := strconv.Atoi(maxRetriesStr)
-		retryDelay, _ := strconv.Atoi(retryDelayStr)
-		timeout, _ := strconv.Atoi(timeoutStr)
-
-		aiCfg := &config.AIConfig{
-			Provider:     provider,
-			Model:        model,
-			MaxRetries:   maxRetries,
-			RetryDelayMs: retryDelay,
-			TimeoutSec:   timeout,
-		}
-
-		if err := config.SaveAIConfig(cwd, aiCfg); err != nil {
-			return MapError(fmt.Errorf("failed to save AI config: %w", err))
-		}
-		fmt.Println("AI configuration saved.")
+		fmt.Println("This wizard helps you configure project policy settings.")
 		fmt.Println()
 
 		// --- Policy Configuration ---

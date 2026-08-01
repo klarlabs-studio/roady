@@ -7,7 +7,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/felixgeelhaar/roady/internal/infrastructure/config"
 	"github.com/felixgeelhaar/roady/pkg/domain/dependency"
 )
 
@@ -25,8 +24,6 @@ version: "1.0.0"
 	if err := os.WriteFile(filepath.Join(roadyDir, "spec.yaml"), []byte(specContent), 0600); err != nil {
 		t.Fatal(err)
 	}
-
-	_ = config.SaveAIConfig(tmpDir, &config.AIConfig{Provider: "mock", Model: "test"})
 
 	// Change to temp dir
 	oldDir, _ := os.Getwd()
@@ -60,8 +57,6 @@ version: "1.0.0"
 		t.Fatal(err)
 	}
 
-	_ = config.SaveAIConfig(tmpDir, &config.AIConfig{Provider: "mock", Model: "test"})
-
 	// Change to temp dir
 	oldDir, _ := os.Getwd()
 	_ = os.Chdir(tmpDir)
@@ -91,8 +86,6 @@ version: "1.0.0"
 	if err := os.WriteFile(filepath.Join(roadyDir, "spec.yaml"), []byte(specContent), 0600); err != nil {
 		t.Fatal(err)
 	}
-
-	_ = config.SaveAIConfig(tmpDir, &config.AIConfig{Provider: "mock", Model: "test"})
 
 	// Change to temp dir
 	oldDir, _ := os.Getwd()
@@ -137,8 +130,6 @@ version: "1.0.0"
 		t.Fatal(err)
 	}
 
-	_ = config.SaveAIConfig(tmpDir, &config.AIConfig{Provider: "mock", Model: "test"})
-
 	// Change to temp dir
 	oldDir, _ := os.Getwd()
 	_ = os.Chdir(tmpDir)
@@ -164,8 +155,6 @@ version: "1.0.0"
 	if err := os.WriteFile(filepath.Join(roadyDir, "spec.yaml"), []byte(specContent), 0600); err != nil {
 		t.Fatal(err)
 	}
-
-	_ = config.SaveAIConfig(tmpDir, &config.AIConfig{Provider: "mock", Model: "test"})
 
 	// Change to temp dir
 	oldDir, _ := os.Getwd()
@@ -197,8 +186,6 @@ version: "1.0.0"
 		t.Fatal(err)
 	}
 
-	_ = config.SaveAIConfig(tmpDir, &config.AIConfig{Provider: "mock", Model: "test"})
-
 	// Change to temp dir
 	oldDir, _ := os.Getwd()
 	_ = os.Chdir(tmpDir)
@@ -224,8 +211,6 @@ version: "1.0.0"
 	if err := os.WriteFile(filepath.Join(roadyDir, "spec.yaml"), []byte(specContent), 0600); err != nil {
 		t.Fatal(err)
 	}
-
-	_ = config.SaveAIConfig(tmpDir, &config.AIConfig{Provider: "mock", Model: "test"})
 
 	// Change to temp dir
 	oldDir, _ := os.Getwd()

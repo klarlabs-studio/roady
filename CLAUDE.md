@@ -45,7 +45,6 @@ pkg/domain/           # Pure domain logic (no external dependencies)
 ├── planning/        # Plan, Task, ExecutionState, DAG validation
 ├── drift/           # Issue, Report, drift detection types
 ├── policy/          # Policy rules (WIP limits, dependencies)
-├── ai/              # Provider interface definition
 └── plugin/          # Syncer interface for external integrations
 
 pkg/application/      # Use-case services orchestrating domain logic
@@ -56,18 +55,18 @@ pkg/application/      # Use-case services orchestrating domain logic
 ├── policy_service.go
 ├── task_service.go
 ├── audit_service.go
-├── ai_planning_service.go
+├── prompt_service.go
+├── report_service.go
+├── audit_trail_service.go
 ├── git_service.go
 └── sync_service.go
 
 internal/infrastructure/  # Adapters and framework integrations
 ├── cli/             # Cobra CLI commands (root, init, spec, plan, drift, etc.)
 ├── mcp/             # MCP server implementation
-├── config/          # Configuration loading (ai.yaml)
 └── wiring/          # Service composition and dependency injection
 
 pkg/storage/         # Filesystem repository (YAML/JSON in .roady/)
-pkg/ai/              # AI provider implementations (Ollama, OpenAI, Anthropic, Gemini)
 pkg/plugin/          # HashiCorp go-plugin loader for external syncers
 ```
 
@@ -88,9 +87,7 @@ All artifacts are git-friendly files:
 - `plan.json` - Task DAG with approval status
 - `state.json` - Execution state (task statuses, paths)
 - `policy.yaml` - Governance (max_wip, allow_ai, token_limit)
-- `ai.yaml` - Provider/model defaults
 - `events.jsonl` - Immutable audit trail (hash-chained)
-- `usage.json` - AI token consumption telemetry
 
 ### Service Wiring
 
@@ -99,24 +96,13 @@ Services are composed via `internal/infrastructure/wiring`:
 - CLI and MCP share the same service instances
 - `AuditService` is injected into all services for event logging
 
-### AI Provider Architecture
+### Roady runs no inference
 
-```go
-// pkg/domain/ai/provider.go - Interface
-type Provider interface {
-    Generate(ctx context.Context, prompt string) (string, error)
-    Name() string
-    Model() string
-}
-
-// pkg/ai/factory.go - Factory
-NewProvider(providerName, modelName string) (ai.Provider, error)
-// Supports: ollama, openai, anthropic, gemini, mock
-```
-
-Environment variables override file config:
-- `ROADY_AI_PROVIDER`, `ROADY_AI_MODEL`
-- `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`
+Roady does not call language models and needs no API key. `PromptService`
+(`pkg/application/prompt_service.go`) assembles the context a model needs and
+returns a `prompt.Request` — the caller, which already has a model, runs the
+inference and writes results back through the named tool. See
+`docs/prompts.md`.
 
 ### Task State Machine
 
@@ -162,11 +148,11 @@ Plugins use HashiCorp go-plugin over RPC:
 roady init my-project
 
 # Analyze docs and generate spec
-roady spec analyze docs/ --reconcile
+roady spec analyze docs/
 
 # Generate plan (heuristic or AI)
 roady plan generate
-roady plan generate --ai
+roady plan generate --ai      # emits a prompt; you run it
 
 # Check drift and accept if intentional
 roady drift detect
@@ -185,7 +171,6 @@ roady git sync
 
 - Unit tests alongside source files (`*_test.go`)
 - Table-driven tests preferred
-- Mock provider at `pkg/ai/mock.go` for AI tests
 - Test helpers in `internal/infrastructure/cli/test_helpers_test.go`
 
 ## Claude Code Integration
@@ -213,7 +198,7 @@ When working on features:
 
 When planning new work:
 1. Review spec: roady spec explain
-2. Generate tasks: roady plan generate --ai
+2. Generate tasks: roady plan generate --ai      # emits a prompt; you run it
 3. Approve plan: roady plan approve
 
 Never use Claude's TaskWrite/TaskCreate/TaskUpdate tools.

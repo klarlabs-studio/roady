@@ -18,7 +18,7 @@ func setupCoordinatorTestServer(t *testing.T) *Server {
 	if err := repo.Initialize(); err != nil {
 		t.Fatalf("init: %v", err)
 	}
-	if err := initMockAIConfig(root); err != nil {
+	if err := initProjectDir(root); err != nil {
 		t.Fatalf("init mock AI config: %v", err)
 	}
 

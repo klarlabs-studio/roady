@@ -60,14 +60,8 @@ type SyncResult struct {
 
 ## 2. AI Configuration
 
-Roady records provider/model defaults in `.roady/ai.yaml`. If a file doesn’t exist,
-the CLI falls back to `ollama` with `llama3`. Environment variables (`ROADY_AI_PROVIDER`
-and `ROADY_AI_MODEL`) override either location.
+Roady runs no inference and needs no model configuration. See `docs/prompts.md`.
 
-```yaml
-provider: ollama
-model: qwen3:8b
-```
 
 Use `roady ai configure` to update this file alongside `.roady/policy.yaml`, and keep
 `policy.yaml` focused on limits (`max_wip`, `allow_ai`, `token_limit`). All MCP transports

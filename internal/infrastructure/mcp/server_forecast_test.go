@@ -9,7 +9,6 @@ import (
 
 	"github.com/felixgeelhaar/roady/pkg/domain/prompt"
 
-	"github.com/felixgeelhaar/roady/internal/infrastructure/config"
 	"github.com/felixgeelhaar/roady/pkg/application"
 	"github.com/felixgeelhaar/roady/pkg/domain"
 	"github.com/felixgeelhaar/roady/pkg/domain/planning"
@@ -79,10 +78,6 @@ func TestServerForecastAndExplainDrift(t *testing.T) {
 
 	if err := repo.SavePolicy(&domain.PolicyConfig{AllowAI: true}); err != nil {
 		t.Fatalf("save policy: %v", err)
-	}
-
-	if err := config.SaveAIConfig(tempDir, &config.AIConfig{Provider: "mock", Model: "test"}); err != nil {
-		t.Fatalf("save ai config: %v", err)
 	}
 
 	audit := application.NewAuditService(repo)

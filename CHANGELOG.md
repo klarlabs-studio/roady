@@ -10,6 +10,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 MCP schema version is now **3.0.0** (see `docs/mcp-schema-changelog.md`);
 `pkg/sdk` moves to `SupportedSchemaMajor = "3"` to match.
 
+### Removed — leftover AI configuration
+
+End-to-end evaluation found `roady ai configure` and the AI half of
+`roady config wizard` still writing `.roady/ai.yaml` — configuring a provider
+that nothing reads any more. A user could set one up and never learn why it
+had no effect. Both are gone, along with `internal/infrastructure/config`.
+
+`CLAUDE.md` and `docs/integrations.md` still documented `pkg/ai/`, `ai.yaml`,
+and `ROADY_AI_PROVIDER`. `CLAUDE.md` is the file agents read to work on this
+repo, so it was actively misdirecting them.
+
 ### Fixed — MCP tool errors reach the agent
 
 Every tool reported failures as JSON-RPC protocol faults, so the library

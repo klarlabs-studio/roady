@@ -3093,8 +3093,9 @@ func TestCov2_ConfigWizardCmd(t *testing.T) {
 	if !strings.Contains(output, "Configuration Wizard") {
 		t.Errorf("expected wizard header, got: %s", output)
 	}
-	if !strings.Contains(output, "AI configuration saved") {
-		t.Errorf("expected AI config saved message, got: %s", output)
+	// The wizard no longer configures a provider — Roady runs no inference.
+	if strings.Contains(output, "AI Provider Configuration") {
+		t.Errorf("wizard should not offer provider setup any more, got: %s", output)
 	}
 	if !strings.Contains(output, "Policy configuration saved") {
 		t.Errorf("expected policy saved message, got: %s", output)

@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/felixgeelhaar/roady/internal/infrastructure/config"
 	"github.com/felixgeelhaar/roady/pkg/domain"
 	"github.com/felixgeelhaar/roady/pkg/domain/planning"
 	"github.com/felixgeelhaar/roady/pkg/domain/spec"
@@ -21,10 +20,6 @@ func TestServerHandlersExercise(t *testing.T) {
 	repo := storage.NewFilesystemRepository(root)
 	if err := repo.Initialize(); err != nil {
 		t.Fatalf("initialize repo: %v", err)
-	}
-
-	if err := config.SaveAIConfig(root, &config.AIConfig{Provider: "mock", Model: "coverage-test"}); err != nil {
-		t.Fatalf("save ai config: %v", err)
 	}
 
 	specFile := &spec.ProductSpec{
@@ -214,7 +209,7 @@ func TestServerPlanEventsLogged(t *testing.T) {
 	if err := repo.Initialize(); err != nil {
 		t.Fatalf("initialize repo: %v", err)
 	}
-	if err := initMockAIConfig(root); err != nil {
+	if err := initProjectDir(root); err != nil {
 		t.Fatalf("init mock AI config: %v", err)
 	}
 
@@ -281,7 +276,7 @@ func TestServicesForPath_DefaultRoot(t *testing.T) {
 	if err := repo.Initialize(); err != nil {
 		t.Fatalf("initialize repo: %v", err)
 	}
-	if err := initMockAIConfig(root); err != nil {
+	if err := initProjectDir(root); err != nil {
 		t.Fatalf("init mock AI config: %v", err)
 	}
 	if err := repo.SaveSpec(&spec.ProductSpec{ID: "test", Title: "Test"}); err != nil {
@@ -318,7 +313,7 @@ func TestServicesForPath_Override(t *testing.T) {
 	if err := repoA.Initialize(); err != nil {
 		t.Fatalf("initialize repo A: %v", err)
 	}
-	if err := initMockAIConfig(rootA); err != nil {
+	if err := initProjectDir(rootA); err != nil {
 		t.Fatalf("init mock AI config: %v", err)
 	}
 	if err := repoA.SaveSpec(&spec.ProductSpec{ID: "project-a", Title: "Project A"}); err != nil {
@@ -330,7 +325,7 @@ func TestServicesForPath_Override(t *testing.T) {
 	if err := repoB.Initialize(); err != nil {
 		t.Fatalf("initialize repo B: %v", err)
 	}
-	if err := initMockAIConfig(rootB); err != nil {
+	if err := initProjectDir(rootB); err != nil {
 		t.Fatalf("init mock AI config B: %v", err)
 	}
 	if err := repoB.SaveSpec(&spec.ProductSpec{ID: "project-b", Title: "Project B"}); err != nil {
@@ -359,7 +354,7 @@ func TestServicesForPath_CacheHitAndEviction(t *testing.T) {
 	if err := repoA.Initialize(); err != nil {
 		t.Fatalf("init repo A: %v", err)
 	}
-	if err := initMockAIConfig(rootA); err != nil {
+	if err := initProjectDir(rootA); err != nil {
 		t.Fatalf("mock AI config A: %v", err)
 	}
 	if err := repoA.SaveSpec(&spec.ProductSpec{ID: "a", Title: "A"}); err != nil {
@@ -379,7 +374,7 @@ func TestServicesForPath_CacheHitAndEviction(t *testing.T) {
 		if err := repo.Initialize(); err != nil {
 			t.Fatalf("init repo %d: %v", i, err)
 		}
-		if err := initMockAIConfig(d); err != nil {
+		if err := initProjectDir(d); err != nil {
 			t.Fatalf("mock AI config %d: %v", i, err)
 		}
 		if err := repo.SaveSpec(&spec.ProductSpec{ID: "p", Title: "P"}); err != nil {
@@ -424,7 +419,7 @@ func TestHandleGetSpec_WithProjectPath(t *testing.T) {
 	if err := repoA.Initialize(); err != nil {
 		t.Fatalf("initialize repo A: %v", err)
 	}
-	if err := initMockAIConfig(rootA); err != nil {
+	if err := initProjectDir(rootA); err != nil {
 		t.Fatalf("init mock AI config: %v", err)
 	}
 	if err := repoA.SaveSpec(&spec.ProductSpec{ID: "project-a", Title: "Project A"}); err != nil {
@@ -436,7 +431,7 @@ func TestHandleGetSpec_WithProjectPath(t *testing.T) {
 	if err := repoB.Initialize(); err != nil {
 		t.Fatalf("initialize repo B: %v", err)
 	}
-	if err := initMockAIConfig(rootB); err != nil {
+	if err := initProjectDir(rootB); err != nil {
 		t.Fatalf("init mock AI config B: %v", err)
 	}
 	if err := repoB.SaveSpec(&spec.ProductSpec{ID: "project-b", Title: "Project B"}); err != nil {
@@ -477,7 +472,7 @@ func TestGRPCServerStartsAndStops(t *testing.T) {
 	if err := repo.Initialize(); err != nil {
 		t.Fatalf("initialize repo: %v", err)
 	}
-	if err := initMockAIConfig(root); err != nil {
+	if err := initProjectDir(root); err != nil {
 		t.Fatalf("init mock AI config: %v", err)
 	}
 
