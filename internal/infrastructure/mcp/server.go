@@ -997,6 +997,8 @@ type TransitionTaskArgs struct {
 	Event       string `json:"event" jsonschema:"description=The transition event (start, complete, block, stop, unblock, reopen)"`
 	Evidence    string `json:"evidence,omitempty" jsonschema:"description=Optional evidence for the transition (e.g. commit hash)"`
 	Actor       string `json:"actor,omitempty" jsonschema:"description=The actor performing the transition (defaults to ai-agent)"`
+	SessionID   string `json:"session_id,omitempty" jsonschema:"description=Identifier for the agent session performing this transition. Recorded in the audit trail so work can later be traced to a specific run."`
+	Agent       string `json:"agent,omitempty" jsonschema:"description=Name of the agent performing this transition (e.g. claude-code, codex, cursor). Recorded in the audit trail."`
 	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
 	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
 }
@@ -1082,6 +1084,17 @@ func (s *Server) handleTransitionTask(ctx context.Context, args TransitionTaskAr
 	if actor == "" {
 		actor = "ai-agent"
 	}
+
+	// A caller that names its own session and agent overrides the ambient
+	// process identity — an agent forwarding the run that spawned it knows
+	// more than the server process does. Restored afterwards so one
+	// request's identity never leaks into the next.
+	if args.SessionID != "" || args.Agent != "" {
+		previous := svc.Audit.Provenance()
+		svc.Audit.SetProvenance(previous.WithSession(args.SessionID, args.Agent))
+		defer svc.Audit.SetProvenance(previous)
+	}
+
 	err = svc.Task.TransitionTask(args.TaskID, args.Event, actor, args.Evidence)
 	if err != nil {
 		return "", mcpErr(fmt.Sprintf("Failed to transition task '%s' with event '%s': %v", args.TaskID, args.Event, err))

@@ -91,6 +91,9 @@ func buildServicesWithProvider(workspace *Workspace, provider domainai.Provider,
 	if err != nil {
 		return nil, fmt.Errorf("create event-sourced audit: %w", err)
 	}
+	// Every event this process records carries the agent and session behind
+	// it, so an audit trail can answer which agent did what.
+	auditSvc.SetProvenance(AmbientProvenance())
 
 	// Create and wire event dispatcher with handlers
 	dispatcher := events.NewEventDispatcher()

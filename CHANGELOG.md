@@ -32,6 +32,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Completion estimates are withheld below three velocity data points rather
   than printing a date nobody should plan around.
 
+### Added — audit trails for GRC
+
+- `roady audit trail [task-id] [--agent X] [--session Y] [--since 30d]`
+  produces an evidence trail: chain-integrity status, findings, the task's
+  evidence and spec citation, who acted, and every recorded event. Markdown
+  or JSON. Exits non-zero when chain verification fails, so it can gate CI.
+- Every event now records the agent and session behind it. Resolution:
+  `ROADY_SESSION_ID` / `ROADY_AGENT`, then runtime detection (Claude Code,
+  Cursor, Codex, Gemini CLI), plus the surface (`cli` / `mcp` / `plugin`).
+  A session is minted once per process, so one MCP server run groups an
+  agent's whole conversation. Previously every agent recorded as the literal
+  string `ai-agent`, making "which agent did this?" unanswerable.
+- MCP `roady_transition_task` accepts `session_id` and `agent`; a
+  caller-supplied identity overrides the ambient process one.
+- `docs/audit-grc.md` documents what a trail attests — **a tamper-evident
+  record of what was asserted, not proof of identity**, since actor and agent
+  are caller-supplied and unauthenticated.
+
 ### Removed — BREAKING
 
 - The web dashboard is gone: `roady dashboard serve`, `roady dashboard

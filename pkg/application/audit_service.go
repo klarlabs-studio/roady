@@ -5,11 +5,26 @@ import (
 	"time"
 
 	"github.com/felixgeelhaar/roady/pkg/domain"
+	"github.com/felixgeelhaar/roady/pkg/domain/provenance"
 	"github.com/google/uuid"
 )
 
 type AuditService struct {
 	repo domain.WorkspaceRepository
+
+	// prov identifies the agent and session behind every event this service
+	// records. Stamped in Log so no call site can omit it.
+	prov provenance.Context
+}
+
+// SetProvenance sets the identity stamped onto subsequently recorded events.
+func (s *AuditService) SetProvenance(ctx provenance.Context) {
+	s.prov = ctx
+}
+
+// Provenance returns the identity currently being stamped.
+func (s *AuditService) Provenance() provenance.Context {
+	return s.prov
 }
 
 // Compile-time check that AuditService implements AuditLogger
@@ -32,7 +47,7 @@ func (s *AuditService) Log(action string, actor string, metadata map[string]inte
 		Timestamp: time.Now(),
 		Action:    action,
 		Actor:     actor,
-		Metadata:  metadata,
+		Metadata:  s.prov.Apply(metadata),
 		PrevHash:  prevHash,
 	}
 	event.Hash = event.CalculateHash()

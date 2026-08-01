@@ -109,6 +109,25 @@ roady notify digest --since 7d              # send
 One chat-sized summary instead of a message per task transition. Run it from
 cron or CI.
 
+**Audit — proving what happened:**
+
+```bash
+roady audit trail task-42                          # evidence trail for one task
+roady audit trail --agent claude-code --since 30d  # everything one agent did
+roady audit trail --session <id>                   # everything one run did
+```
+
+Every event records the agent and session behind it, so "which agent worked on
+this, and what proves it?" has an answer. A trail reports hash-chain integrity,
+findings (a task marked done with no evidence, entries with no agent recorded),
+the task's `doc:line` citation back to the spec, and every recorded event. It
+exits non-zero when the chain fails verification, so it can gate CI.
+
+Roady attests to **a complete, tamper-evident record of what was asserted** —
+not to who acted, since actor and agent are caller-supplied and never
+authenticated. See [`docs/audit-grc.md`](docs/audit-grc.md) before quoting a
+trail to an auditor.
+
 ## Nested sub-projects
 
 One repository can host many Roady projects in parallel:
