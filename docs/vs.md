@@ -69,13 +69,24 @@ you need Roady.
 
 These are built for human PMs and human eng teams. They have
 sprints, swimlanes, custom fields, and assignees. They do not have
-drift detection, source citations from spec docs, or MCP. Their APIs
-are not good interfaces for AI agents (rate limits, complex auth,
-high-cost reads).
+drift detection or source citations from spec docs.
+
+They **do** have MCP now, and this page previously claimed otherwise.
+Linear ships an official hosted MCP server, and Atlassian's Rovo MCP
+server reached GA in February 2026 covering Jira, Confluence, JSM,
+Bitbucket, and Compass. "Agents cannot reach them" is no longer true
+and has not been since early 2026. What Roady still has that they do
+not is the spec-lock/drift loop and `from doc:line` provenance.
 
 Roady ships a `roady-plugin-linear` / `roady-plugin-jira` /
-`roady-plugin-github` syncer if you want both: human PMs in Linear,
-agents working through Roady, state synchronised both directions.
+`roady-plugin-github` syncer. Be aware of its current limits: it
+**creates** issues from tasks and reads status back, but Roady does
+not yet push status changes out — the `Syncer.Push` method exists and
+is implemented by every plugin, but nothing in the CLI or MCP calls
+it. Inbound mapping covers `done` and `in_progress` only; `blocked`,
+`pending`, and `verified` are dropped. No field beyond title,
+description, and status maps in either direction. Closing that gap is
+tracked as the top integration priority.
 
 ### vs `dadbodgeoff/drift` (the GitHub project, not the concept)
 

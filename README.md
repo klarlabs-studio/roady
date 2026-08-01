@@ -62,6 +62,53 @@ Status, drift, and progress all show in `roady status` — including a
 `from doc:line` citation for every task so the AI's choices stay
 auditable.
 
+## Keeping people informed — without a UI
+
+Two jobs a tracker normally does with an app, Roady does with generated
+artifacts and push notifications.
+
+**Coordination — who is on what:**
+
+```bash
+roady task assign <task-id> alice
+roady task mine                   # your tasks (ROADY_USER, git user.name, or USER)
+roady task assigned alice         # someone else's
+roady task unassigned             # work nobody owns
+```
+
+Add guardrails in `.roady/policy.yaml`:
+
+```yaml
+max_wip_per_owner: 2       # cap in-progress work per person, not just per project
+enforce_team_roles: true   # a viewer in team.yaml can no longer move tasks
+```
+
+**Stakeholder reporting — a document, not a dashboard:**
+
+```bash
+roady report                                # Markdown to stdout
+roady report --since 7d                     # just this week's changes
+roady report --format html -o status.html   # ~5KB, no scripts, no requests
+roady report --format json | jq .risks      # machine-readable
+```
+
+The report carries progress, a forecast with its confidence interval, a risk
+register built from drift plus sticky debt, who is on what, and what changed.
+Commit it, email it, attach it to a PR, or publish it to a static host —
+nothing to install and nothing to log into. A completion estimate is withheld
+until there is enough velocity data to justify one.
+
+**Push it on a schedule:**
+
+```bash
+roady notify add team-chat slack https://hooks.slack.com/services/...
+roady notify digest --since 7d --dry-run    # preview
+roady notify digest --since 7d              # send
+```
+
+One chat-sized summary instead of a message per task transition. Run it from
+cron or CI.
+
 ## Live Kanban dashboard
 
 ```bash

@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — coordination
+
+- `roady task mine`, `roady task assigned <name>`, and `roady task unassigned`
+  make assignment readable. Previously `roady task assign` wrote an owner that
+  nothing could query back, so "who is working on what" had no answer.
+- MCP `roady_tasks` gains an `assignee` filter and an `unassigned` status.
+- `policy.max_wip_per_owner` caps in-progress work per person. The existing
+  project-wide `max_wip` let one person hold the entire allowance.
+- `policy.enforce_team_roles` (default `false`) makes `.roady/team.yaml` a
+  guard rather than documentation — a listed viewer can no longer transition
+  tasks. Only actors present in the roster are checked, so unlisted actors and
+  existing projects are unaffected.
+
+### Added — stakeholder reporting
+
+- `roady report` renders progress, forecast, risks, ownership, and a change
+  log as Markdown, self-contained HTML (~5KB, no scripts or external
+  requests, light/dark aware, printable), or JSON. `--since` accepts `7d`,
+  `2w`, or an absolute date.
+- `roady notify digest` sends one chat-sized progress summary through
+  configured adapters instead of a message per domain event. Supports
+  `--dry-run`, `--adapter`, and `--since`.
+- Completion estimates are withheld below three velocity data points rather
+  than printing a date nobody should plan around.
+
+### Fixed
+
+- Service-load warnings printed to stdout, corrupting `--json` output on every
+  command that offers it. They now go to stderr.
+- `roady task start` resolved the actor from `USER` while `roady task mine`
+  used `ROADY_USER` then `git user.name`; ownership and the new per-owner
+  guards disagreed about identity. Both now share one resolver.
+
 ## [0.12.0] - 2026-05-16
 
 Four polish features on top of v0.11.3's Kanban. All backward-compatible.
