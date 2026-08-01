@@ -2,6 +2,13 @@
 /roady
 /roady-plugin-*
 dist/
+# ...but not the built MCP App UIs. They are generated, yet they are also
+# //go:embed inputs, so the package does not compile without them. The bare
+# `dist/` rule above silently swallowed new files here: the existing ones are
+# tracked only because they predate it, which is why ui://roady/billing
+# shipped registered-but-missing.
+!internal/infrastructure/mcp/dist/
+!internal/infrastructure/mcp/dist/**
 
 # OS files
 .DS_Store
