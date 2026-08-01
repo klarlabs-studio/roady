@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-08-01
+
+Roady stops calling language models, and MCP tool failures become readable
+to the agent that triggered them. Both are breaking.
+
+MCP schema version is now **3.0.0** (see `docs/mcp-schema-changelog.md`);
+`pkg/sdk` requires major 3. An SDK pinned to major 2 will refuse to connect,
+by design.
+
+No API key is needed for anything any more.
+
 MCP schema version is now **3.0.0** (see `docs/mcp-schema-changelog.md`);
 `pkg/sdk` moves to `SupportedSchemaMajor = "3"` to match.
 

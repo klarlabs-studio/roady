@@ -9,7 +9,19 @@ intended **open-core boundary** for a future hosted product.
 
 ---
 
-## Now (v0.14.0 — shipped)
+## Now (v0.15.0 — shipped)
+
+- **Roady runs no inference.** The provider clients are gone. The
+  model-assisted operations return the assembled prompt plus the tool
+  that accepts the result; the caller, which already has a model, runs
+  it. No API key is needed for anything. See
+  [`docs/prompts.md`](docs/prompts.md).
+- **MCP tool errors reach the agent.** Failures are returned as results
+  carrying `isError` with a readable message, rather than as JSON-RPC
+  protocol faults the transport replaced with "internal error".
+- MCP schema 3.0.0; `pkg/sdk` requires major 3.
+
+## Earlier (v0.14.0 — shipped)
 
 - **Coordination**: owner-scoped task queries (`roady task mine |
   assigned <name> | unassigned`), per-owner WIP limits
