@@ -158,7 +158,11 @@ import Footer from '../components/Footer.astro';
             <table class="w-full text-sm">
               <tr class="border-b border-white/10">
                 <td class="py-2 text-violet-300 mono">--ai</td>
-                <td class="py-2 text-gray-400">Use AI to intelligently decompose the spec into tasks</td>
+                <td class="py-2 text-gray-400">Emit a decomposition prompt instead of generating. Run it with your own model, then write the tasks back with <code class="mono text-violet-400">roady_update_plan</code>.</td>
+              </tr>
+              <tr class="border-b border-white/10">
+                <td class="py-2 text-violet-300 mono">--json</td>
+                <td class="py-2 text-gray-400">Emit the prompt request as JSON for an agent to consume</td>
               </tr>
             </table>
             <div class="mt-4 bg-black/40 rounded-lg p-4">
@@ -203,6 +207,16 @@ import Footer from '../components/Footer.astro';
         <p class="text-gray-400 mb-6">Manage individual task lifecycle - start, complete, block, and verify.</p>
 
         <div class="space-y-6">
+          <div class="glass rounded-xl p-6">
+            <h3 class="text-lg font-semibold text-white mb-2">roady task mine · assigned · unassigned</h3>
+            <p class="text-gray-400 mb-4">Answer who is working on what. <code class="mono text-violet-400">mine</code> resolves you from <code class="mono text-violet-400">ROADY_USER</code>, then git <code class="mono text-violet-400">user.name</code>, then <code class="mono text-violet-400">USER</code>.</p>
+            <div class="bg-black/40 rounded-lg p-4">
+              <code class="text-sm text-gray-300 block">roady task mine</code>
+              <code class="text-sm text-gray-300 block mt-1">roady task assigned &lt;name&gt;</code>
+              <code class="text-sm text-gray-300 block mt-1">roady task unassigned</code>
+            </div>
+          </div>
+
           <div class="glass rounded-xl p-6">
             <h3 class="text-lg font-semibold text-white mb-2">roady task start</h3>
             <p class="text-gray-400 mb-4">Start working on a task. Validates dependencies and WIP limits.</p>
@@ -279,10 +293,29 @@ import Footer from '../components/Footer.astro';
         <div class="space-y-6">
           <div class="glass rounded-xl p-6">
             <h3 class="text-lg font-semibold text-white mb-2">roady drift detect</h3>
-            <p class="text-gray-400 mb-4">Check for discrepancies between the current Spec and Plan.</p>
-            <div class="bg-black/40 rounded-lg p-4">
+            <p class="text-gray-400 mb-4">Report where intent, plan, and reality have parted company. Exits non-zero when drift is found, so it can gate CI.</p>
+            <div class="bg-black/40 rounded-lg p-4 mb-4">
               <code class="text-sm text-gray-300">roady drift detect</code>
             </div>
+            <h4 class="text-sm font-semibold text-gray-300 mb-2">What it checks</h4>
+            <table class="w-full text-sm">
+              <tr class="border-b border-white/10">
+                <td class="py-2 text-violet-300 mono">intent</td>
+                <td class="py-2 text-gray-400">The spec changed since it was last locked</td>
+              </tr>
+              <tr class="border-b border-white/10">
+                <td class="py-2 text-violet-300 mono">plan</td>
+                <td class="py-2 text-gray-400">Requirements with no task, or tasks with no requirement</td>
+              </tr>
+              <tr class="border-b border-white/10">
+                <td class="py-2 text-violet-300 mono">code</td>
+                <td class="py-2 text-gray-400">A task marked done whose file is missing or uncommitted</td>
+              </tr>
+              <tr class="border-b border-white/10">
+                <td class="py-2 text-violet-300 mono">stale</td>
+                <td class="py-2 text-gray-400">The plan itself has fallen behind — the repository moved on without it</td>
+              </tr>
+            </table>
           </div>
 
           <div class="glass rounded-xl p-6">
@@ -613,6 +646,16 @@ import Footer from '../components/Footer.astro';
                 <td class="py-2 text-gray-400">Only changes since this point (7d, 2w, 2026-07-01)</td>
               </tr>
             </table>
+          </div>
+
+          <div class="glass rounded-xl p-6">
+            <h3 class="text-lg font-semibold text-white mb-2">roady state rebuild</h3>
+            <p class="text-gray-400 mb-4">Reconstruct <code class="mono text-violet-400">state.json</code> by replaying the event log. <code class="mono text-violet-400">events.jsonl</code> union-merges cleanly, but <code class="mono text-violet-400">state.json</code> is a whole-file document and will still conflict; it is derived data, so keep either side and replay.</p>
+            <div class="bg-black/40 rounded-lg p-4 mb-4">
+              <code class="text-sm text-gray-300 block">git checkout --ours .roady/state.json</code>
+              <code class="text-sm text-gray-300 block mt-1">roady state rebuild --dry-run</code>
+              <code class="text-sm text-gray-300 block mt-1">roady state rebuild</code>
+            </div>
           </div>
 
           <div class="glass rounded-xl p-6">
@@ -1095,14 +1138,6 @@ import Footer from '../components/Footer.astro';
           </div>
 
           <div class="glass rounded-xl p-6">
-            <h3 class="text-lg font-semibold text-white mb-2">roady ai configure</h3>
-            <p class="text-gray-400 mb-4">Configure AI provider and policy settings.</p>
-            <div class="bg-black/40 rounded-lg p-4">
-              <code class="text-sm text-gray-300">roady ai configure</code>
-            </div>
-          </div>
-
-          <div class="glass rounded-xl p-6">
             <h3 class="text-lg font-semibold text-white mb-2">roady audit verify</h3>
             <p class="text-gray-400 mb-4">Verify the integrity of the project audit trail (hash-chain verification).</p>
             <div class="bg-black/40 rounded-lg p-4">
@@ -1145,24 +1180,16 @@ import Footer from '../components/Footer.astro';
             </thead>
             <tbody>
               <tr class="border-b border-white/10">
-                <td class="py-3 text-violet-300 mono">ROADY_AI_PROVIDER</td>
-                <td class="py-3 text-gray-400">AI provider (ollama, openai, anthropic, gemini)</td>
+                <td class="py-3 text-violet-300 mono">ROADY_SESSION_ID</td>
+                <td class="py-3 text-gray-400">Session recorded in the audit trail (generated per run when unset)</td>
               </tr>
               <tr class="border-b border-white/10">
-                <td class="py-3 text-violet-300 mono">ROADY_AI_MODEL</td>
-                <td class="py-3 text-gray-400">AI model name</td>
+                <td class="py-3 text-violet-300 mono">ROADY_AGENT</td>
+                <td class="py-3 text-gray-400">Agent name recorded in the audit trail (auto-detected for Claude Code, Cursor, Codex, Gemini CLI)</td>
               </tr>
               <tr class="border-b border-white/10">
-                <td class="py-3 text-violet-300 mono">OPENAI_API_KEY</td>
-                <td class="py-3 text-gray-400">OpenAI API key</td>
-              </tr>
-              <tr class="border-b border-white/10">
-                <td class="py-3 text-violet-300 mono">ANTHROPIC_API_KEY</td>
-                <td class="py-3 text-gray-400">Anthropic API key</td>
-              </tr>
-              <tr class="border-b border-white/10">
-                <td class="py-3 text-violet-300 mono">GEMINI_API_KEY</td>
-                <td class="py-3 text-gray-400">Google Gemini API key</td>
+                <td class="py-3 text-violet-300 mono">ROADY_USER</td>
+                <td class="py-3 text-gray-400">Task owner for assignment and per-owner WIP limits</td>
               </tr>
               <tr class="border-b border-white/10">
                 <td class="py-3 text-violet-300 mono">GITHUB_WEBHOOK_SECRET</td>
@@ -1217,10 +1244,6 @@ import Footer from '../components/Footer.astro';
               <tr class="border-b border-white/10">
                 <td class="py-3 text-violet-300 mono">policy.yaml</td>
                 <td class="py-3 text-gray-400">Governance (max_wip, allow_ai, token_limit)</td>
-              </tr>
-              <tr class="border-b border-white/10">
-                <td class="py-3 text-violet-300 mono">ai.yaml</td>
-                <td class="py-3 text-gray-400">AI provider/model defaults</td>
               </tr>
               <tr class="border-b border-white/10">
                 <td class="py-3 text-violet-300 mono">events.jsonl</td>

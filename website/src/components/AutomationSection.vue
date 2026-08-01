@@ -9,7 +9,7 @@ const lines = [
   { type: 'output', text: 'Score: 85/100' },
   { type: 'highlight', text: '2 findings: 1 warning, 1 info' },
   { type: 'output', text: '' },
-  { type: 'command', text: '$ roady plan smart-decompose' },
+  { type: 'command', text: '$ roady report --format html -o status.html' },
   { type: 'success', text: '✓ 8 tasks generated from codebase analysis' },
   { type: 'output', text: '' },
   { type: 'command', text: '$ roady task assign auth-api alice' },
@@ -97,9 +97,9 @@ function getLineClass(type: string): string {
               <i data-lucide="shield-check" class="w-5 h-5"></i>
             </div>
             <div>
-              <h4 class="text-white font-semibold mb-1">Policy-Driven AI</h4>
+              <h4 class="text-white font-semibold mb-1">No model of its own</h4>
               <p class="text-sm">
-                Guard agentic spending with hard token limits and vendor-agnostic routing (OpenAI, Anthropic, Gemini, Ollama).
+                Roady runs no inference and holds no API key. It assembles the context a model needs and hands it to the agent that already has one.
               </p>
             </div>
           </div>
