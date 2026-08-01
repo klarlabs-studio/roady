@@ -21,7 +21,7 @@ func (s *Server) handleOrgPolicy(ctx context.Context, args OrgPolicyArgs) (any, 
 
 	merged, err := s.orgSvc.LoadMergedPolicy(projectPath)
 	if err != nil {
-		return nil, mcpErr("Failed to load merged policy.")
+		return mcpErr("Failed to load merged policy."), nil
 	}
 	return merged, nil
 }
@@ -30,7 +30,7 @@ func (s *Server) handleOrgPolicy(ctx context.Context, args OrgPolicyArgs) (any, 
 func (s *Server) handleOrgDetectDrift(ctx context.Context, args GetSpecArgs) (any, error) {
 	report, err := s.orgSvc.DetectCrossDrift()
 	if err != nil {
-		return nil, mcpErr("Failed to detect cross-project drift.")
+		return mcpErr("Failed to detect cross-project drift."), nil
 	}
 	return report, nil
 }
@@ -51,7 +51,7 @@ func (s *Server) pluginSvcForPath(projectPath, project string) *application.Plug
 func (s *Server) handlePluginList(ctx context.Context, args GetSpecArgs) (any, error) {
 	plugins, err := s.pluginSvcForPath(args.ProjectPath, args.Project).ListPlugins()
 	if err != nil {
-		return nil, mcpErr("Failed to list plugins.")
+		return mcpErr("Failed to list plugins."), nil
 	}
 	return plugins, nil
 }
@@ -65,7 +65,7 @@ type PluginValidateArgs struct {
 func (s *Server) handlePluginValidate(ctx context.Context, args PluginValidateArgs) (any, error) {
 	result, err := s.pluginSvcForPath(args.ProjectPath, args.Project).ValidatePlugin(args.Name)
 	if err != nil {
-		return nil, mcpErr("Failed to validate plugin.")
+		return mcpErr("Failed to validate plugin."), nil
 	}
 	return result, nil
 }
@@ -81,13 +81,13 @@ func (s *Server) handlePluginStatus(ctx context.Context, args PluginStatusArgs) 
 	if args.Name != "" {
 		result, err := psvc.CheckHealth(args.Name)
 		if err != nil {
-			return nil, mcpErr("Failed to check plugin health.")
+			return mcpErr("Failed to check plugin health."), nil
 		}
 		return result, nil
 	}
 	results, err := psvc.CheckAllHealth()
 	if err != nil {
-		return nil, mcpErr("Failed to check plugin health.")
+		return mcpErr("Failed to check plugin health."), nil
 	}
 	return results, nil
 }
@@ -102,7 +102,7 @@ func (s *Server) handleMessagingList(ctx context.Context, args GetSpecArgs) (any
 	repo := storage.NewFilesystemRepository(root)
 	cfg, err := repo.LoadMessagingConfig()
 	if err != nil {
-		return nil, mcpErr("Failed to load messaging config.")
+		return mcpErr("Failed to load messaging config."), nil
 	}
 	return cfg, nil
 }

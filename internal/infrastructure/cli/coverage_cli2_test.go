@@ -606,38 +606,7 @@ func TestCov2_SpecExplainCmd(t *testing.T) {
 }
 
 // ============================================================================
-// spec.go - specParseCmd - No input (lines 209-233)
 // ============================================================================
-
-func TestCov2_SpecParseCmd_NoInput(t *testing.T) {
-	_, cleanup := withTempDir(t)
-	defer cleanup()
-	setupBasicRepo2(t)
-
-	specParseCmd.SetContext(context.Background())
-	err := specParseCmd.RunE(specParseCmd, []string{})
-	if err == nil {
-		t.Error("expected error for no input")
-	}
-	if !strings.Contains(err.Error(), "no input") {
-		t.Errorf("unexpected error: %v", err)
-	}
-}
-
-func TestCov2_SpecParseCmd_EmptyInput(t *testing.T) {
-	_, cleanup := withTempDir(t)
-	defer cleanup()
-	setupBasicRepo2(t)
-
-	specParseCmd.SetContext(context.Background())
-	err := specParseCmd.RunE(specParseCmd, []string{""})
-	if err == nil {
-		t.Error("expected error for empty input")
-	}
-	if !strings.Contains(err.Error(), "empty") {
-		t.Errorf("unexpected error: %v", err)
-	}
-}
 
 // ============================================================================
 // deps.go - Add success with description (lines 88-95)

@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/felixgeelhaar/roady/pkg/domain/prompt"
+
 	"github.com/felixgeelhaar/roady/internal/infrastructure/config"
 	"github.com/felixgeelhaar/roady/pkg/application"
 	"github.com/felixgeelhaar/roady/pkg/domain"
@@ -107,11 +109,20 @@ func TestServerForecastAndExplainDrift(t *testing.T) {
 		t.Fatalf("unexpected forecast: %s", string(forecastJSON))
 	}
 
+	// Roady no longer explains drift itself; it hands back the prompt for
+	// the caller's own model to run.
 	explanation, err := server.handleExplainDrift(ctx, ExplainDriftArgs{})
 	if err != nil {
 		t.Fatalf("explain drift failed: %v", err)
 	}
-	if !strings.Contains(explanation, "Mock response for prompt") {
-		t.Fatalf("unexpected explanation: %s", explanation)
+	req, ok := explanation.(*prompt.Request)
+	if !ok {
+		t.Fatalf("expected a prompt request, got %T", explanation)
+	}
+	if req.Operation != prompt.OpExplainDrift {
+		t.Errorf("operation = %q, want %q", req.Operation, prompt.OpExplainDrift)
+	}
+	if req.Prompt == "" {
+		t.Error("expected an assembled prompt")
 	}
 }

@@ -23,7 +23,7 @@ func TestLoadServicesSucceeds(t *testing.T) {
 	if err != nil {
 		t.Fatalf("load services: %v", err)
 	}
-	if services == nil || services.Plan == nil || services.AI == nil {
+	if services == nil || services.Plan == nil || services.Prompt == nil {
 		t.Fatalf("expected services, got %+v", services)
 	}
 }
@@ -159,16 +159,13 @@ func TestLoadServices_AIProviderFails(t *testing.T) {
 		t.Fatalf("initialize repo: %v", err)
 	}
 
-	// Without AI config, services should still load (soft failure).
-	// AI-dependent tools will fail at call time, not at startup.
+	// There is no provider to configure any more — Roady assembles prompts
+	// and the caller runs inference — so services must load regardless.
 	svc, err := loadServices(tempDir)
 	if err != nil {
-		t.Fatalf("expected no error (soft failure), got: %v", err)
+		t.Fatalf("expected no error, got: %v", err)
 	}
-	if svc == nil {
-		t.Fatal("expected non-nil services even without AI provider")
-	}
-	if svc.Provider != nil {
-		t.Fatal("expected nil Provider when AI is not configured")
+	if svc == nil || svc.Prompt == nil {
+		t.Fatal("expected services with a prompt builder")
 	}
 }

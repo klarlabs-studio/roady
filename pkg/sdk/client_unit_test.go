@@ -994,7 +994,7 @@ func TestClient_GetSchema(t *testing.T) {
 func TestClient_Compatible(t *testing.T) {
 	mt := newMockTransport()
 	// Same major as SupportedSchemaMajor, newer minor: compatible.
-	mt.setResourceResponse(`{"schema_version":"2.2.0","server_version":"0.14.0","changelog":"https://example.com"}`)
+	mt.setResourceResponse(`{"schema_version":"3.2.0","server_version":"0.15.0","changelog":"https://example.com"}`)
 	c := newTestClient(t, mt)
 
 	if err := c.Compatible(context.Background()); err != nil {
@@ -1005,7 +1005,7 @@ func TestClient_Compatible(t *testing.T) {
 func TestClient_Compatible_Incompatible(t *testing.T) {
 	mt := newMockTransport()
 	// A server still on the previous major must be rejected.
-	mt.setResourceResponse(`{"schema_version":"1.0.0","server_version":"0.12.0","changelog":"https://example.com"}`)
+	mt.setResourceResponse(`{"schema_version":"2.0.0","server_version":"0.14.0","changelog":"https://example.com"}`)
 	c := newTestClient(t, mt)
 
 	err := c.Compatible(context.Background())
@@ -1061,8 +1061,8 @@ func TestNewClient_CustomRetry(t *testing.T) {
 // be imported here, so the literal is the coupling — when the server's major
 // changes, this test is the reminder to move the SDK with it.
 func TestSupportedSchemaMajor(t *testing.T) {
-	if SupportedSchemaMajor != "2" {
-		t.Errorf("expected '2', got %q", SupportedSchemaMajor)
+	if SupportedSchemaMajor != "3" {
+		t.Errorf("expected '3', got %q", SupportedSchemaMajor)
 	}
 }
 

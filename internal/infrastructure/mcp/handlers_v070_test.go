@@ -289,17 +289,13 @@ func TestServer_HandleTeamAdd_Validation(t *testing.T) {
 	}
 
 	t.Run("EmptyName", func(t *testing.T) {
-		_, err := server.handleTeamAdd(context.Background(), TeamAddArgs{Name: "", Role: "admin"})
-		if err == nil {
-			t.Error("expected error for empty name")
-		}
+		res, err := server.handleTeamAdd(context.Background(), TeamAddArgs{Name: "", Role: "admin"})
+		assertToolError(t, res, err, "")
 	})
 
 	t.Run("EmptyRole", func(t *testing.T) {
-		_, err := server.handleTeamAdd(context.Background(), TeamAddArgs{Name: "Bob", Role: ""})
-		if err == nil {
-			t.Error("expected error for empty role")
-		}
+		res, err := server.handleTeamAdd(context.Background(), TeamAddArgs{Name: "Bob", Role: ""})
+		assertToolError(t, res, err, "")
 	})
 }
 
@@ -355,10 +351,8 @@ func TestServer_HandleTeamRemove_Validation(t *testing.T) {
 		t.Fatalf("create server: %v", err)
 	}
 
-	_, err = server.handleTeamRemove(context.Background(), TeamRemoveArgs{Name: ""})
-	if err == nil {
-		t.Error("expected error for empty name")
-	}
+	res, err := server.handleTeamRemove(context.Background(), TeamRemoveArgs{Name: ""})
+	assertToolError(t, res, err, "")
 }
 
 func TestServer_HandleRateList(t *testing.T) {
@@ -417,7 +411,7 @@ func TestServer_HandleRateAdd(t *testing.T) {
 		t.Fatalf("handleRateAdd failed: %v", err)
 	}
 
-	if result == "" {
+	if result == nil {
 		t.Error("expected non-empty result")
 	}
 }
@@ -442,23 +436,19 @@ func TestServer_HandleRateAdd_Validation(t *testing.T) {
 	}
 
 	t.Run("EmptyID", func(t *testing.T) {
-		_, err := server.handleRateAdd(context.Background(), RateAddArgs{
+		res, err := server.handleRateAdd(context.Background(), RateAddArgs{
 			ID:   "",
 			Name: "Test",
 		})
-		if err == nil {
-			t.Error("expected error for empty ID")
-		}
+		assertToolError(t, res, err, "")
 	})
 
 	t.Run("EmptyName", func(t *testing.T) {
-		_, err := server.handleRateAdd(context.Background(), RateAddArgs{
+		res, err := server.handleRateAdd(context.Background(), RateAddArgs{
 			ID:   "test",
 			Name: "",
 		})
-		if err == nil {
-			t.Error("expected error for empty name")
-		}
+		assertToolError(t, res, err, "")
 	})
 }
 
@@ -518,10 +508,8 @@ func TestServer_HandleRateRemove_Validation(t *testing.T) {
 		t.Fatalf("create server: %v", err)
 	}
 
-	_, err = server.handleRateRemove(context.Background(), RateRemoveArgs{ID: ""})
-	if err == nil {
-		t.Error("expected error for empty ID")
-	}
+	res, err := server.handleRateRemove(context.Background(), RateRemoveArgs{ID: ""})
+	assertToolError(t, res, err, "")
 }
 
 func TestServer_HandleRateSetDefault(t *testing.T) {
@@ -580,10 +568,8 @@ func TestServer_HandleRateSetDefault_Validation(t *testing.T) {
 		t.Fatalf("create server: %v", err)
 	}
 
-	_, err = server.handleRateSetDefault(context.Background(), RateSetDefaultArgs{ID: ""})
-	if err == nil {
-		t.Error("expected error for empty ID")
-	}
+	res, err := server.handleRateSetDefault(context.Background(), RateSetDefaultArgs{ID: ""})
+	assertToolError(t, res, err, "")
 }
 
 func TestServer_HandleRateTax(t *testing.T) {
@@ -639,33 +625,27 @@ func TestServer_HandleRateTax_Validation(t *testing.T) {
 	}
 
 	t.Run("EmptyName", func(t *testing.T) {
-		_, err := server.handleRateTax(context.Background(), RateTaxArgs{
+		res, err := server.handleRateTax(context.Background(), RateTaxArgs{
 			Name:    "",
 			Percent: 20.0,
 		})
-		if err == nil {
-			t.Error("expected error for empty name")
-		}
+		assertToolError(t, res, err, "")
 	})
 
 	t.Run("NegativePercent", func(t *testing.T) {
-		_, err := server.handleRateTax(context.Background(), RateTaxArgs{
+		res, err := server.handleRateTax(context.Background(), RateTaxArgs{
 			Name:    "VAT",
 			Percent: -10.0,
 		})
-		if err == nil {
-			t.Error("expected error for negative percent")
-		}
+		assertToolError(t, res, err, "")
 	})
 
 	t.Run("PercentOver100", func(t *testing.T) {
-		_, err := server.handleRateTax(context.Background(), RateTaxArgs{
+		res, err := server.handleRateTax(context.Background(), RateTaxArgs{
 			Name:    "VAT",
 			Percent: 150.0,
 		})
-		if err == nil {
-			t.Error("expected error for percent over 100")
-		}
+		assertToolError(t, res, err, "")
 	})
 }
 
@@ -731,33 +711,27 @@ func TestServer_HandleTaskLogTime_Validation(t *testing.T) {
 	}
 
 	t.Run("EmptyTaskID", func(t *testing.T) {
-		_, err := server.handleTaskLogTime(context.Background(), TaskLogTimeArgs{
+		res, err := server.handleTaskLogTime(context.Background(), TaskLogTimeArgs{
 			TaskID:  "",
 			Minutes: 60,
 		})
-		if err == nil {
-			t.Error("expected error for empty task ID")
-		}
+		assertToolError(t, res, err, "")
 	})
 
 	t.Run("ZeroMinutes", func(t *testing.T) {
-		_, err := server.handleTaskLogTime(context.Background(), TaskLogTimeArgs{
+		res, err := server.handleTaskLogTime(context.Background(), TaskLogTimeArgs{
 			TaskID:  "task-1",
 			Minutes: 0,
 		})
-		if err == nil {
-			t.Error("expected error for zero minutes")
-		}
+		assertToolError(t, res, err, "")
 	})
 
 	t.Run("NegativeMinutes", func(t *testing.T) {
-		_, err := server.handleTaskLogTime(context.Background(), TaskLogTimeArgs{
+		res, err := server.handleTaskLogTime(context.Background(), TaskLogTimeArgs{
 			TaskID:  "task-1",
 			Minutes: -30,
 		})
-		if err == nil {
-			t.Error("expected error for negative minutes")
-		}
+		assertToolError(t, res, err, "")
 	})
 }
 
@@ -895,10 +869,8 @@ func TestServer_HandleSync_Error(t *testing.T) {
 		t.Fatalf("create server: %v", err)
 	}
 
-	_, err = server.handleSync(context.Background(), SyncArgs{PluginPath: "/nonexistent/binary"})
-	if err == nil {
-		t.Error("expected sync error for missing plugin")
-	}
+	res, err := server.handleSync(context.Background(), SyncArgs{PluginPath: "/nonexistent/binary"})
+	assertToolError(t, res, err, "")
 }
 
 func TestServer_HandleWorkspacePushPull_Error(t *testing.T) {
@@ -920,18 +892,16 @@ func TestServer_HandleWorkspacePushPull_Error(t *testing.T) {
 		t.Fatalf("create server: %v", err)
 	}
 
-	if _, err := server.handleWorkspacePush(context.Background(), WorkspacePushArgs{}); err == nil {
-		t.Error("expected error for workspace push without git")
-	}
-	if _, err := server.handleWorkspacePull(context.Background(), WorkspacePullArgs{}); err == nil {
-		t.Error("expected error for workspace pull without git")
-	}
+	// Without a git repository both report a tool error the agent can read.
+	pushRes, pushErr := server.handleWorkspacePush(context.Background(), WorkspacePushArgs{})
+	assertToolError(t, pushRes, pushErr, "")
+
+	pullRes, pullErr := server.handleWorkspacePull(context.Background(), WorkspacePullArgs{})
+	assertToolError(t, pullRes, pullErr, "")
 }
 
 func TestServer_HandleSmartDecompose_NoService(t *testing.T) {
 	server := &Server{root: t.TempDir()}
-	_, err := server.handleSmartDecompose(context.Background(), SmartDecomposeArgs{})
-	if err == nil {
-		t.Error("expected error when AI service is nil")
-	}
+	res, err := server.handleSmartDecompose(context.Background(), SmartDecomposeArgs{})
+	assertToolError(t, res, err, "")
 }

@@ -50,7 +50,8 @@ roady setup claude-code           # or claude-desktop, opencode, openai, gemini
 roady init my-project
 roady spec analyze docs/          # parses markdown, captures source citations
 
-# 3. Generate a plan (heuristic by default; --ai for richer decomposition)
+# 3. Generate a plan (deterministic by default; --ai emits a prompt for
+#    your own model to run, then write the tasks back)
 roady plan generate
 roady plan approve
 
@@ -132,6 +133,20 @@ Roady attests to **a complete, tamper-evident record of what was asserted** —
 not to who acted, since actor and agent are caller-supplied and never
 authenticated. See [`docs/audit-grc.md`](docs/audit-grc.md) before quoting a
 trail to an auditor.
+
+## Roady runs no inference
+
+Roady does not call language models. It assembles the context one needs and
+hands it back — you or your agent already has a model:
+
+```bash
+roady query "what is left to do?"        # prompt on stdout, pipeable
+roady plan generate --ai --json          # the request as JSON for an agent
+```
+
+Requests that produce data Roady stores name the tool that accepts it
+(`decompose_spec` → `roady_update_plan`). No API key is needed for anything.
+See [`docs/prompts.md`](docs/prompts.md).
 
 ## Nested sub-projects
 

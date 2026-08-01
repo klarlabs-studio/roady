@@ -737,7 +737,7 @@ func TestDriftDetectCmd_JSON(t *testing.T) {
 	}
 }
 
-func TestSpecExplainCmd_AI(t *testing.T) {
+func TestSpecExplainCmd_EmitsPrompt(t *testing.T) {
 	_, cleanup := withTempDir(t)
 	defer cleanup()
 
@@ -752,21 +752,19 @@ func TestSpecExplainCmd_AI(t *testing.T) {
 		},
 	})
 
-	t.Setenv("ROADY_AI_PROVIDER", "mock")
-	t.Setenv("ROADY_AI_MODEL", "test")
-
 	output := captureStdout(t, func() {
 		specExplainCmd.SetContext(context.Background())
 		if err := specExplainCmd.RunE(specExplainCmd, []string{}); err != nil {
 			t.Fatalf("spec explain failed: %v", err)
 		}
 	})
-	if !strings.Contains(output, "Spec Explanation") {
-		t.Fatalf("expected explain output, got:\n%s", output)
+	// Roady emits the prompt; the caller runs it.
+	if !strings.Contains(output, "architectural walkthrough") {
+		t.Fatalf("expected an assembled explain prompt, got:\n%s", output)
 	}
 }
 
-func TestDriftExplainCmd_AI(t *testing.T) {
+func TestDriftExplainCmd_EmitsPrompt(t *testing.T) {
 	_, cleanup := withTempDir(t)
 	defer cleanup()
 
@@ -789,16 +787,13 @@ func TestDriftExplainCmd_AI(t *testing.T) {
 	_ = repo.SavePlan(&planning.Plan{ID: "p1"})
 	_ = repo.SaveState(planning.NewExecutionState("p1"))
 
-	t.Setenv("ROADY_AI_PROVIDER", "mock")
-	t.Setenv("ROADY_AI_MODEL", "test")
-
 	output := captureStdout(t, func() {
 		driftExplainCmd.SetContext(context.Background())
 		if err := driftExplainCmd.RunE(driftExplainCmd, []string{}); err != nil {
 			t.Fatalf("drift explain failed: %v", err)
 		}
 	})
-	if !strings.Contains(output, "Drift Analysis") {
-		t.Fatalf("expected drift output, got:\n%s", output)
+	if !strings.Contains(output, "Explain this drift") {
+		t.Fatalf("expected an assembled drift prompt, got:\n%s", output)
 	}
 }

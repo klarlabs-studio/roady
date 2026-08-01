@@ -35,10 +35,8 @@ func TestServer_Handlers(t *testing.T) {
 	}
 
 	// 1.1 HandleInit Error (empty name)
-	_, err = s.handleInit(context.Background(), InitArgs{Name: ""})
-	if err == nil {
-		t.Error("expected error for empty name")
-	}
+	res, err := s.handleInit(context.Background(), InitArgs{Name: ""})
+	assertToolError(t, res, err, "")
 
 	// 2. HandleGeneratePlan
 	_, err = s.handleGeneratePlan(context.Background(), GeneratePlanArgs{})
@@ -123,10 +121,8 @@ func TestServer_Handlers(t *testing.T) {
 	_ = os.Chmod(tempDir+"/.roady", 0000)
 	defer func() { _ = os.Chmod(tempDir+"/.roady", 0700) }()
 
-	_, err = s.handleGetPlan(context.Background(), GetPlanArgs{})
-	if err == nil {
-		t.Error("expected error for handleGetPlan on restricted dir")
-	}
+	res, err = s.handleGetPlan(context.Background(), GetPlanArgs{})
+	assertToolError(t, res, err, "")
 
 	// 8.1 HandleGeneratePlan missing spec
 	tempEmpty2, _ := os.MkdirTemp("", "roady-mcp-empty-*")
@@ -135,64 +131,44 @@ func TestServer_Handlers(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create server: %v", err)
 	}
-	_, err = s2.handleGeneratePlan(context.Background(), GeneratePlanArgs{})
-	if err == nil {
-		t.Error("expected error for handleGeneratePlan without spec")
-	}
+	res2, err2 := s2.handleGeneratePlan(context.Background(), GeneratePlanArgs{})
+	assertToolError(t, res2, err2, "")
 
 	// 8.1.1 HandleGeneratePlan error (restricted dir)
-	_, err = s.handleGeneratePlan(context.Background(), GeneratePlanArgs{})
-	if err == nil {
-		t.Error("expected error for handleGeneratePlan on restricted dir")
-	}
+	res, err = s.handleGeneratePlan(context.Background(), GeneratePlanArgs{})
+	assertToolError(t, res, err, "")
 
 	// 8.2.1 HandleGetSpec error (restricted dir)
-	_, err = s.handleGetSpec(context.Background(), GetSpecArgs{})
-	if err == nil {
-		t.Error("expected error for handleGetSpec on restricted dir")
-	}
+	res, err = s.handleGetSpec(context.Background(), GetSpecArgs{})
+	assertToolError(t, res, err, "")
 
 	// 8.3 HandleUpdatePlan error (cycle)
 
-	_, err = s.handleUpdatePlan(context.Background(), UpdatePlanArgs{
+	res, err = s.handleUpdatePlan(context.Background(), UpdatePlanArgs{
 
 		Tasks: []planning.Task{{ID: "t1", DependsOn: []string{"t1"}}},
 	})
 
-	if err == nil {
-
-		t.Error("expected error for handleUpdatePlan with cycle")
-
-	}
+	assertToolError(t, res, err, "")
 
 	// 8.3.1 HandleUpdatePlan error (restricted dir)
 
-	_, err = s.handleUpdatePlan(context.Background(), UpdatePlanArgs{
+	res, err = s.handleUpdatePlan(context.Background(), UpdatePlanArgs{
 
 		Tasks: []planning.Task{{ID: "t1"}},
 	})
 
-	if err == nil {
-
-		t.Error("expected error for handleUpdatePlan on restricted dir")
-
-	}
+	assertToolError(t, res, err, "")
 
 	// 8.4 HandleStatus error
-	_, err = s.handleStatus(context.Background(), StatusArgs{})
-	if err == nil {
-		t.Error("expected error for handleStatus on restricted dir")
-	}
+	res, err = s.handleStatus(context.Background(), StatusArgs{})
+	assertToolError(t, res, err, "")
 
 	// 8.5 HandleDetectDrift error
-	_, err = s.handleDetectDrift(context.Background(), DetectDriftArgs{})
-	if err == nil {
-		t.Error("expected error for handleDetectDrift on restricted dir")
-	}
+	res, err = s.handleDetectDrift(context.Background(), DetectDriftArgs{})
+	assertToolError(t, res, err, "")
 
 	// 8.6 HandleCheckPolicy error
-	_, err = s.handleCheckPolicy(context.Background(), CheckPolicyArgs{})
-	if err == nil {
-		t.Error("expected error for handleCheckPolicy on restricted dir")
-	}
+	res, err = s.handleCheckPolicy(context.Background(), CheckPolicyArgs{})
+	assertToolError(t, res, err, "")
 }

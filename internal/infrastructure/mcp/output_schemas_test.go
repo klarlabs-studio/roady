@@ -39,7 +39,6 @@ func TestOutputSchemasGenerate(t *testing.T) {
 		{"roady_debt_trend", events.DriftTrend{}},
 		{"roady_suggest_priorities", planning.PrioritySuggestions{}},
 		{"roady_review_spec", spec.SpecReview{}},
-		{"roady_cost_estimate", application.CostEstimate{}},
 		{"roady_cost_report", billing.CostReport{}},
 		{"roady_cost_budget", billing.BudgetStatus{}},
 	}

@@ -41,7 +41,6 @@ var watchCmd = &cobra.Command{
 
 		specSvc := services.Spec
 		driftSvc := services.Drift
-		aiSvc := services.AI
 		planSvc := services.Plan
 
 		fmt.Printf("Watching %s for changes... (Auto-sync: %v, Reconcile: %v)\n", dir, autoSync, reconcile)
@@ -87,8 +86,12 @@ var watchCmd = &cobra.Command{
 						fmt.Println("Plan regenerated.")
 					}
 				} else if autoSync {
+					// Regenerates from the spec with the deterministic
+					// planner. This used to call a model; Roady no longer
+					// runs inference, and an unattended file watcher is the
+					// last place that should silently spend tokens anyway.
 					fmt.Println("Autonomous Reconciliation: Synchronizing plan with new intent...")
-					if _, err := aiSvc.DecomposeSpec(cmd.Context()); err != nil {
+					if _, err := planSvc.GeneratePlan(cmd.Context()); err != nil {
 						fmt.Printf("Auto-sync failed: %v\n", err)
 					} else {
 						fmt.Println("Plan successfully synchronized.")

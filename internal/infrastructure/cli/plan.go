@@ -1,10 +1,8 @@
 package cli
 
 import (
-	"context"
 	"fmt"
 
-	"github.com/felixgeelhaar/roady/pkg/domain/planning"
 	"github.com/spf13/cobra"
 )
 
@@ -24,16 +22,19 @@ var planGenerateCmd = &cobra.Command{
 			return err
 		}
 
-		var plan *planning.Plan
+		// --ai no longer runs a model. Roady assembles the decomposition
+		// prompt and hands it back; the caller runs inference with whatever
+		// model it already has and returns the tasks through
+		// `roady_update_plan`.
 		if useAI {
-			err = withAIProgress(cmd.Context(), "AI plan generation", func(ctx context.Context) error {
-				p, gerr := services.AI.DecomposeSpec(ctx)
-				plan = p
-				return gerr
-			})
-		} else {
-			plan, err = services.Plan.GeneratePlan(cmd.Context())
+			req, pErr := services.Prompt.DecomposeSpec(cmd.Context())
+			if pErr != nil {
+				return MapError(pErr)
+			}
+			return printPromptRequest(req, promptJSON)
 		}
+
+		plan, err := services.Plan.GeneratePlan(cmd.Context())
 
 		if err != nil {
 			return MapError(err)
@@ -130,32 +131,12 @@ var planPrioritizeCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		if services.AI == nil {
-			return MapError(fmt.Errorf("AI service not available; configure an AI provider"))
+		req, pErr := services.Prompt.SuggestPriorities(cmd.Context())
+		if pErr != nil {
+			return MapError(pErr)
 		}
 
-		var suggestions *planning.PrioritySuggestions
-		err = withAIProgress(cmd.Context(), "AI prioritisation", func(ctx context.Context) error {
-			s, perr := services.AI.SuggestPriorities(ctx)
-			suggestions = s
-			return perr
-		})
-		if err != nil {
-			return MapError(fmt.Errorf("failed to suggest priorities: %w", err))
-		}
-
-		fmt.Println("\n--- AI Priority Suggestions ---")
-		fmt.Println(suggestions.Summary)
-		if len(suggestions.Suggestions) > 0 {
-			fmt.Println("\nSuggested changes:")
-			for _, s := range suggestions.Suggestions {
-				fmt.Printf("  %s: %s → %s\n    %s\n", s.TaskID, s.CurrentPriority, s.SuggestedPriority, s.Reason)
-			}
-		} else {
-			fmt.Println("\nAll task priorities look appropriate.")
-		}
-		fmt.Println("-------------------------------")
-		return nil
+		return printPromptRequest(req, promptJSON)
 	},
 }
 
@@ -167,38 +148,12 @@ var planSmartDecomposeCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		if services.AI == nil {
-			return MapError(fmt.Errorf("AI service not available; configure an AI provider"))
+		req, dErr := services.Prompt.DecomposeSpec(cmd.Context())
+		if dErr != nil {
+			return MapError(dErr)
 		}
 
-		cwd, cErr := getProjectRoot()
-		if cErr != nil {
-			return MapError(fmt.Errorf("resolve project path: %w", cErr))
-		}
-
-		var result *planning.SmartPlan
-		err = withAIProgress(cmd.Context(), "AI smart decomposition", func(ctx context.Context) error {
-			r, derr := services.AI.SmartDecompose(ctx, cwd)
-			result = r
-			return derr
-		})
-		if err != nil {
-			return MapError(fmt.Errorf("smart decompose failed: %w", err))
-		}
-
-		fmt.Println("\n--- Smart Decomposition ---")
-		fmt.Println(result.Summary)
-		fmt.Printf("\nTasks (%d):\n", len(result.Tasks))
-		for _, t := range result.Tasks {
-			fmt.Printf("  %-30s [%s] %s\n", t.ID, t.Complexity, t.Title)
-			if len(t.Files) > 0 {
-				for _, f := range t.Files {
-					fmt.Printf("    → %s\n", f)
-				}
-			}
-		}
-		fmt.Println("---------------------------")
-		return nil
+		return printPromptRequest(req, promptJSON)
 	},
 }
 
@@ -214,6 +169,7 @@ func init() {
 
 	planCmd.AddCommand(planPruneCmd)
 
+	addPromptJSONFlag(planPrioritizeCmd, planSmartDecomposeCmd, planGenerateCmd)
 	planCmd.AddCommand(planPrioritizeCmd)
 
 	planCmd.AddCommand(planSmartDecomposeCmd)
