@@ -270,7 +270,16 @@ type workflowState struct {
 	Type string `json:"type"`
 }
 
+// Push sends status only. PushFields is preferred by the host when
+// available; this remains for hosts that predate field support.
 func (s *LinearSyncer) Push(taskID string, status planning.TaskStatus) error {
+	return s.PushFields(taskID, domainPlugin.TaskFields{Status: status})
+}
+
+// PushFields implements domainPlugin.FieldSyncer, mapping Roady's priority
+// onto Linear's numeric scale alongside the workflow state.
+func (s *LinearSyncer) PushFields(taskID string, fields domainPlugin.TaskFields) error {
+	status := fields.Status
 	// Find the issue by roady-id marker
 	issues, err := s.fetchTeamIssues()
 	if err != nil {
@@ -322,7 +331,25 @@ func (s *LinearSyncer) Push(taskID string, status planning.TaskStatus) error {
 	}
 
 	// Update the issue
-	return s.updateIssueState(targetIssue.ID, targetState.ID)
+	return s.updateIssue(targetIssue.ID, targetState.ID, linearPriority(fields.Priority))
+}
+
+// linearPriority maps Roady's three-value priority onto Linear's scale,
+// where 0 means "no priority", 1 is urgent and 4 is low. An unset Roady
+// priority returns -1 so the field is left untouched rather than being
+// reset to "no priority" — sync must not clear a value a human set in
+// Linear just because Roady has nothing to say about it.
+func linearPriority(p planning.TaskPriority) int {
+	switch p {
+	case planning.PriorityHigh:
+		return 2 // High
+	case planning.PriorityMedium:
+		return 3 // Medium
+	case planning.PriorityLow:
+		return 4 // Low
+	default:
+		return -1
+	}
 }
 
 func (s *LinearSyncer) fetchWorkflowStates() ([]workflowState, error) {
@@ -355,17 +382,29 @@ func (s *LinearSyncer) fetchWorkflowStates() ([]workflowState, error) {
 	return states, nil
 }
 
-func (s *LinearSyncer) updateIssueState(issueID, stateID string) error {
+// updateIssue sets the workflow state, and the priority too when one is
+// specified (priority < 0 means leave it alone).
+func (s *LinearSyncer) updateIssue(issueID, stateID string, priority int) error {
 	q := `mutation($issueId: String!, $stateId: String!) {
 		issueUpdate(id: $issueId, input: { stateId: $stateId }) {
 			success
 		}
 	}`
-
-	data, err := s.query(q, map[string]interface{}{
+	vars := map[string]interface{}{
 		"issueId": issueID,
 		"stateId": stateID,
-	})
+	}
+
+	if priority >= 0 {
+		q = `mutation($issueId: String!, $stateId: String!, $priority: Int!) {
+			issueUpdate(id: $issueId, input: { stateId: $stateId, priority: $priority }) {
+				success
+			}
+		}`
+		vars["priority"] = priority
+	}
+
+	data, err := s.query(q, vars)
 	if err != nil {
 		return err
 	}

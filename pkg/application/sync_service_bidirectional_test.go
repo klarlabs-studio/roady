@@ -86,7 +86,7 @@ func TestApplyOutboundPushesOnlyDivergentTasks(t *testing.T) {
 		"diverge": planning.StatusPending, // Roady moved, tracker is stale
 	}
 
-	results := svc.applyOutbound(syncer, external)
+	results := svc.applyOutbound(syncer, nil, external)
 
 	if _, pushed := syncer.pushed["agree"]; pushed {
 		t.Error("a task the tracker already agrees about must not be pushed")
@@ -117,7 +117,7 @@ func TestApplyOutboundReportsFailuresWithoutAborting(t *testing.T) {
 		"c": planning.StatusPending,
 	}
 
-	results := svc.applyOutbound(syncer, external)
+	results := svc.applyOutbound(syncer, nil, external)
 
 	// One unreachable issue must not stop the rest of the run.
 	if syncer.pushCall != 3 {
@@ -148,9 +148,9 @@ func TestApplyOutboundIsDeterministic(t *testing.T) {
 
 	svc := &SyncService{repo: &stubStateRepo{state: state}, pushEnabled: true}
 
-	first := strings.Join(svc.applyOutbound(newRecordingSyncer(), external), "|")
+	first := strings.Join(svc.applyOutbound(newRecordingSyncer(), nil, external), "|")
 	for range 20 {
-		got := strings.Join(svc.applyOutbound(newRecordingSyncer(), external), "|")
+		got := strings.Join(svc.applyOutbound(newRecordingSyncer(), nil, external), "|")
 		if got != first {
 			t.Fatalf("push order varies between runs:\n%s\n%s", got, first)
 		}
@@ -163,7 +163,7 @@ func TestApplyOutboundIsDeterministic(t *testing.T) {
 func TestApplyOutboundHandlesUnreadableState(t *testing.T) {
 	svc := &SyncService{repo: &stubStateRepo{err: errBoom}, pushEnabled: true}
 
-	results := svc.applyOutbound(newRecordingSyncer(), map[string]planning.TaskStatus{"a": planning.StatusDone})
+	results := svc.applyOutbound(newRecordingSyncer(), nil, map[string]planning.TaskStatus{"a": planning.StatusDone})
 
 	if len(results) != 1 || !strings.Contains(results[0], "skipped") {
 		t.Errorf("expected a skip message, got %v", results)
@@ -179,3 +179,69 @@ type stubStateRepo struct {
 }
 
 func (s *stubStateRepo) LoadState() (*planning.ExecutionState, error) { return s.state, s.err }
+
+// fieldSyncer implements the optional FieldSyncer extension.
+type fieldSyncer struct {
+	*recordingSyncer
+	fields map[string]domainPlugin.TaskFields
+}
+
+func newFieldSyncer() *fieldSyncer {
+	return &fieldSyncer{
+		recordingSyncer: newRecordingSyncer(),
+		fields:          map[string]domainPlugin.TaskFields{},
+	}
+}
+
+func (f *fieldSyncer) PushFields(taskID string, fields domainPlugin.TaskFields) error {
+	f.fields[taskID] = fields
+	return f.Push(taskID, fields.Status)
+}
+
+func TestPushTaskUsesFieldsWhenSupported(t *testing.T) {
+	fs := newFieldSyncer()
+
+	if err := pushTask(fs, "t1", planning.StatusDone, planning.PriorityHigh); err != nil {
+		t.Fatalf("pushTask: %v", err)
+	}
+
+	got, ok := fs.fields["t1"]
+	if !ok {
+		t.Fatal("PushFields was not called on a plugin that implements it")
+	}
+	if got.Priority != planning.PriorityHigh || got.Status != planning.StatusDone {
+		t.Errorf("fields = %+v, want status=done priority=high", got)
+	}
+}
+
+func TestPushTaskFallsBackForPlainSyncers(t *testing.T) {
+	// A plugin that only implements Syncer must still receive its status
+	// update; attribute support is additive, not a compatibility break.
+	plain := newRecordingSyncer()
+
+	if err := pushTask(plain, "t1", planning.StatusBlocked, planning.PriorityHigh); err != nil {
+		t.Fatalf("pushTask: %v", err)
+	}
+
+	if plain.pushed["t1"] != planning.StatusBlocked {
+		t.Errorf("status not pushed through the plain interface: %v", plain.pushed)
+	}
+}
+
+func TestApplyOutboundSendsPlanPriority(t *testing.T) {
+	state := planning.NewExecutionState("plan-1")
+	state.TaskStates = map[string]planning.TaskResult{"t1": {Status: planning.StatusDone}}
+
+	// Priority is plan data, not execution state, so it must be read from
+	// the plan rather than from state.json.
+	plan := &planning.Plan{Tasks: []planning.Task{{ID: "t1", Priority: planning.PriorityLow}}}
+
+	svc := &SyncService{repo: &stubStateRepo{state: state}, pushEnabled: true}
+	fs := newFieldSyncer()
+
+	svc.applyOutbound(fs, plan, map[string]planning.TaskStatus{"t1": planning.StatusPending})
+
+	if fs.fields["t1"].Priority != planning.PriorityLow {
+		t.Errorf("priority = %q, want low", fs.fields["t1"].Priority)
+	}
+}

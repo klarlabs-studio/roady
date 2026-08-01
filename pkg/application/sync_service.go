@@ -113,7 +113,7 @@ func (s *SyncService) SyncWithPluginConfig(pluginPath string, config map[string]
 	// which is what makes this converge without needing timestamps from
 	// either side.
 	if s.pushEnabled {
-		results = append(results, s.applyOutbound(syncer, result.StatusUpdates)...)
+		results = append(results, s.applyOutbound(syncer, plan, result.StatusUpdates)...)
 	}
 
 	for _, e := range result.Errors {
@@ -178,13 +178,22 @@ func (s *SyncService) applyInbound(state *planning.ExecutionState, updates map[s
 // A push failure is reported but never aborts the sync: one unreachable issue
 // must not stop the rest of the run, and the report tells the operator exactly
 // which task did not land.
-func (s *SyncService) applyOutbound(syncer domainPlugin.Syncer, external map[string]planning.TaskStatus) []string {
+func (s *SyncService) applyOutbound(syncer domainPlugin.Syncer, plan *planning.Plan, external map[string]planning.TaskStatus) []string {
 	var results []string
 
 	// Re-read state so pushes reflect the inbound transitions just applied.
 	state, err := s.repo.LoadState()
 	if err != nil || state == nil {
 		return []string{fmt.Sprintf("Push: skipped (cannot reload state: %v)", err)}
+	}
+
+	// Priority is plan data, not execution state, so it is read from the
+	// plan rather than from state.json.
+	priorities := map[string]planning.TaskPriority{}
+	if plan != nil {
+		for _, t := range plan.Tasks {
+			priorities[t.ID] = t.Priority
+		}
 	}
 
 	ids := make([]string, 0, len(external))
@@ -199,7 +208,7 @@ func (s *SyncService) applyOutbound(syncer domainPlugin.Syncer, external map[str
 			continue
 		}
 
-		if err := syncer.Push(id, local); err != nil {
+		if err := pushTask(syncer, id, local, priorities[id]); err != nil {
 			results = append(results, fmt.Sprintf("Push Task %s: error (%v)", id, err))
 			continue
 		}
@@ -207,6 +216,16 @@ func (s *SyncService) applyOutbound(syncer domainPlugin.Syncer, external map[str
 	}
 
 	return results
+}
+
+// pushTask sends status, and attributes too when the plugin accepts them.
+// A plugin that only implements Syncer still gets its status update, so
+// attribute support is additive rather than a compatibility break.
+func pushTask(syncer domainPlugin.Syncer, taskID string, status planning.TaskStatus, priority planning.TaskPriority) error {
+	if fs, ok := syncer.(domainPlugin.FieldSyncer); ok {
+		return fs.PushFields(taskID, domainPlugin.TaskFields{Status: status, Priority: priority})
+	}
+	return syncer.Push(taskID, status)
 }
 
 // ProviderFromPluginPath infers the provider name from a plugin binary path.
