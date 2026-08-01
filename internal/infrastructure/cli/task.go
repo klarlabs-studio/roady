@@ -37,7 +37,10 @@ func createTaskCommand(use, short, event string) *cobra.Command {
 			service := application.NewTaskService(repo, audit, policy)
 			taskID := args[0]
 
-			actor := os.Getenv("USER")
+			// Same identity resolution as `roady task mine`, so ownership,
+			// per-owner WIP limits, and team-role checks all agree on who
+			// you are.
+			actor := resolveCurrentOwner(gitConfigUserName)
 			if actor == "" {
 				actor = "unknown-human"
 			}
