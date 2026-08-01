@@ -6,6 +6,52 @@
 - **Minor** (1.x.0): New optional fields (`omitempty`), new tools, fields deprecated
 - **Major** (x.0.0): Required fields added/removed, tool signatures changed
 
+## v3.0.0 — No inference, and errors that reach the agent
+
+**Major** per the rules above: a tool was removed and six changed their
+response shape.
+
+### Removed (breaking)
+
+| Removed | Why |
+| --- | --- |
+| `roady_cost_estimate` | Roady no longer calls a model, so it cannot project a token bill for one. |
+
+### Changed (breaking)
+
+Six tools returned model output. Roady no longer runs inference — the caller
+already has a model — so they now return the assembled request instead:
+
+`roady_plan_decompose`, `roady_explain_spec`, `roady_review_spec`,
+`roady_query`, `roady_suggest_priorities`, `roady_explain_drift`
+
+```json
+{
+  "operation": "decompose_spec",
+  "system": "...",
+  "prompt": "...",
+  "expected_format": "{\"tasks\": [...]}",
+  "write_back": "roady_update_plan",
+  "guidance": "Produce the tasks yourself, then call roady_update_plan."
+}
+```
+
+`write_back` names the tool that accepts the result. These tools now work
+with no configuration at all — previously they failed without a provider.
+
+### Changed — tool errors are results, not protocol faults
+
+Every tool reported failure as a JSON-RPC error, which clients surface as
+`-32603 "internal error"` with Roady's actual message discarded. Failures are
+now returned as a normal result with `isError: true` and the message as
+readable content, per the MCP spec. Protocol errors are reserved for
+malformed requests.
+
+Clients that only inspected the JSON-RPC `error` field will now see a
+successful response carrying `isError` — check that flag.
+
+53 tools in this version.
+
 ## v2.0.0 — Alias removal + behaviour annotations
 
 **Major** per the rules above: tools were removed.

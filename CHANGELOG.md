@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+MCP schema version is now **3.0.0** (see `docs/mcp-schema-changelog.md`);
+`pkg/sdk` moves to `SupportedSchemaMajor = "3"` to match.
+
 ### Fixed — MCP tool errors reach the agent
 
 Every tool reported failures as JSON-RPC protocol faults, so the library
