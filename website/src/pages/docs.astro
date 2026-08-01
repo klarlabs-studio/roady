@@ -593,16 +593,43 @@ import Footer from '../components/Footer.astro';
           </div>
 
           <div class="glass rounded-xl p-6">
-            <h3 class="text-lg font-semibold text-white mb-2">roady dashboard serve</h3>
-            <p class="text-gray-400 mb-4">Start a web-based dashboard server.</p>
+            <h3 class="text-lg font-semibold text-white mb-2">roady report</h3>
+            <p class="text-gray-400 mb-4">Generate a progress report for people who do not run the CLI &mdash; progress, forecast, risks, ownership, and what changed.</p>
             <div class="bg-black/40 rounded-lg p-4 mb-4">
-              <code class="text-sm text-gray-300">roady dashboard serve [flags]</code>
+              <code class="text-sm text-gray-300">roady report [flags]</code>
             </div>
             <h4 class="text-sm font-semibold text-gray-300 mb-2">Flags</h4>
             <table class="w-full text-sm">
               <tr class="border-b border-white/10">
-                <td class="py-2 text-violet-300 mono">-p, --port</td>
-                <td class="py-2 text-gray-400">Port to listen on (default 3000)</td>
+                <td class="py-2 text-violet-300 mono">-f, --format</td>
+                <td class="py-2 text-gray-400">markdown (default), html, or json</td>
+              </tr>
+              <tr class="border-b border-white/10">
+                <td class="py-2 text-violet-300 mono">-o, --output</td>
+                <td class="py-2 text-gray-400">Write to a file instead of stdout</td>
+              </tr>
+              <tr class="border-b border-white/10">
+                <td class="py-2 text-violet-300 mono">--since</td>
+                <td class="py-2 text-gray-400">Only changes since this point (7d, 2w, 2026-07-01)</td>
+              </tr>
+            </table>
+          </div>
+
+          <div class="glass rounded-xl p-6">
+            <h3 class="text-lg font-semibold text-white mb-2">roady audit trail</h3>
+            <p class="text-gray-400 mb-4">Produce an evidence trail for a task, agent, or session: chain integrity, findings, evidence, and every recorded event. Exits non-zero when verification fails.</p>
+            <div class="bg-black/40 rounded-lg p-4 mb-4">
+              <code class="text-sm text-gray-300">roady audit trail [task-id] [flags]</code>
+            </div>
+            <h4 class="text-sm font-semibold text-gray-300 mb-2">Flags</h4>
+            <table class="w-full text-sm">
+              <tr class="border-b border-white/10">
+                <td class="py-2 text-violet-300 mono">--agent</td>
+                <td class="py-2 text-gray-400">Only events from this agent</td>
+              </tr>
+              <tr class="border-b border-white/10">
+                <td class="py-2 text-violet-300 mono">--session</td>
+                <td class="py-2 text-gray-400">Only events from this session ID</td>
               </tr>
             </table>
           </div>

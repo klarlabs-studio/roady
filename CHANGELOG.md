@@ -85,6 +85,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- All 14 committed MCP App artifacts were stale, built against older
+  dependencies. Rebuilt, and CI now rebuilds them on every run and fails
+  on drift — nothing previously verified that the committed HTML matched
+  `app/src`, which is how they went stale unnoticed.
+- The website still advertised the removed web dashboard (`roady
+  dashboard serve`, a "Live Kanban" feature card, and a `/org/kanban`
+  reference). Replaced with `roady report` and `roady audit trail`.
 - `ui://roady/billing` was registered as an MCP App but its built file was
   never committed, so every request for it failed at runtime. The app is
   now built and shipped, with a test asserting every registered app
