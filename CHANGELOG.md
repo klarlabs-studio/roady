@@ -14,6 +14,8 @@ trails, and bidirectional tracker sync. Three breaking changes, all listed
 below.
 
 MCP schema version is now **2.0.0** (see `docs/mcp-schema-changelog.md`).
+`pkg/sdk` moves to `SupportedSchemaMajor = "2"` to match; an SDK build
+pinned to major 1 will refuse to talk to a v0.13 server, by design.
 
 ### Added — coordination
 
