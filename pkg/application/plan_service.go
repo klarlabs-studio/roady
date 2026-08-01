@@ -266,6 +266,15 @@ func (s *PlanService) GetInProgressTasks(ctx context.Context) ([]project.TaskSum
 	return s.coordinator.GetInProgressTasks(ctx)
 }
 
+// GetTasksByOwner returns tasks assigned to owner. An empty owner returns
+// unassigned tasks.
+func (s *PlanService) GetTasksByOwner(ctx context.Context, owner string) ([]project.TaskSummary, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	return s.coordinator.GetTasksByOwner(ctx, owner)
+}
+
 // GetCoordinator returns the underlying project coordinator for advanced operations.
 func (s *PlanService) GetCoordinator() *project.Coordinator {
 	return s.coordinator

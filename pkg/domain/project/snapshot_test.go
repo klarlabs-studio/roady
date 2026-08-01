@@ -245,3 +245,63 @@ func TestCoordinator_GetInProgressTasks(t *testing.T) {
 		t.Errorf("Expected task-1, got %s", inProgress[0].ID)
 	}
 }
+
+func TestCoordinator_GetTasksByOwner(t *testing.T) {
+	plan := &planning.Plan{
+		ID:             "plan-1",
+		ApprovalStatus: planning.ApprovalApproved,
+		Tasks: []planning.Task{
+			{ID: "task-1", Title: "Alice work"},
+			{ID: "task-2", Title: "Bob work"},
+			{ID: "task-3", Title: "Alice other"},
+			{ID: "task-4", Title: "Nobody's work"},
+		},
+	}
+	planRepo := &mockPlanRepo{plan: plan}
+
+	state := planning.NewExecutionState("plan-1")
+	state.TaskStates["task-1"] = planning.TaskResult{Status: planning.StatusInProgress, Owner: "alice"}
+	state.TaskStates["task-2"] = planning.TaskResult{Status: planning.StatusInProgress, Owner: "bob"}
+	state.TaskStates["task-3"] = planning.TaskResult{Status: planning.StatusDone, Owner: "Alice"}
+	state.TaskStates["task-4"] = planning.TaskResult{Status: planning.StatusPending}
+	stateRepo := &mockStateRepo{state: state}
+
+	coord := NewCoordinator(planRepo, stateRepo, nil)
+
+	tests := []struct {
+		name    string
+		owner   string
+		wantIDs []string
+	}{
+		{name: "exact match", owner: "bob", wantIDs: []string{"task-2"}},
+		{name: "case-insensitive across entries", owner: "alice", wantIDs: []string{"task-1", "task-3"}},
+		{name: "surrounding whitespace tolerated", owner: "  bob  ", wantIDs: []string{"task-2"}},
+		{name: "empty owner returns unassigned", owner: "", wantIDs: []string{"task-4"}},
+		{name: "unknown owner returns none", owner: "carol", wantIDs: nil},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := coord.GetTasksByOwner(context.Background(), tt.owner)
+			if err != nil {
+				t.Fatalf("GetTasksByOwner failed: %v", err)
+			}
+			if len(got) != len(tt.wantIDs) {
+				t.Fatalf("Expected %d tasks %v, got %d (%v)", len(tt.wantIDs), tt.wantIDs, len(got), ids(got))
+			}
+			for i, want := range tt.wantIDs {
+				if got[i].ID != want {
+					t.Errorf("Expected %s at index %d, got %s", want, i, got[i].ID)
+				}
+			}
+		})
+	}
+}
+
+func ids(summaries []TaskSummary) []string {
+	out := make([]string, 0, len(summaries))
+	for _, s := range summaries {
+		out = append(out, s.ID)
+	}
+	return out
+}

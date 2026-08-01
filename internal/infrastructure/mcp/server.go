@@ -13,6 +13,7 @@ import (
 	"github.com/felixgeelhaar/roady/pkg/application"
 	"github.com/felixgeelhaar/roady/pkg/domain/billing"
 	"github.com/felixgeelhaar/roady/pkg/domain/planning"
+	"github.com/felixgeelhaar/roady/pkg/domain/project"
 	"github.com/felixgeelhaar/roady/pkg/domain/team"
 	"go.klarlabs.de/mcp"
 )
@@ -334,7 +335,8 @@ type GetInProgressTasksArgs struct {
 // single status enum parameter. Existing tools delegate to the same handler
 // for backward compatibility.
 type TasksArgs struct {
-	Status      string `json:"status,omitempty" jsonschema:"description=Which tasks to return: ready (unlocked + pending), in_progress, blocked, or all. Defaults to ready.,enum=ready,enum=in_progress,enum=blocked,enum=all"`
+	Status      string `json:"status,omitempty" jsonschema:"description=Which tasks to return: ready (unlocked + pending), in_progress, blocked, unassigned, or all. Defaults to ready.,enum=ready,enum=in_progress,enum=blocked,enum=unassigned,enum=all"`
+	Assignee    string `json:"assignee,omitempty" jsonschema:"description=Only return tasks assigned to this person or agent. Matched case-insensitively. Ignored when status is unassigned."`
 	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
 	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
 }
@@ -1628,17 +1630,23 @@ func (s *Server) handleTasks(ctx context.Context, args TasksArgs) (any, error) {
 		if err != nil {
 			return nil, mcpErr("Failed to get ready tasks. Ensure a plan and state exist.")
 		}
-		return tasks, nil
+		return filterByAssignee(tasks, args.Assignee), nil
 	case "in_progress":
 		tasks, err := svc.Plan.GetInProgressTasks(ctx)
 		if err != nil {
 			return nil, mcpErr("Failed to get in-progress tasks. Ensure a plan and state exist.")
 		}
-		return tasks, nil
+		return filterByAssignee(tasks, args.Assignee), nil
 	case "blocked":
 		tasks, err := svc.Plan.GetBlockedTasks(ctx)
 		if err != nil {
 			return nil, mcpErr("Failed to get blocked tasks. Ensure a plan and state exist.")
+		}
+		return filterByAssignee(tasks, args.Assignee), nil
+	case "unassigned":
+		tasks, err := svc.Plan.GetTasksByOwner(ctx, "")
+		if err != nil {
+			return nil, mcpErr("Failed to get unassigned tasks. Ensure a plan and state exist.")
 		}
 		return tasks, nil
 	case "all":
@@ -1655,13 +1663,31 @@ func (s *Server) handleTasks(ctx context.Context, args TasksArgs) (any, error) {
 			return nil, mcpErr("Failed to load tasks. Ensure a plan and state exist.")
 		}
 		return map[string]any{
-			"ready":       ready,
-			"in_progress": inProgress,
-			"blocked":     blocked,
+			"ready":       filterByAssignee(ready, args.Assignee),
+			"in_progress": filterByAssignee(inProgress, args.Assignee),
+			"blocked":     filterByAssignee(blocked, args.Assignee),
 		}, nil
 	default:
-		return nil, mcpErr("Invalid status. Use ready, in_progress, blocked, or all.")
+		return nil, mcpErr("Invalid status. Use ready, in_progress, blocked, unassigned, or all.")
 	}
+}
+
+// filterByAssignee narrows tasks to those owned by assignee. An empty assignee
+// means "no filter requested" and returns tasks unchanged — callers wanting
+// unassigned tasks use status=unassigned instead.
+func filterByAssignee(tasks []project.TaskSummary, assignee string) []project.TaskSummary {
+	want := strings.ToLower(strings.TrimSpace(assignee))
+	if want == "" {
+		return tasks
+	}
+
+	filtered := make([]project.TaskSummary, 0, len(tasks))
+	for _, t := range tasks {
+		if strings.ToLower(strings.TrimSpace(t.Owner)) == want {
+			filtered = append(filtered, t)
+		}
+	}
+	return filtered
 }
 
 func (s *Server) handleGetReadyTasks(ctx context.Context, args GetReadyTasksArgs) (any, error) {
