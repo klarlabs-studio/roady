@@ -9,7 +9,19 @@ intended **open-core boundary** for a future hosted product.
 
 ---
 
-## Now (v0.15.0 — shipped)
+## Now (v0.16.0 — shipped)
+
+- **Staleness drift** — `roady drift detect` reports a plan the repository
+  has left behind, judged by commit volume rather than file timestamps.
+  Found by running Roady on Roady: 55 commits and seven releases past a
+  plan marked complete, reported as healthy.
+- **Audit verification correctness** — three distinct causes were all
+  being reported as "possible tampering": two hash functions writing one
+  log, a shell script appending unhashed entries, and a hash-algorithm
+  change that invalidated history. Events now carry `hash_algo`.
+- **`plan prune` cleans execution state**, which it previously orphaned.
+
+## Earlier (v0.15.0 — shipped)
 
 - **Roady runs no inference.** The provider clients are gone. The
   model-assisted operations return the assembled prompt plus the tool
@@ -62,7 +74,7 @@ intended **open-core boundary** for a future hosted product.
 - `roady demo` for <1s aha; `roady init --interactive` default in TTY;
   empty-state ladder on `roady status`
 
-## Next (v0.16.x)
+## Next (v0.17.x)
 
 - **Cross-project task dependencies** — `@project:task-id` syntax in
   `DependsOn` so an org-level plan can express "feature-payments task

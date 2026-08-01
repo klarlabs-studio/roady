@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-08-01
+
+Found by running Roady against itself. Every item here was invisible to a
+green build and a passing test suite.
+
+**Behaviour change worth reading before upgrading:** `roady drift detect` can
+now report drift — and exit non-zero — on projects that previously reported
+clean, because it detects plans the repository has left behind. If you gate CI
+on its exit code, expect stale-plan projects to start failing. That is the
+feature working; refresh the plan or archive it.
+
 ### Fixed — `plan prune` left orphaned execution state
 
 `roady plan prune` removed tasks from `plan.json` and left their entries in

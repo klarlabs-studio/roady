@@ -1,5 +1,5 @@
-id: roadmap-v016
-title: 'Roady v0.16.0: Agent Handoff & Cross-Project Planning'
+id: roadmap-v017
+title: 'Roady v0.17.0: Agent Handoff & Cross-Project Planning'
 description: "Roady planning system roadmap:\n- v0.5.0 (complete): Horizons 5 & 6 — predictive analytics,\
   \ domain hardening, event sourcing.\n- v0.6.0 (complete): Multi-repo org dashboard, plugin contracts,\
   \ notification webhooks, fsnotify watch,\n  coordinator integration into CLI/MCP with snapshot and task\
@@ -25,7 +25,9 @@ description: "Roady planning system roadmap:\n- v0.5.0 (complete): Horizons 5 & 
   \ state rebuild`. Web dashboard removed.\n    - v0.15.0 (complete): Roady stopped calling language models.\
   \ Provider clients\n      removed; the model-assisted operations return assembled prompts plus the\n\
   \      tool that accepts the result. MCP tool failures became readable results\n      rather than masked\
-  \ protocol faults. MCP schema 3.0.0.\n    - v0.16.0 (planned): the features below.\n"
+  \ protocol faults. MCP schema 3.0.0.\n    - v0.16.0 (complete): staleness drift detection, audit-verification\n\
+  \      correctness (three causes, none of them tampering), and plan prune\n      cleaning execution\
+  \ state.\n    - v0.17.0 (planned): the features below.\n"
 features:
 - id: cross-project-deps
   title: Cross-project task dependencies
@@ -112,4 +114,4 @@ constraints:
   description: Follow existing DDD patterns and naming conventions
 - id: cli-mcp-parity
   description: All new CLI commands should have corresponding MCP tools
-version: 0.16.0
+version: 0.17.0
