@@ -53,7 +53,7 @@ func (s *AuditTrailService) BuildTrail(ctx context.Context, q TrailQuery) (*doma
 		now = time.Now()
 	}
 
-	loaded, err := s.audit.LoadEventsSince(q.Since)
+	loaded, err := s.loadEntries(q.Since)
 	if err != nil {
 		return nil, err
 	}
@@ -69,11 +69,11 @@ func (s *AuditTrailService) BuildTrail(ctx context.Context, q TrailQuery) (*doma
 	}
 
 	for _, e := range loaded {
-		if e == nil || !matchesQuery(e.Metadata, e.AggregateID(), q) {
+		if !matchesQuery(e.metadata, e.aggregateID, q) {
 			continue
 		}
 		trail.Entries = append(trail.Entries, domainaudit.EntryFrom(
-			e.Timestamp, eventAction(e.Type, e.Action), e.Actor, e.Hash, e.Metadata,
+			e.at, e.action, e.actor, e.hash, e.metadata,
 		))
 	}
 
@@ -100,6 +100,69 @@ func eventAction(eventType, action string) string {
 		return eventType
 	}
 	return action
+}
+
+// trailEntrySource is the normalised shape both audit implementations
+// reduce to, so BuildTrail does not care which one is wired.
+type trailEntrySource struct {
+	at          time.Time
+	action      string
+	actor       string
+	hash        string
+	aggregateID string
+	metadata    map[string]any
+}
+
+// loadEntries reads the log from whichever audit service is available.
+// NewAuditTrailService documents every collaborator except plan as optional,
+// so this must tolerate a nil event-sourced service rather than dereference
+// it — the plain AuditService holds the same events and can stand in.
+func (s *AuditTrailService) loadEntries(since time.Time) ([]trailEntrySource, error) {
+	if s.audit != nil {
+		loaded, err := s.audit.LoadEventsSince(since)
+		if err != nil {
+			return nil, err
+		}
+		out := make([]trailEntrySource, 0, len(loaded))
+		for _, e := range loaded {
+			if e == nil {
+				continue
+			}
+			out = append(out, trailEntrySource{
+				at:          e.Timestamp,
+				action:      eventAction(e.Type, e.Action),
+				actor:       e.Actor,
+				hash:        e.Hash,
+				aggregateID: e.AggregateID(),
+				metadata:    e.Metadata,
+			})
+		}
+		return out, nil
+	}
+
+	if s.plain == nil {
+		return nil, nil
+	}
+
+	loaded, err := s.plain.GetTimeline()
+	if err != nil {
+		return nil, err
+	}
+	out := make([]trailEntrySource, 0, len(loaded))
+	for i := range loaded {
+		e := loaded[i]
+		if !since.IsZero() && e.Timestamp.Before(since) {
+			continue
+		}
+		out = append(out, trailEntrySource{
+			at:       e.Timestamp,
+			action:   e.Action,
+			actor:    e.Actor,
+			hash:     e.Hash,
+			metadata: e.Metadata,
+		})
+	}
+	return out, nil
 }
 
 func subjectFor(q TrailQuery) domainaudit.Subject {
