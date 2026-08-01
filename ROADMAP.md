@@ -108,10 +108,18 @@ the existing local workflow with no behavioural change.
 
 ## Out of scope
 
-- Becoming a Linear / Jira replacement. We integrate with them; we do
-  not compete with them.
+- **Matching Linear / Jira feature-for-feature.** No sprints, custom
+  fields, configurable workflows, or non-engineer intake queues. Roady
+  covers two of the jobs those tools do — coordinating who is on what,
+  and keeping stakeholders informed — with generated documents and push
+  notifications rather than an app. Where non-engineers create and
+  triage work daily, use a tracker; Roady syncs with it bidirectionally.
 - A web-based code editor or AI agent of our own.
 - Hosted general-purpose memory for non-coding workflows.
+- **Authenticated identity.** Actors and agents are asserted by the
+  caller and never verified. Roady's audit trail is tamper-evident about
+  what was recorded, not proof of who acted — see
+  [`docs/audit-grc.md`](docs/audit-grc.md).
 
 If you want any of these, Roady is the wrong tool — we are deliberately
 narrow.

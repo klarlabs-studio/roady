@@ -31,12 +31,16 @@ Concretely:
 
 ## Category
 
-**Planning memory for AI coding agents.**
+**The plan-of-record for AI coding agents.**
 
-A memory layer is not a planning tool, not an issue tracker, not a wiki.
+A plan-of-record is not a planning tool, not an issue tracker, not a wiki.
 It is the durable state record that intent, plans, and execution operate
 against. We are claiming this category before agent runtimes (Claude
 Code, Cursor, Codex) bake their own opinionated, lock-in versions of it.
+
+> This heading previously read "Planning memory for AI coding agents",
+> contradicting the round-2 conclusion below that bans the phrase. The
+> research stands; only the label changed.
 
 ### Validated against
 

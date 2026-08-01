@@ -34,7 +34,7 @@ func NewAuditService(repo domain.WorkspaceRepository) *AuditService {
 	return &AuditService{repo: repo}
 }
 
-func (s *AuditService) Log(action string, actor string, metadata map[string]interface{}) error {
+func (s *AuditService) Log(action string, actor string, metadata map[string]any) error {
 	// Get the latest event to continue the hash chain
 	events, _ := s.repo.LoadEvents()
 	prevHash := ""

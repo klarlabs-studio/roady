@@ -88,7 +88,7 @@ func (s *EventSourcedAuditService) rebuildProjections() error {
 }
 
 // Log implements domain.AuditLogger.
-func (s *EventSourcedAuditService) Log(action string, actor string, metadata map[string]interface{}) error {
+func (s *EventSourcedAuditService) Log(action string, actor string, metadata map[string]any) error {
 	event := &events.BaseEvent{
 		ID:        uuid.New().String(),
 		Type:      action,

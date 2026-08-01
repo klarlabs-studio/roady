@@ -52,6 +52,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed — BREAKING
 
+- Stale duplicate docs: `docs/roadmap.md` (superseded by `ROADMAP.md`,
+  and whitespace-corrupted — 178 of 232 lines were blank) and
+  `docs/small.md` (a truncated copy of `docs/vision.md`).
 - The web dashboard is gone: `roady dashboard serve`, `roady dashboard
   open`, the `/kanban` and `/org/kanban` boards, `/api/*` endpoints, the
   SSE stream, action endpoints, and the shared-token auth. The whole
@@ -67,7 +70,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `roady notify digest` — push a summary to a channel
   - `roady dashboard` — the interactive TUI, unchanged
 
+### Added — bidirectional tracker sync
+
+- `roady sync` now writes Roady's status back to the external tracker.
+  `Syncer.Push` was implemented by all seven plugins but called from
+  nothing, so sync was read-only despite the docs claiming otherwise.
+  `--no-push` restores pull-only behaviour.
+- Inbound sync honours all five statuses. Previously only `done` and
+  `in_progress` were mapped and `blocked`/`pending`/`verified` were
+  silently dropped, so a task blocked in Jira stayed pending in Roady.
+- `planning.EventForTransition` / `planning.PathToStatus` reverse-map the
+  FSM, so a status the tracker reports is reached by walking real
+  transitions rather than being written past the state machine.
+
 ### Fixed
+
+- `ui://roady/billing` was registered as an MCP App but its built file was
+  never committed, so every request for it failed at runtime. The app is
+  now built and shipped, with a test asserting every registered app
+  resource is readable.
+- Plugin provider inference matched only github/jira/linear, so trello,
+  asana, and notion all filed task links under `external` and collided in
+  `ExternalRefs`. All six are recognised, and custom plugins derive a
+  stable name from their binary.
 
 - Service-load warnings printed to stdout, corrupting `--json` output on every
   command that offers it. They now go to stderr.

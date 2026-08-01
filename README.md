@@ -154,7 +154,7 @@ switch context by passing `--project / -P <name>` (CLI) or `project`
 
 | Roady is... | Roady is not... |
 | --- | --- |
-| The plan-of-record for an AI-paired feature | A Jira / Linear replacement |
+| The plan-of-record for an AI-paired feature | A feature-for-feature Jira / Linear clone |
 | Memory that survives `/clear` and session resets | A chat history layer |
 | File-based, git-friendly, local-first | A hosted SaaS (today) |
 | MCP-native — every operation is a tool | A code-search or context-stuffing tool |

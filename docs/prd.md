@@ -135,12 +135,14 @@ Roady must answer instantly:
 
 ## Out of Scope (Core)
 
-- Ownership tracking
-- Real-time presence
-- Team dashboards
-- Forecasting
-- Billing
-- Compliance
+> Corrected 2026-08. This list previously named ownership tracking, team
+> dashboards, forecasting, billing, and compliance as out of scope. All of
+> them shipped in Core, so the list described the opposite of reality.
+
+- Real-time multi-user presence (state syncs through git, not a server)
+- A hosted control plane — see `ROADMAP.md` for the Roady Cloud boundary
+- Authenticated identity: actors are asserted, never verified
+  (see `docs/audit-grc.md`)
 
 ---
 
