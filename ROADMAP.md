@@ -9,7 +9,7 @@ intended **open-core boundary** for a future hosted product.
 
 ---
 
-## Now (v0.13.x — in progress)
+## Now (v0.14.0 — shipped)
 
 - **Coordination**: owner-scoped task queries (`roady task mine |
   assigned <name> | unassigned`), per-owner WIP limits
@@ -50,7 +50,7 @@ intended **open-core boundary** for a future hosted product.
 - `roady demo` for <1s aha; `roady init --interactive` default in TTY;
   empty-state ladder on `roady status`
 
-## Next (v0.13.x)
+## Next (v0.15.x)
 
 - **Cross-project task dependencies** — `@project:task-id` syntax in
   `DependsOn` so an org-level plan can express "feature-payments task

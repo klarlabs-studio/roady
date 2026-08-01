@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.13.0] - 2026-08-01
+## [0.14.0] - 2026-08-01
 
 Coordination and stakeholder reporting without a UI, agent-traceable audit
 trails, and bidirectional tracker sync. Three breaking changes, all listed

@@ -994,7 +994,7 @@ func TestClient_GetSchema(t *testing.T) {
 func TestClient_Compatible(t *testing.T) {
 	mt := newMockTransport()
 	// Same major as SupportedSchemaMajor, newer minor: compatible.
-	mt.setResourceResponse(`{"schema_version":"2.2.0","server_version":"0.13.0","changelog":"https://example.com"}`)
+	mt.setResourceResponse(`{"schema_version":"2.2.0","server_version":"0.14.0","changelog":"https://example.com"}`)
 	c := newTestClient(t, mt)
 
 	if err := c.Compatible(context.Background()); err != nil {
