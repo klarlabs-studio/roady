@@ -7,41 +7,11 @@ import (
 
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/felixgeelhaar/roady/internal/infrastructure/wiring"
-	"github.com/felixgeelhaar/roady/pkg/application"
 	"github.com/felixgeelhaar/roady/pkg/domain"
 	"github.com/felixgeelhaar/roady/pkg/domain/planning"
 	"github.com/felixgeelhaar/roady/pkg/domain/spec"
 	"github.com/felixgeelhaar/roady/pkg/storage"
 )
-
-func TestIsValidBrowserURL(t *testing.T) {
-	tests := []struct {
-		name  string
-		url   string
-		valid bool
-	}{
-		{"http", "http://localhost:3000", true},
-		{"https", "https://example.com/path", true},
-		{"bad scheme", "file:///etc/passwd", false},
-		{"shell char", "http://example.com;rm -rf /", false},
-		{"newline", "http://example.com/\n", false},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := isValidBrowserURL(tt.url); got != tt.valid {
-				t.Fatalf("isValidBrowserURL(%q) = %v, want %v", tt.url, got, tt.valid)
-			}
-		})
-	}
-}
-
-func TestOpenBrowser_InvalidURL(t *testing.T) {
-	if err := openBrowser("ftp://example.com"); err == nil {
-		t.Fatal("expected error for invalid url")
-	}
-}
 
 func TestInitialModel_Success(t *testing.T) {
 	_, cleanup := withTempDir(t)
@@ -142,50 +112,6 @@ func TestDashboardModel_ViewError(t *testing.T) {
 	view := m.View()
 	if !strings.Contains(view, "Error loading dashboard") {
 		t.Fatalf("expected error view, got:\n%s", view)
-	}
-}
-
-func TestDashboardDataProvider_GetPlanAndState(t *testing.T) {
-	_, cleanup := withTempDir(t)
-	defer cleanup()
-
-	repo := storage.NewFilesystemRepository(".")
-	if err := repo.Initialize(); err != nil {
-		t.Fatalf("init repo: %v", err)
-	}
-
-	plan := &planning.Plan{
-		ID:             "plan-1",
-		ApprovalStatus: planning.ApprovalApproved,
-		Tasks:          []planning.Task{{ID: "task-1", Title: "Task 1"}},
-	}
-	if err := repo.SavePlan(plan); err != nil {
-		t.Fatalf("save plan: %v", err)
-	}
-
-	state := planning.NewExecutionState("plan-1")
-	state.TaskStates["task-1"] = planning.TaskResult{Status: planning.StatusPending}
-	if err := repo.SaveState(state); err != nil {
-		t.Fatalf("save state: %v", err)
-	}
-
-	planSvc := application.NewPlanService(repo, application.NewAuditService(repo))
-	provider := dashboardDataProvider{services: &wiring.AppServices{Plan: planSvc}}
-
-	gotPlan, err := provider.GetPlan()
-	if err != nil {
-		t.Fatalf("GetPlan failed: %v", err)
-	}
-	if gotPlan == nil || gotPlan.ID != "plan-1" {
-		t.Fatalf("unexpected plan: %#v", gotPlan)
-	}
-
-	gotState, err := provider.GetState()
-	if err != nil {
-		t.Fatalf("GetState failed: %v", err)
-	}
-	if gotState == nil || gotState.TaskStates["task-1"].Status != planning.StatusPending {
-		t.Fatalf("unexpected state: %#v", gotState)
 	}
 }
 

@@ -853,16 +853,6 @@ func TestCov_Update_SpinnerTick_DuringInstall(t *testing.T) {
 // dashboard.go - openBrowser (15.4%) - test invalid URL case
 // ============================================================================
 
-func TestCov_OpenBrowser_InvalidURL(t *testing.T) {
-	err := openBrowser("javascript:alert(1)")
-	if err == nil {
-		t.Fatal("expected error for invalid URL")
-	}
-	if !strings.Contains(err.Error(), "invalid URL") {
-		t.Fatalf("expected 'invalid URL' error, got: %v", err)
-	}
-}
-
 // ============================================================================
 // status.go - orEmptySlice edge cases
 // ============================================================================
@@ -3193,27 +3183,6 @@ func TestCov_WatchCmd_SinglePass(t *testing.T) {
 // ---------------------------------------------------------------------------
 // dashboard.go - isValidBrowserURL and openBrowser error paths
 // ---------------------------------------------------------------------------
-
-func TestCov_IsValidBrowserURL(t *testing.T) {
-	tests := []struct {
-		url  string
-		want bool
-	}{
-		{"http://localhost:8080", true},
-		{"https://example.com", true},
-		{"ftp://bad", false},
-		{"javascript:alert(1)", false},
-		{"", false},
-		{"not-a-url", false},
-	}
-
-	for _, tt := range tests {
-		got := isValidBrowserURL(tt.url)
-		if got != tt.want {
-			t.Errorf("isValidBrowserURL(%q) = %v, want %v", tt.url, got, tt.want)
-		}
-	}
-}
 
 // ---------------------------------------------------------------------------
 // cost.go - Additional cost output paths

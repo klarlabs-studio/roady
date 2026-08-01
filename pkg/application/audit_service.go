@@ -5,11 +5,26 @@ import (
 	"time"
 
 	"github.com/felixgeelhaar/roady/pkg/domain"
+	"github.com/felixgeelhaar/roady/pkg/domain/provenance"
 	"github.com/google/uuid"
 )
 
 type AuditService struct {
 	repo domain.WorkspaceRepository
+
+	// prov identifies the agent and session behind every event this service
+	// records. Stamped in Log so no call site can omit it.
+	prov provenance.Context
+}
+
+// SetProvenance sets the identity stamped onto subsequently recorded events.
+func (s *AuditService) SetProvenance(ctx provenance.Context) {
+	s.prov = ctx
+}
+
+// Provenance returns the identity currently being stamped.
+func (s *AuditService) Provenance() provenance.Context {
+	return s.prov
 }
 
 // Compile-time check that AuditService implements AuditLogger
@@ -19,7 +34,7 @@ func NewAuditService(repo domain.WorkspaceRepository) *AuditService {
 	return &AuditService{repo: repo}
 }
 
-func (s *AuditService) Log(action string, actor string, metadata map[string]interface{}) error {
+func (s *AuditService) Log(action string, actor string, metadata map[string]any) error {
 	// Get the latest event to continue the hash chain
 	events, _ := s.repo.LoadEvents()
 	prevHash := ""
@@ -32,7 +47,7 @@ func (s *AuditService) Log(action string, actor string, metadata map[string]inte
 		Timestamp: time.Now(),
 		Action:    action,
 		Actor:     actor,
-		Metadata:  metadata,
+		Metadata:  s.prov.Apply(metadata),
 		PrevHash:  prevHash,
 	}
 	event.Hash = event.CalculateHash()
@@ -44,31 +59,81 @@ func (s *AuditService) GetTimeline() ([]domain.Event, error) {
 	return s.repo.LoadEvents()
 }
 
+// rawEventLoader exposes the undeduplicated log. Asserted optionally so
+// repositories and test doubles without it keep working.
+type rawEventLoader interface {
+	LoadEventsRaw() ([]domain.Event, error)
+}
+
 func (s *AuditService) VerifyIntegrity() ([]string, error) {
-	events, err := s.repo.LoadEvents()
+	// Verify against the raw log: LoadEvents deduplicates so projections
+	// stay correct, but a reviewer should still be told the log contains
+	// the same event twice.
+	load := s.repo.LoadEvents
+	if raw, ok := s.repo.(rawEventLoader); ok {
+		load = raw.LoadEventsRaw
+	}
+
+	events, err := load()
 	if err != nil {
 		return nil, err
 	}
 
 	var violations []string
-	lastHash := ""
 
-	for i, e := range events {
-		// 1. Verify links
-		if e.PrevHash != lastHash {
-			violations = append(violations, fmt.Sprintf("Event %d (%s): PrevHash mismatch. Audit trail broken.", i, e.ID))
+	// The log is verified as a hash-linked graph rather than a strict
+	// sequence. Two collaborators appending concurrently produce branches
+	// from a shared parent, and git union-merges them in whatever order the
+	// timestamps fall; requiring each event to follow the previous *line*
+	// rejected every such merge, which is what made concurrent work
+	// impossible.
+	//
+	// Nothing is given up by relaxing order, because CalculateHash covers
+	// PrevHash: altering an event's content or reparenting it breaks that
+	// event's own hash. What the links still prove is that no event which
+	// something else references has been removed.
+	present := make(map[string]bool, len(events))
+	seenIDs := make(map[string]int, len(events))
+	for i := range events {
+		present[events[i].Hash] = true
+		if first, dup := seenIDs[events[i].ID]; dup {
+			violations = append(violations, fmt.Sprintf(
+				"Event %d (%s): duplicate of event %d. The log contains the same event twice.",
+				i, events[i].ID, first))
+			continue
+		}
+		seenIDs[events[i].ID] = i
+	}
+
+	for i := range events {
+		e := events[i]
+
+		// 1. Self-hash. Covers content and parentage together.
+		if e.Hash != e.CalculateHash() {
+			violations = append(violations, fmt.Sprintf(
+				"Event %d (%s): Content hash mismatch. Possible tampering.", i, e.ID))
+			continue
 		}
 
-		// 2. Verify self-hash (requires a shallow copy to check without the hash field)
-		expected := e.CalculateHash()
-		if e.Hash != expected {
-			violations = append(violations, fmt.Sprintf("Event %d (%s): Content hash mismatch. Possible tampering.", i, e.ID))
+		// 2. Parent resolution. An empty PrevHash is a root, which a fresh
+		// log and each independently-started branch legitimately have.
+		if e.PrevHash != "" && !present[e.PrevHash] {
+			violations = append(violations, fmt.Sprintf(
+				"Event %d (%s): missing parent %s. An earlier event has been removed.",
+				i, e.ID, shortHash(e.PrevHash)))
 		}
-
-		lastHash = e.Hash
 	}
 
 	return violations, nil
+}
+
+// shortHash trims a hash for human-readable findings while staying long
+// enough to identify the event.
+func shortHash(h string) string {
+	if len(h) <= 12 {
+		return h
+	}
+	return h[:12]
 }
 
 // GetVelocity returns the average verified tasks per day over the last 7 days.

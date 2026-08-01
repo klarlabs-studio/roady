@@ -41,6 +41,7 @@ func (s *PolicyService) CheckCompliance() ([]policy.Violation, error) {
 	var activeRules []policy.Rule
 	if cfg != nil {
 		activeRules = append(activeRules, &rules.MaxWIPRule{Limit: cfg.MaxWIP})
+		activeRules = append(activeRules, &rules.MaxWIPPerOwnerRule{Limit: cfg.MaxWIPPerOwner})
 	}
 	activeRules = append(activeRules, &rules.DependencyRule{})
 
@@ -52,23 +53,47 @@ func (s *PolicyService) CheckCompliance() ([]policy.Violation, error) {
 }
 
 func (s *PolicyService) ValidateTransition(taskID string, event string) error {
+	return s.ValidateTransitionForOwner(taskID, event, "")
+}
+
+// ValidateTransitionForOwner is ValidateTransition with the acting owner
+// known, which is what per-owner WIP limits need. An empty owner skips the
+// per-owner check.
+func (s *PolicyService) ValidateTransitionForOwner(taskID, event, owner string) error {
+	// Role enforcement covers every transition, not just start — a viewer
+	// must not be able to complete or reopen work either.
+	if err := s.ValidateActorCanTransition(owner); err != nil {
+		return err
+	}
+
 	if event != "start" {
 		return nil
 	}
 
-	// 1. Check WIP Limit
+	// 1. Check WIP Limits
 	cfg, err := s.repo.LoadPolicy()
-	if err == nil && cfg != nil && cfg.MaxWIP > 0 {
+	if err == nil && cfg != nil && (cfg.MaxWIP > 0 || cfg.MaxWIPPerOwner > 0) {
 		state, err := s.repo.LoadState()
 		if err == nil {
 			inProgressCount := 0
+			ownerCount := 0
+			wantOwner := strings.ToLower(strings.TrimSpace(owner))
+
 			for id, ts := range state.TaskStates {
-				if id != taskID && ts.Status == "in_progress" {
-					inProgressCount++
+				if id == taskID || ts.Status != "in_progress" {
+					continue
+				}
+				inProgressCount++
+				if wantOwner != "" && strings.ToLower(strings.TrimSpace(ts.Owner)) == wantOwner {
+					ownerCount++
 				}
 			}
-			if inProgressCount >= cfg.MaxWIP {
+
+			if cfg.MaxWIP > 0 && inProgressCount >= cfg.MaxWIP {
 				return fmt.Errorf("WIP limit reached (current limit: %d); please complete or stop an existing task before starting a new one", cfg.MaxWIP)
+			}
+			if cfg.MaxWIPPerOwner > 0 && wantOwner != "" && ownerCount >= cfg.MaxWIPPerOwner {
+				return fmt.Errorf("per-owner WIP limit reached for %s (current limit: %d); complete or stop one of their tasks first", strings.TrimSpace(owner), cfg.MaxWIPPerOwner)
 			}
 		}
 	}

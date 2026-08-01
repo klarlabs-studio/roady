@@ -7,6 +7,163 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-08-01
+
+Coordination and stakeholder reporting without a UI, agent-traceable audit
+trails, and bidirectional tracker sync. Three breaking changes, all listed
+below.
+
+MCP schema version is now **2.0.0** (see `docs/mcp-schema-changelog.md`).
+`pkg/sdk` moves to `SupportedSchemaMajor = "2"` to match; an SDK build
+pinned to major 1 will refuse to talk to a v0.13 server, by design.
+
+### Added — coordination
+
+- `roady task mine`, `roady task assigned <name>`, and `roady task unassigned`
+  make assignment readable. Previously `roady task assign` wrote an owner that
+  nothing could query back, so "who is working on what" had no answer.
+- MCP `roady_tasks` gains an `assignee` filter and an `unassigned` status.
+- `policy.max_wip_per_owner` caps in-progress work per person. The existing
+  project-wide `max_wip` let one person hold the entire allowance.
+- `policy.enforce_team_roles` (default `false`) makes `.roady/team.yaml` a
+  guard rather than documentation — a listed viewer can no longer transition
+  tasks. Only actors present in the roster are checked, so unlisted actors and
+  existing projects are unaffected.
+
+### Added — stakeholder reporting
+
+- `roady report` renders progress, forecast, risks, ownership, and a change
+  log as Markdown, self-contained HTML (~5KB, no scripts or external
+  requests, light/dark aware, printable), or JSON. `--since` accepts `7d`,
+  `2w`, or an absolute date.
+- `roady notify digest` sends one chat-sized progress summary through
+  configured adapters instead of a message per domain event. Supports
+  `--dry-run`, `--adapter`, and `--since`.
+- Completion estimates are withheld below three velocity data points rather
+  than printing a date nobody should plan around.
+
+### Added — audit trails for GRC
+
+- `roady audit trail [task-id] [--agent X] [--session Y] [--since 30d]`
+  produces an evidence trail: chain-integrity status, findings, the task's
+  evidence and spec citation, who acted, and every recorded event. Markdown
+  or JSON. Exits non-zero when chain verification fails, so it can gate CI.
+- Every event now records the agent and session behind it. Resolution:
+  `ROADY_SESSION_ID` / `ROADY_AGENT`, then runtime detection (Claude Code,
+  Cursor, Codex, Gemini CLI), plus the surface (`cli` / `mcp` / `plugin`).
+  A session is minted once per process, so one MCP server run groups an
+  agent's whole conversation. Previously every agent recorded as the literal
+  string `ai-agent`, making "which agent did this?" unanswerable.
+- MCP `roady_transition_task` accepts `session_id` and `agent`; a
+  caller-supplied identity overrides the ambient process one.
+- `docs/audit-grc.md` documents what a trail attests — **a tamper-evident
+  record of what was asserted, not proof of identity**, since actor and agent
+  are caller-supplied and unauthenticated.
+
+### Removed — BREAKING
+
+- Stale duplicate docs: `docs/roadmap.md` (superseded by `ROADMAP.md`,
+  and whitespace-corrupted — 178 of 232 lines were blank) and
+  `docs/small.md` (a truncated copy of `docs/vision.md`).
+- The web dashboard is gone: `roady dashboard serve`, `roady dashboard
+  open`, the `/kanban` and `/org/kanban` boards, `/api/*` endpoints, the
+  SSE stream, action endpoints, and the shared-token auth. The whole
+  `pkg/infrastructure/dashboard` package and `docs/dashboard.md` are
+  removed.
+
+  Rationale: an agent can render and update a human-readable view from
+  the same data through Roady's MCP Apps, and people who are not in an
+  agent client are better served by a document than by a server they
+  have to reach. Replacements:
+
+  - `roady report --format html -o status.html` — shareable progress
+  - `roady notify digest` — push a summary to a channel
+  - `roady dashboard` — the interactive TUI, unchanged
+
+### Added — parallel collaboration
+
+- `roady audit verify` treats the event log as a hash-linked graph instead
+  of a strict sequence. Two people appending concurrently produced branches
+  that union-merge cleanly but failed verification, which made parallel work
+  impossible. Nothing is given up: each event's hash already covers its own
+  content and its parent reference, so tampering and reparenting are still
+  caught, and a removed event still leaves a dangling parent.
+- `.gitattributes` marks `events.jsonl` `merge=union` so git merges it
+  instead of conflicting.
+- `LoadEvents` deduplicates by event ID so a line reproduced by a union
+  merge cannot double-count in velocity, cost, or task projections.
+  Verification reads the raw log via `LoadEventsRaw` and still reports
+  duplicates.
+- `roady state rebuild [--dry-run]` reconstructs `state.json` by replaying
+  the log. `state.json` is a whole-file document and still conflicts in git;
+  it is derived data, so the resolution is to keep either side and replay.
+  The replay is idempotent and order-independent.
+
+### Changed — MCP agent experience
+
+- Every MCP tool now carries behaviour annotations (`readOnlyHint`,
+  `destructiveHint`, `idempotentHint`, `openWorldHint`). None did before,
+  and the spec's defaults are pessimistic — an unannotated tool is assumed
+  not read-only and potentially destructive, so ~30 pure read tools were
+  telling every client that reading a plan might destroy something.
+  Classification is accurate rather than convenient: the AI tools are
+  deliberately *not* marked read-only because they record token usage to
+  the audit log, and plan generation / drift acceptance are marked
+  destructive because they overwrite state that cannot be recovered.
+- Tests fail the build if a tool is registered without a classification,
+  if a classification outlives its tool, or if the judgement calls above
+  are reversed.
+
+### Removed — BREAKING (MCP)
+
+- The five deprecated tool aliases from v0.10.0 are gone:
+  `roady_get_ready_tasks`, `roady_get_blocked_tasks`,
+  `roady_get_in_progress_tasks` (use `roady_tasks` with `status`),
+  `roady_sticky_drift` (use `roady_drift_recurring`), and
+  `roady_smart_decompose` (use `roady_plan_decompose`).
+  Tool definitions cost context in every agent session: the surface was
+  ~11,000 tokens, of which these five were ~900. Duplicate tools also
+  degrade tool-selection accuracy. Now 54 tools, ~10,200 tokens.
+  `pkg/sdk` is repointed at the canonical tools; its method signatures are
+  unchanged, so SDK consumers need no edit.
+
+### Added — bidirectional tracker sync
+
+- `roady sync` now writes Roady's status back to the external tracker.
+  `Syncer.Push` was implemented by all seven plugins but called from
+  nothing, so sync was read-only despite the docs claiming otherwise.
+  `--no-push` restores pull-only behaviour.
+- Inbound sync honours all five statuses. Previously only `done` and
+  `in_progress` were mapped and `blocked`/`pending`/`verified` were
+  silently dropped, so a task blocked in Jira stayed pending in Roady.
+- `planning.EventForTransition` / `planning.PathToStatus` reverse-map the
+  FSM, so a status the tracker reports is reached by walking real
+  transitions rather than being written past the state machine.
+
+### Fixed
+
+- All 14 committed MCP App artifacts were stale, built against older
+  dependencies. Rebuilt, and CI now rebuilds them on every run and fails
+  on drift — nothing previously verified that the committed HTML matched
+  `app/src`, which is how they went stale unnoticed.
+- The website still advertised the removed web dashboard (`roady
+  dashboard serve`, a "Live Kanban" feature card, and a `/org/kanban`
+  reference). Replaced with `roady report` and `roady audit trail`.
+- `ui://roady/billing` was registered as an MCP App but its built file was
+  never committed, so every request for it failed at runtime. The app is
+  now built and shipped, with a test asserting every registered app
+  resource is readable.
+- Plugin provider inference matched only github/jira/linear, so trello,
+  asana, and notion all filed task links under `external` and collided in
+  `ExternalRefs`. All six are recognised, and custom plugins derive a
+  stable name from their binary.
+
+- Service-load warnings printed to stdout, corrupting `--json` output on every
+  command that offers it. They now go to stderr.
+- `roady task start` resolved the actor from `USER` while `roady task mine`
+  used `ROADY_USER` then `git user.name`; ownership and the new per-owner
+  guards disagreed about identity. Both now share one resolver.
+
 ## [0.12.0] - 2026-05-16
 
 Four polish features on top of v0.11.3's Kanban. All backward-compatible.

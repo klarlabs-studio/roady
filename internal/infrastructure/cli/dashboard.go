@@ -4,31 +4,22 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
-	"os/signal"
-	"runtime"
-	"strings"
-	"syscall"
-	"time"
 
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/felixgeelhaar/roady/internal/infrastructure/wiring"
-	"github.com/felixgeelhaar/roady/pkg/application"
-	"github.com/felixgeelhaar/roady/pkg/domain/planning"
-	"github.com/felixgeelhaar/roady/pkg/infrastructure/dashboard"
 	"github.com/spf13/cobra"
 )
 
 var dashboardCmd = &cobra.Command{
 	Use:   "dashboard",
-	Short: "Project dashboards (TUI and web-based)",
-	Long: `The dashboard command provides both TUI and web-based interfaces for viewing
-your Roady project status, tasks, and plan details.
+	Short: "Interactive TUI dashboard",
+	Long: `Open an interactive terminal dashboard showing project status, tasks,
+and drift at a glance.
 
-Without subcommands, opens the interactive TUI dashboard.
-Use 'roady dashboard serve' for the web-based dashboard.`,
+For a shareable progress document — one a lead or stakeholder can read
+without installing anything — use 'roady report' instead. To push a
+summary to a chat channel on a schedule, use 'roady notify digest'.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if os.Getenv("ROADY_SKIP_DASHBOARD_RUN") == "true" {
 			return nil
@@ -41,225 +32,8 @@ Use 'roady dashboard serve' for the web-based dashboard.`,
 	},
 }
 
-var (
-	dashboardPort      int
-	dashboardAuthToken string
-)
-
-// resolveDashboardToken picks the auth token from the --auth-token flag,
-// falling back to the ROADY_DASHBOARD_TOKEN env var. Empty = public.
-func resolveDashboardToken() string {
-	if dashboardAuthToken != "" {
-		return dashboardAuthToken
-	}
-	return os.Getenv("ROADY_DASHBOARD_TOKEN")
-}
-
-var dashboardServeCmd = &cobra.Command{
-	Use:   "serve",
-	Short: "Start the web dashboard server",
-	Long: `Start a local web server to view the dashboard.
-
-The dashboard provides:
-  - Project overview with completion statistics
-  - Task list with status indicators
-  - Plan details and approval status
-
-Access the dashboard in your browser at the displayed URL.`,
-	Example: `  # Start on default port 3000
-  roady dashboard serve
-
-  # Start on custom port
-  roady dashboard serve --port 8080`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		services, err := loadServicesForCurrentDir()
-		if err != nil {
-			return err
-		}
-
-		provider := &dashboardDataProvider{services: services}
-
-		addr := fmt.Sprintf(":%d", dashboardPort)
-		server, err := dashboard.NewServer(addr, provider)
-		if err != nil {
-			return fmt.Errorf("create server: %w", err)
-		}
-
-		// Wire cross-project Kanban over the workspace root so /org/kanban surfaces
-		// every project (root + sub-projects under .roady/projects/<name>/).
-		root := services.Workspace.Repo.Root()
-		server.EnableOrgKanban(application.NewOrgService(root), nil)
-		// Wire task-action buttons (Start / Complete / Block / Unblock / Reopen)
-		// on the per-project Kanban board.
-		server.EnableTaskActions(services.Task)
-		// Wire cross-project action routing so /org/kanban DnD targets the
-		// right sub-project's TaskService.
-		server.EnableOrgTaskActions(newOrgTaskActionsResolver(root))
-		// Optional auth token gate (--auth-token flag or ROADY_DASHBOARD_TOKEN env).
-		if tok := resolveDashboardToken(); tok != "" {
-			server.EnableAuthToken(tok)
-		}
-
-		// Handle graceful shutdown
-		stop := make(chan os.Signal, 1)
-		signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
-
-		go func() {
-			<-stop
-			fmt.Println("\nShutting down dashboard...")
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cancel()
-			_ = server.Shutdown(ctx)
-		}()
-
-		fmt.Printf("Dashboard starting on http://localhost:%d\n", dashboardPort)
-		fmt.Println("Press Ctrl+C to stop")
-
-		if err := server.Start(); err != nil && err.Error() != "http: Server closed" {
-			return fmt.Errorf("server error: %w", err)
-		}
-
-		return nil
-	},
-}
-
-var dashboardOpenCmd = &cobra.Command{
-	Use:   "open",
-	Short: "Start the web dashboard and open in browser",
-	Long:  `Start the web dashboard server and automatically open it in your default browser.`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		services, err := loadServicesForCurrentDir()
-		if err != nil {
-			return err
-		}
-
-		provider := &dashboardDataProvider{services: services}
-
-		addr := fmt.Sprintf(":%d", dashboardPort)
-		server, err := dashboard.NewServer(addr, provider)
-		if err != nil {
-			return fmt.Errorf("create server: %w", err)
-		}
-
-		// Wire cross-project Kanban over the workspace root so /org/kanban surfaces
-		// every project (root + sub-projects under .roady/projects/<name>/).
-		root := services.Workspace.Repo.Root()
-		server.EnableOrgKanban(application.NewOrgService(root), nil)
-		// Wire task-action buttons (Start / Complete / Block / Unblock / Reopen)
-		// on the per-project Kanban board.
-		server.EnableTaskActions(services.Task)
-		// Wire cross-project action routing so /org/kanban DnD targets the
-		// right sub-project's TaskService.
-		server.EnableOrgTaskActions(newOrgTaskActionsResolver(root))
-		// Optional auth token gate (--auth-token flag or ROADY_DASHBOARD_TOKEN env).
-		if tok := resolveDashboardToken(); tok != "" {
-			server.EnableAuthToken(tok)
-		}
-
-		// Handle graceful shutdown
-		stop := make(chan os.Signal, 1)
-		signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
-
-		go func() {
-			<-stop
-			fmt.Println("\nShutting down dashboard...")
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cancel()
-			_ = server.Shutdown(ctx)
-		}()
-
-		// Start server in background
-		go func() {
-			if err := server.Start(); err != nil && err.Error() != "http: Server closed" {
-				fmt.Printf("Server error: %v\n", err)
-			}
-		}()
-
-		// Wait a moment for server to start
-		time.Sleep(500 * time.Millisecond)
-
-		// Open browser
-		url := fmt.Sprintf("http://localhost:%d", dashboardPort)
-		fmt.Printf("Opening %s in browser...\n", url)
-		fmt.Println("Press Ctrl+C to stop")
-
-		if err := openBrowser(url); err != nil {
-			fmt.Printf("Could not open browser: %v\n", err)
-			fmt.Printf("Please open %s manually\n", url)
-		}
-
-		// Wait for signal
-		<-stop
-		return nil
-	},
-}
-
 func init() {
 	RootCmd.AddCommand(dashboardCmd)
-	dashboardCmd.AddCommand(dashboardServeCmd)
-	dashboardCmd.AddCommand(dashboardOpenCmd)
-
-	dashboardServeCmd.Flags().IntVarP(&dashboardPort, "port", "p", 3000, "Port to listen on")
-	dashboardOpenCmd.Flags().IntVarP(&dashboardPort, "port", "p", 3000, "Port to listen on")
-
-	const tokHelp = "Shared bearer token required on every request (env: ROADY_DASHBOARD_TOKEN). Empty = public."
-	dashboardServeCmd.Flags().StringVar(&dashboardAuthToken, "auth-token", "", tokHelp)
-	dashboardOpenCmd.Flags().StringVar(&dashboardAuthToken, "auth-token", "", tokHelp)
-}
-
-// dashboardDataProvider implements dashboard.DataProvider
-type dashboardDataProvider struct {
-	services *wiring.AppServices
-}
-
-func (p *dashboardDataProvider) GetPlan() (*planning.Plan, error) {
-	return p.services.Plan.GetPlan()
-}
-
-func (p *dashboardDataProvider) GetState() (*planning.ExecutionState, error) {
-	return p.services.Plan.GetState()
-}
-
-func openBrowser(url string) error {
-	// Validate URL to prevent command injection
-	if !isValidBrowserURL(url) {
-		return fmt.Errorf("invalid URL: must be http:// or https://")
-	}
-
-	var cmd string
-	var args []string
-
-	switch runtime.GOOS {
-	case "darwin":
-		cmd = "open"
-		args = []string{url}
-	case "linux":
-		cmd = "xdg-open"
-		args = []string{url}
-	case "windows":
-		cmd = "cmd"
-		args = []string{"/c", "start", url}
-	default:
-		return fmt.Errorf("unsupported platform")
-	}
-
-	return exec.Command(cmd, args...).Start() // #nosec G204 -- URL validated above
-}
-
-// isValidBrowserURL validates that the URL is a safe http/https URL.
-func isValidBrowserURL(url string) bool {
-	// Only allow http and https schemes
-	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
-		return false
-	}
-	// Reject URLs with shell metacharacters
-	dangerousChars := []string{";", "|", "&", "$", "`", "(", ")", "{", "}", "<", ">", "\n", "\r"}
-	for _, char := range dangerousChars {
-		if strings.Contains(url, char) {
-			return false
-		}
-	}
-	return true
 }
 
 // Styles

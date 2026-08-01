@@ -1,0 +1,11 @@
+# events.jsonl is an append-only, hash-linked log. Two collaborators working
+# in parallel each append their own lines, so a union merge is the correct
+# resolution: keep both sides. Integrity verification treats the log as a
+# graph rather than a strict sequence, so branches that merged this way still
+# verify, and LoadEvents deduplicates any line a union reproduces.
+.roady/events.jsonl merge=union
+.roady/projects/*/events.jsonl merge=union
+
+# Built MCP App UIs are generated artifacts; never hand-merge them.
+# Regenerate with `cd app && npm ci && bash build.sh`.
+internal/infrastructure/mcp/dist/*.html -diff linguist-generated

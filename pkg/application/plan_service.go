@@ -106,7 +106,7 @@ func (s *PlanService) UpdatePlan(tasks []planning.Task) (*planning.Plan, error) 
 		return nil, err
 	}
 
-	if err := s.audit.Log("plan.update_smart", "ai", map[string]interface{}{
+	if err := s.audit.Log("plan.update_smart", "ai", map[string]any{
 		"plan_id":    plan.ID,
 		"spec_id":    plan.SpecID,
 		"task_count": len(tasks),
@@ -197,7 +197,7 @@ func (s *PlanService) PrunePlan() error {
 
 	plan.Tasks = s.reconciler.FilterValidTasks(plan.Tasks, validTaskIDs, validFeatureIDs)
 	plan.UpdatedAt = time.Now()
-	if err := s.audit.Log("plan.prune", "cli", map[string]interface{}{
+	if err := s.audit.Log("plan.prune", "cli", map[string]any{
 		"plan_id": plan.ID,
 		"spec_id": plan.SpecID,
 	}); err != nil {
@@ -217,7 +217,7 @@ func (s *PlanService) RejectPlan() error {
 
 	plan.ApprovalStatus = planning.ApprovalRejected
 	plan.UpdatedAt = time.Now()
-	if err := s.audit.Log("plan.reject", "cli", map[string]interface{}{
+	if err := s.audit.Log("plan.reject", "cli", map[string]any{
 		"plan_id": plan.ID,
 		"spec_id": plan.SpecID,
 	}); err != nil {
@@ -264,6 +264,15 @@ func (s *PlanService) GetInProgressTasks(ctx context.Context) ([]project.TaskSum
 		ctx = context.Background()
 	}
 	return s.coordinator.GetInProgressTasks(ctx)
+}
+
+// GetTasksByOwner returns tasks assigned to owner. An empty owner returns
+// unassigned tasks.
+func (s *PlanService) GetTasksByOwner(ctx context.Context, owner string) ([]project.TaskSummary, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	return s.coordinator.GetTasksByOwner(ctx, owner)
 }
 
 // GetCoordinator returns the underlying project coordinator for advanced operations.

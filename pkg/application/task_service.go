@@ -30,9 +30,10 @@ func NewTaskService(repo domain.WorkspaceRepository, audit domain.AuditLogger, p
 func (s *TaskService) TransitionTask(taskID string, event string, actor string, evidence string) error {
 	ctx := context.Background()
 
-	// Validate policy first if policy service is available
+	// Validate policy first if policy service is available. The actor is the
+	// owner a "start" would assign, so pass it through for per-owner limits.
 	if s.policy != nil {
-		if err := s.policy.ValidateTransition(taskID, event); err != nil {
+		if err := s.policy.ValidateTransitionForOwner(taskID, event, actor); err != nil {
 			return err
 		}
 	}
@@ -246,7 +247,7 @@ func (s *TaskService) StartTask(ctx context.Context, taskID, owner, rateID strin
 		ctx = context.Background()
 	}
 	if s.policy != nil {
-		if err := s.policy.ValidateTransition(taskID, "start"); err != nil {
+		if err := s.policy.ValidateTransitionForOwner(taskID, "start", owner); err != nil {
 			return err
 		}
 	}

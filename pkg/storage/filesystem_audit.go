@@ -40,7 +40,19 @@ func (r *FilesystemRepository) RecordEvent(event domain.Event) (err error) {
 	return nil
 }
 
+// LoadEventsRaw returns every line in the log, including duplicates that a
+// union merge may have produced. Only integrity verification wants this;
+// everything else reads through LoadEvents, which deduplicates so projections
+// cannot double-count.
+func (r *FilesystemRepository) LoadEventsRaw() ([]domain.Event, error) {
+	return r.loadEvents(false)
+}
+
 func (r *FilesystemRepository) LoadEvents() ([]domain.Event, error) {
+	return r.loadEvents(true)
+}
+
+func (r *FilesystemRepository) loadEvents(dedupe bool) ([]domain.Event, error) {
 	path, err := r.ResolvePath(EventsFile)
 	if err != nil {
 		return nil, err
@@ -55,7 +67,15 @@ func (r *FilesystemRepository) LoadEvents() ([]domain.Event, error) {
 		return nil, fmt.Errorf("failed to read events file: %w", err)
 	}
 
+	// events.jsonl is append-only and merged with `merge=union` (see
+	// .gitattributes), so a merge can reproduce a line that both branches
+	// already had. Deduplicating by event ID here keeps projections —
+	// velocity, task state, cost — from counting the same event twice.
+	// Verification reads through LoadEventsRaw instead, so a duplicate is
+	// still reported to a reviewer even though it is harmless to the
+	// derived state.
 	var events []domain.Event
+	seen := map[string]bool{}
 	lines := bytes.Split(data, []byte("\n"))
 	for _, line := range lines {
 		if len(bytes.TrimSpace(line)) == 0 {
@@ -64,6 +84,12 @@ func (r *FilesystemRepository) LoadEvents() ([]domain.Event, error) {
 		var e domain.Event
 		if err := json.Unmarshal(line, &e); err != nil {
 			continue // Skip malformed lines
+		}
+		if dedupe && e.ID != "" {
+			if seen[e.ID] {
+				continue
+			}
+			seen[e.ID] = true
 		}
 		events = append(events, e)
 	}

@@ -9,6 +9,8 @@ import (
 	"syscall"
 
 	inframcp "github.com/felixgeelhaar/roady/internal/infrastructure/mcp"
+	"github.com/felixgeelhaar/roady/internal/infrastructure/wiring"
+	"github.com/felixgeelhaar/roady/pkg/domain/provenance"
 	"github.com/spf13/cobra"
 )
 
@@ -24,6 +26,10 @@ var mcpCmd = &cobra.Command{
 		if os.Getenv("ROADY_SKIP_MCP_START") == "true" {
 			return nil
 		}
+		// Declare the surface before any service is built, so events this
+		// process records are attributed to an agent rather than to a CLI run.
+		wiring.SetProvenanceSurface(provenance.SurfaceMCP)
+
 		cwd, err := getProjectRoot()
 		if err != nil {
 			return fmt.Errorf("resolve project path: %w", err)

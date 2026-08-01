@@ -9,21 +9,20 @@ intended **open-core boundary** for a future hosted product.
 
 ---
 
-## Now (v0.12.x — shipped)
+## Now (v0.13.x — in progress)
 
-- **Live Kanban dashboard** at `/kanban` with five status columns
-  (Backlog / Ready / In Progress / Blocked / Done) and a `/api/kanban`
-  JSON endpoint. Click or drag to drive task transitions; board
-  reloads ~200 ms after every change via Server-Sent Events.
-- **Cross-project Kanban** at `/org/kanban` merges every project under
-  the repo (root + sub-projects) into one board; cards carry their
-  origin project and drops route to the right sub-project's
-  `TaskService`.
-- **Action endpoints**: `POST /actions/task/{start,complete,block,unblock,reopen}`,
-  form-encoded, accept optional `project_path` + `project` for org
-  routing.
-- **Dashboard auth token** (`--auth-token` flag or `ROADY_DASHBOARD_TOKEN`
-  env). Bearer / Cookie / one-time `?token=` handshake. Empty = public.
+- **Coordination**: owner-scoped task queries (`roady task mine |
+  assigned <name> | unassigned`), per-owner WIP limits
+  (`policy.max_wip_per_owner`), and enforceable `team.yaml` roles
+  (`policy.enforce_team_roles`).
+- **Stakeholder reporting without a UI**: `roady report` renders
+  progress, forecast, a risk register, ownership, and a change log to
+  Markdown, self-contained HTML, or JSON. `roady notify digest` pushes
+  one chat-sized summary through configured adapters.
+- **Removed the web dashboard** (BREAKING). Agents render and update a
+  human-readable view from the same data through MCP Apps, and
+  stakeholders get a document rather than a server they must reach.
+  `roady dashboard` remains as the TUI.
 
 ## Recently (v0.11.x — shipped)
 
@@ -56,9 +55,6 @@ intended **open-core boundary** for a future hosted product.
 - **Cross-project task dependencies** — `@project:task-id` syntax in
   `DependsOn` so an org-level plan can express "feature-payments task
   X waits on feature-auth task Y".
-- **Inline-edit on Kanban actions** — owner / evidence / reason
-  prompts on the dashboard instead of the current defaults
-  (`owner=dashboard`, `evidence="completed via dashboard"`).
 - **Drift explainer follow-ups**: synthesised "explain + propose patch"
   output that lands a PR-ready diff for accepted drift.
 - **Per-task subagent dispatch**: `roady task start` can hand a ready
@@ -66,8 +62,6 @@ intended **open-core boundary** for a future hosted product.
   with the spec source attached and a deterministic completion hook.
 - **Spec-to-PR loop**: CI integration that auto-detects drift on PR
   merge and either accepts or opens a follow-up issue.
-- **Touch-device Kanban DnD** — HTML5 DnD is desktop-only today;
-  mobile users still have the buttons.
 
 ## Soon (v0.14+)
 
@@ -114,10 +108,18 @@ the existing local workflow with no behavioural change.
 
 ## Out of scope
 
-- Becoming a Linear / Jira replacement. We integrate with them; we do
-  not compete with them.
+- **Matching Linear / Jira feature-for-feature.** No sprints, custom
+  fields, configurable workflows, or non-engineer intake queues. Roady
+  covers two of the jobs those tools do — coordinating who is on what,
+  and keeping stakeholders informed — with generated documents and push
+  notifications rather than an app. Where non-engineers create and
+  triage work daily, use a tracker; Roady syncs with it bidirectionally.
 - A web-based code editor or AI agent of our own.
 - Hosted general-purpose memory for non-coding workflows.
+- **Authenticated identity.** Actors and agents are asserted by the
+  caller and never verified. Roady's audit trail is tamper-evident about
+  what was recorded, not proof of who acted — see
+  [`docs/audit-grc.md`](docs/audit-grc.md).
 
 If you want any of these, Roady is the wrong tool — we are deliberately
 narrow.

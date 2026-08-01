@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 
 	"github.com/felixgeelhaar/roady/internal/infrastructure/wiring"
@@ -36,7 +37,10 @@ func createTaskCommand(use, short, event string) *cobra.Command {
 			service := application.NewTaskService(repo, audit, policy)
 			taskID := args[0]
 
-			actor := os.Getenv("USER")
+			// Same identity resolution as `roady task mine`, so ownership,
+			// per-owner WIP limits, and team-role checks all agree on who
+			// you are.
+			actor := resolveCurrentOwner(gitConfigUserName)
 			if actor == "" {
 				actor = "unknown-human"
 			}
@@ -164,6 +168,71 @@ var taskAssignCmd = &cobra.Command{
 	},
 }
 
+// resolveCurrentOwner determines who "me" is for owner-scoped task queries.
+// Precedence: ROADY_USER, then git user.name, then USER. Returns "" when no
+// identity is configured, which callers must treat as an error rather than as
+// a query for unassigned tasks.
+func resolveCurrentOwner(gitUserName func() string) string {
+	if v := strings.TrimSpace(os.Getenv("ROADY_USER")); v != "" {
+		return v
+	}
+	if v := strings.TrimSpace(gitUserName()); v != "" {
+		return v
+	}
+	return strings.TrimSpace(os.Getenv("USER"))
+}
+
+func gitConfigUserName() string {
+	out, err := exec.Command("git", "config", "user.name").Output()
+	if err != nil {
+		return ""
+	}
+	return string(out)
+}
+
+var taskAssignedCmd = &cobra.Command{
+	Use:   "assigned <assignee>",
+	Short: "List tasks assigned to a person or agent",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return listTasksForOwner(cmd, args[0], "Tasks assigned to "+args[0])
+	},
+}
+
+var taskMineCmd = &cobra.Command{
+	Use:   "mine",
+	Short: "List tasks assigned to you (ROADY_USER, git user.name, or USER)",
+	Args:  cobra.NoArgs,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		owner := resolveCurrentOwner(gitConfigUserName)
+		if owner == "" {
+			return fmt.Errorf("cannot determine who you are: set ROADY_USER or git config user.name")
+		}
+		return listTasksForOwner(cmd, owner, "Your tasks ("+owner+")")
+	},
+}
+
+var taskUnassignedCmd = &cobra.Command{
+	Use:   "unassigned",
+	Short: "List tasks with no assignee",
+	Args:  cobra.NoArgs,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return listTasksForOwner(cmd, "", "Unassigned Tasks")
+	},
+}
+
+func listTasksForOwner(cmd *cobra.Command, owner, title string) error {
+	services, err := loadServicesForCurrentDir()
+	if err != nil {
+		return err
+	}
+	tasks, err := services.Plan.GetTasksByOwner(cmd.Context(), owner)
+	if err != nil {
+		return MapError(fmt.Errorf("get tasks by owner: %w", err))
+	}
+	return outputTaskSummaries(title, tasks, taskQueryJSON)
+}
+
 var taskStartRate string
 
 var taskLogCmd = &cobra.Command{
@@ -208,6 +277,13 @@ func init() {
 	taskReadyCmd.Flags().BoolVar(&taskQueryJSON, "json", false, "Output in JSON format")
 	taskBlockedCmd.Flags().BoolVar(&taskQueryJSON, "json", false, "Output in JSON format")
 	taskInProgressCmd.Flags().BoolVar(&taskQueryJSON, "json", false, "Output in JSON format")
+	taskAssignedCmd.Flags().BoolVar(&taskQueryJSON, "json", false, "Output in JSON format")
+	taskMineCmd.Flags().BoolVar(&taskQueryJSON, "json", false, "Output in JSON format")
+	taskUnassignedCmd.Flags().BoolVar(&taskQueryJSON, "json", false, "Output in JSON format")
+
+	taskCmd.AddCommand(taskAssignedCmd)
+	taskCmd.AddCommand(taskMineCmd)
+	taskCmd.AddCommand(taskUnassignedCmd)
 
 	taskCmd.AddCommand(taskReadyCmd)
 	taskCmd.AddCommand(taskBlockedCmd)

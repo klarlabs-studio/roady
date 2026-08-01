@@ -211,7 +211,16 @@ func mapJiraStatus(jiraName string) planning.TaskStatus {
 	}
 }
 
+// Push sends status only. PushFields is preferred by the host when
+// available; this remains for hosts that predate field support.
 func (s *JiraSyncer) Push(taskID string, status planning.TaskStatus) error {
+	return s.PushFields(taskID, domainPlugin.TaskFields{Status: status})
+}
+
+// PushFields implements domainPlugin.FieldSyncer, setting Jira's priority
+// field alongside the workflow transition.
+func (s *JiraSyncer) PushFields(taskID string, fields domainPlugin.TaskFields) error {
+	status := fields.Status
 	ctx := context.Background()
 
 	// Find the issue by roady-id marker
@@ -257,7 +266,41 @@ func (s *JiraSyncer) Push(taskID string, status planning.TaskStatus) error {
 		return fmt.Errorf("do transition (ID=%s): %w - if this fails, your Jira workflow may use different transition IDs", transitionID, err)
 	}
 
+	// Priority is set separately from the transition. A failure here is
+	// reported but does not undo the transition that already succeeded —
+	// partially-applied is better than silently reverting a status the
+	// caller asked for.
+	if name := jiraPriorityName(fields.Priority); name != "" {
+		if pErr := s.client.Issue.Update(ctx, targetIssue.Key, &issue.UpdateInput{
+			Fields: map[string]interface{}{
+				"priority": map[string]string{"name": name},
+			},
+		}); pErr != nil {
+			return fmt.Errorf("status updated, but setting priority %q failed: %w", name, pErr)
+		}
+	}
+
 	return nil
+}
+
+// jiraPriorityName maps Roady's three-value priority onto Jira's default
+// scheme. An unset Roady priority returns "" so the field is left untouched
+// rather than being reset — sync must not clear a value a human set in Jira
+// just because Roady has nothing to say about it.
+//
+// Jira priority schemes are configurable per project; these are the defaults.
+// A project using custom names needs its own mapping.
+func jiraPriorityName(p planning.TaskPriority) string {
+	switch p {
+	case planning.PriorityHigh:
+		return "High"
+	case planning.PriorityMedium:
+		return "Medium"
+	case planning.PriorityLow:
+		return "Low"
+	default:
+		return ""
+	}
 }
 
 func main() {

@@ -331,7 +331,7 @@ func (c *Client) GetSnapshot(ctx context.Context) (*Snapshot, error) {
 
 // GetReadyTasks returns tasks that are ready to start.
 func (c *Client) GetReadyTasks(ctx context.Context) (string, error) {
-	res, err := c.call(ctx, "roady_get_ready_tasks", nil)
+	res, err := c.call(ctx, "roady_tasks", map[string]any{"status": "ready"})
 	if err != nil {
 		return "", err
 	}
@@ -340,7 +340,7 @@ func (c *Client) GetReadyTasks(ctx context.Context) (string, error) {
 
 // GetBlockedTasks returns tasks that are currently blocked.
 func (c *Client) GetBlockedTasks(ctx context.Context) (string, error) {
-	res, err := c.call(ctx, "roady_get_blocked_tasks", nil)
+	res, err := c.call(ctx, "roady_tasks", map[string]any{"status": "blocked"})
 	if err != nil {
 		return "", err
 	}
@@ -349,7 +349,7 @@ func (c *Client) GetBlockedTasks(ctx context.Context) (string, error) {
 
 // GetInProgressTasks returns tasks currently in progress.
 func (c *Client) GetInProgressTasks(ctx context.Context) (string, error) {
-	res, err := c.call(ctx, "roady_get_in_progress_tasks", nil)
+	res, err := c.call(ctx, "roady_tasks", map[string]any{"status": "in_progress"})
 	if err != nil {
 		return "", err
 	}
@@ -469,7 +469,7 @@ func (c *Client) DebtSummary(ctx context.Context) (string, error) {
 
 // StickyDrift returns unresolved drift items older than 7 days.
 func (c *Client) StickyDrift(ctx context.Context) (string, error) {
-	res, err := c.call(ctx, "roady_sticky_drift", nil)
+	res, err := c.call(ctx, "roady_drift_recurring", nil)
 	if err != nil {
 		return "", err
 	}
@@ -553,7 +553,7 @@ func (c *Client) WorkspacePull(ctx context.Context) (*SyncResult, error) {
 
 // SmartDecompose performs AI-powered context-aware task decomposition.
 func (c *Client) SmartDecompose(ctx context.Context) (*SmartPlan, error) {
-	res, err := c.call(ctx, "roady_smart_decompose", nil)
+	res, err := c.call(ctx, "roady_plan_decompose", nil)
 	if err != nil {
 		return nil, err
 	}

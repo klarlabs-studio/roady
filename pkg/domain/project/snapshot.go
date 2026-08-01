@@ -2,6 +2,7 @@ package project
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/felixgeelhaar/roady/pkg/domain/planning"
@@ -152,6 +153,30 @@ func (c *Coordinator) GetReadyTasks(ctx context.Context) ([]TaskSummary, error) 
 	}
 
 	return ready, nil
+}
+
+// GetTasksByOwner returns tasks assigned to owner, matched case-insensitively
+// and ignoring surrounding whitespace. An empty owner returns unassigned tasks.
+func (c *Coordinator) GetTasksByOwner(ctx context.Context, owner string) ([]TaskSummary, error) {
+	summaries, err := c.GetTaskSummaries(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	want := normalizeOwner(owner)
+
+	var owned []TaskSummary
+	for _, s := range summaries {
+		if normalizeOwner(s.Owner) == want {
+			owned = append(owned, s)
+		}
+	}
+
+	return owned, nil
+}
+
+func normalizeOwner(owner string) string {
+	return strings.ToLower(strings.TrimSpace(owner))
 }
 
 // GetBlockedTasks returns tasks that are currently blocked.

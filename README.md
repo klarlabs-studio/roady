@@ -67,30 +67,71 @@ Status, drift, and progress all show in `roady status` — including a
 `from doc:line` citation for every task so the AI's choices stay
 auditable.
 
-## Live Kanban dashboard
+## Keeping people informed — without a UI
+
+Two jobs a tracker normally does with an app, Roady does with generated
+artifacts and push notifications.
+
+**Coordination — who is on what:**
 
 ```bash
-roady dashboard serve --port 3000
-open http://localhost:3000/kanban
+roady task assign <task-id> alice
+roady task mine                   # your tasks (ROADY_USER, git user.name, or USER)
+roady task assigned alice         # someone else's
+roady task unassigned             # work nobody owns
 ```
 
-Five status columns (Backlog · Ready · In Progress · Blocked · Done).
-Click **Start / Complete / Block / Unblock / Reopen** or drag cards
-between columns — every drop is a real task transition. The board
-reloads within ~200 ms via Server-Sent Events.
+Add guardrails in `.roady/policy.yaml`:
 
-`/org/kanban` merges every project under the repo into a single
-cross-project board, so one agent juggling many feature streams sees
-the whole pipeline at once.
+```yaml
+max_wip_per_owner: 2       # cap in-progress work per person, not just per project
+enforce_team_roles: true   # a viewer in team.yaml can no longer move tasks
+```
 
-For shared / remote use:
+**Stakeholder reporting — a document, not a dashboard:**
 
 ```bash
-roady dashboard serve --port 3000 --auth-token "$(openssl rand -hex 16)"
+roady report                                # Markdown to stdout
+roady report --since 7d                     # just this week's changes
+roady report --format html -o status.html   # ~5KB, no scripts, no requests
+roady report --format json | jq .risks      # machine-readable
 ```
 
-Token accepted via `Authorization: Bearer`, `Cookie: roady_token`, or a
-one-time `?token=<value>` handshake. See [`docs/dashboard.md`](docs/dashboard.md).
+The report carries progress, a forecast with its confidence interval, a risk
+register built from drift plus sticky debt, who is on what, and what changed.
+Commit it, email it, attach it to a PR, or publish it to a static host —
+nothing to install and nothing to log into. A completion estimate is withheld
+until there is enough velocity data to justify one.
+
+**Push it on a schedule:**
+
+```bash
+roady notify add team-chat slack https://hooks.slack.com/services/...
+roady notify digest --since 7d --dry-run    # preview
+roady notify digest --since 7d              # send
+```
+
+One chat-sized summary instead of a message per task transition. Run it from
+cron or CI.
+
+**Audit — proving what happened:**
+
+```bash
+roady audit trail task-42                          # evidence trail for one task
+roady audit trail --agent claude-code --since 30d  # everything one agent did
+roady audit trail --session <id>                   # everything one run did
+```
+
+Every event records the agent and session behind it, so "which agent worked on
+this, and what proves it?" has an answer. A trail reports hash-chain integrity,
+findings (a task marked done with no evidence, entries with no agent recorded),
+the task's `doc:line` citation back to the spec, and every recorded event. It
+exits non-zero when the chain fails verification, so it can gate CI.
+
+Roady attests to **a complete, tamper-evident record of what was asserted** —
+not to who acted, since actor and agent are caller-supplied and never
+authenticated. See [`docs/audit-grc.md`](docs/audit-grc.md) before quoting a
+trail to an auditor.
 
 ## Nested sub-projects
 
@@ -118,7 +159,7 @@ switch context by passing `--project / -P <name>` (CLI) or `project`
 
 | Roady is... | Roady is not... |
 | --- | --- |
-| The plan-of-record for an AI-paired feature | A Jira / Linear replacement |
+| The plan-of-record for an AI-paired feature | A feature-for-feature Jira / Linear clone |
 | Memory that survives `/clear` and session resets | A chat history layer |
 | File-based, git-friendly, local-first | A hosted SaaS (today) |
 | MCP-native — every operation is a tool | A code-search or context-stuffing tool |
@@ -134,9 +175,10 @@ Claude.md, spec-kit, Backlog.md, Linear, GitHub Projects.
 ## Everything else
 
 The headline workflow is intentionally short. Roady supports billing
-rates, debt scoring, dependency graphs, multi-project org dashboards,
-plugin syncers, fsnotify watch mode, web dashboards, D3 visualisations,
-realtime SSE streaming, webhook + Slack notifications, and more — see
+rates, debt scoring, dependency graphs, cross-project org views,
+plugin syncers, fsnotify watch mode, an interactive TUI (`roady
+dashboard`), inline MCP App UIs rendered by your agent, webhook +
+Slack notifications, and more — see
 [`docs/advanced.md`](docs/advanced.md) for the full catalogue grouped by
 audience (solo dev / small team / org).
 

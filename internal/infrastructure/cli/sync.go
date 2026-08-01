@@ -9,6 +9,7 @@ import (
 
 var (
 	syncPluginName string
+	syncNoPush     bool
 )
 
 var syncCmd = &cobra.Command{
@@ -39,6 +40,8 @@ Configure plugins in .roady/plugins.yaml:
 		if err != nil {
 			return err
 		}
+
+		services.Sync.SetPushEnabled(!syncNoPush)
 
 		var results []string
 
@@ -154,6 +157,7 @@ func isSensitiveKey(key string) bool {
 
 func init() {
 	syncCmd.Flags().StringVarP(&syncPluginName, "name", "n", "", "Use named plugin configuration from plugins.yaml")
+	syncCmd.Flags().BoolVar(&syncNoPush, "no-push", false, "Pull external status only; do not write Roady's status back to the tracker")
 	syncCmd.AddCommand(syncListCmd)
 	syncCmd.AddCommand(syncShowCmd)
 	RootCmd.AddCommand(syncCmd)

@@ -69,13 +69,31 @@ you need Roady.
 
 These are built for human PMs and human eng teams. They have
 sprints, swimlanes, custom fields, and assignees. They do not have
-drift detection, source citations from spec docs, or MCP. Their APIs
-are not good interfaces for AI agents (rate limits, complex auth,
-high-cost reads).
+drift detection or source citations from spec docs.
 
-Roady ships a `roady-plugin-linear` / `roady-plugin-jira` /
-`roady-plugin-github` syncer if you want both: human PMs in Linear,
-agents working through Roady, state synchronised both directions.
+They **do** have MCP now, and this page previously claimed otherwise.
+Linear ships an official hosted MCP server, and Atlassian's Rovo MCP
+server reached GA in February 2026 covering Jira, Confluence, JSM,
+Bitbucket, and Compass. "Agents cannot reach them" is no longer true
+and has not been since early 2026. What Roady still has that they do
+not is the spec-lock/drift loop and `from doc:line` provenance.
+
+Roady ships syncer plugins for Linear, Jira, GitHub, Trello, Asana, and
+Notion. Sync is bidirectional: it creates issues from tasks, reads all
+five statuses back, and pushes Roady's status outward for anything the
+tracker still disagrees about. `--no-push` makes it pull-only.
+
+Priority also travels outward, mapped onto each tracker's own scale
+(Linear and Jira today). It is deliberately **one-way**: Roady's
+priority comes from the spec and is rebuilt from it on every
+`roady plan generate`, so a priority written inward would be discarded
+on the next replan. An unset Roady priority leaves the tracker's value
+untouched rather than clearing it.
+
+Estimate and assignee still map in neither direction. Roady's estimate
+is a free string and its owner is a free string, while trackers use
+story points and user IDs; mapping either without per-provider identity
+resolution would overwrite real data with a guess.
 
 ### vs `dadbodgeoff/drift` (the GitHub project, not the concept)
 
@@ -133,8 +151,9 @@ day 3 of a feature.
   repos but each repo still owns its `.roady/`. Cross-repo planning
   is on the roadmap.
 - **No real-time multi-user UI.** State syncs via git push/pull plus
-  optimistic locking. Two collaborators editing in parallel will
-  conflict on `.roady/state.json` like any other file.
+  optimistic locking. `.roady/events.jsonl` union-merges and still
+  verifies, but `state.json` is a whole-file document and will still
+  conflict; it is derived data, so resolve it with `roady state rebuild`.
 - **Heuristic planner is intentionally simple** (1 requirement = 1
   task). Real complexity needs `--ai`. The eval harness in
   `evals/` keeps both planners honest.

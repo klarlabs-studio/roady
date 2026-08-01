@@ -7,6 +7,7 @@ import (
 
 	"github.com/felixgeelhaar/roady/pkg/domain"
 	"github.com/felixgeelhaar/roady/pkg/domain/events"
+	"github.com/felixgeelhaar/roady/pkg/domain/provenance"
 	"github.com/google/uuid"
 )
 
@@ -19,6 +20,21 @@ type EventSourcedAuditService struct {
 	taskProj   *events.TaskStateProjection
 	velProj    *events.VelocityProjection
 	auditProj  *events.AuditTimelineProjection
+
+	// prov identifies the agent and session behind every event this service
+	// records. Stamping it in Log rather than at each call site means no
+	// event can be written without provenance by forgetting to pass it.
+	prov provenance.Context
+}
+
+// SetProvenance sets the identity stamped onto subsequently recorded events.
+func (s *EventSourcedAuditService) SetProvenance(ctx provenance.Context) {
+	s.prov = ctx
+}
+
+// Provenance returns the identity currently being stamped.
+func (s *EventSourcedAuditService) Provenance() provenance.Context {
+	return s.prov
 }
 
 // Compile-time check that EventSourcedAuditService implements AuditLogger.
@@ -72,13 +88,13 @@ func (s *EventSourcedAuditService) rebuildProjections() error {
 }
 
 // Log implements domain.AuditLogger.
-func (s *EventSourcedAuditService) Log(action string, actor string, metadata map[string]interface{}) error {
+func (s *EventSourcedAuditService) Log(action string, actor string, metadata map[string]any) error {
 	event := &events.BaseEvent{
 		ID:        uuid.New().String(),
 		Type:      action,
 		Timestamp: time.Now(),
 		Actor:     actor,
-		Metadata:  metadata,
+		Metadata:  s.prov.Apply(metadata),
 	}
 
 	// Extract aggregate info from metadata if available

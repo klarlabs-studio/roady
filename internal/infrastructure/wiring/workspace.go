@@ -41,9 +41,16 @@ func NewWorkspaceForProject(root, project string) (*Workspace, error) {
 		notifier = webhook.NewNotifier(config.Webhooks, dlStore)
 	}
 
+	auditSvc := application.NewAuditService(repo)
+	// Every event recorded through this workspace carries the agent and
+	// session behind it. The CLI builds task services from here rather than
+	// from BuildAppServices, so stamping only the event-sourced service
+	// would leave CLI-driven history unattributed.
+	auditSvc.SetProvenance(AmbientProvenance())
+
 	return &Workspace{
 		Repo:     repo,
-		Audit:    application.NewAuditService(repo),
+		Audit:    auditSvc,
 		Usage:    application.NewUsageService(repo),
 		Notifier: notifier,
 	}, nil

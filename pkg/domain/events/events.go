@@ -249,6 +249,11 @@ const (
 	EventTypeDriftResolved     = "drift.resolved"
 	EventTypeFileChanged       = "file.changed"
 
+	// EventTypeReportDigest carries a prerendered progress summary out to
+	// notification adapters. It is dispatched on demand, never recorded in
+	// the audit log — a digest reports on history rather than making it.
+	EventTypeReportDigest = "report.digest"
+
 	// Billing events
 	EventTypeRateAdded             = "billing.rate_added"
 	EventTypeRateRemoved           = "billing.rate_removed"

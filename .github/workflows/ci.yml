@@ -43,6 +43,42 @@ jobs:
           # warnings.
           args: ${{ github.event_name == 'pull_request' && '--new-from-rev=origin/main' || '' }}
 
+  mcp-apps:
+    # The MCP App UIs are Vue sources in app/ compiled to single-file HTML
+    # that is committed under internal/infrastructure/mcp/dist/ and embedded
+    # with //go:embed. Nothing else verifies the two agree: a stale or
+    # missing artifact still compiles and still starts, and only fails when
+    # a client requests that resource. That is how ui://roady/billing
+    # shipped broken. This job rebuilds and fails on any drift.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install app dependencies
+        working-directory: app
+        run: npm ci
+
+      - name: Rebuild the MCP apps
+        working-directory: app
+        run: bash build.sh
+
+      - name: Fail if the committed artifacts are stale
+        run: |
+          if ! git diff --quiet -- internal/infrastructure/mcp/dist; then
+            echo "::error::internal/infrastructure/mcp/dist is out of date with app/src."
+            echo "Run 'cd app && npm ci && bash build.sh' and commit the result."
+            git diff --stat -- internal/infrastructure/mcp/dist
+            exit 1
+          fi
+          echo "MCP app artifacts are up to date."
+
   build:
     runs-on: ubuntu-latest
     needs: lint
@@ -74,62 +110,3 @@ jobs:
       # domain ≥ 80%, infrastructure ≥ 76%). Fails CI if any domain
       # regresses below the floor.
       run: coverctl check --from-profile -p coverage.out
-
-  release:
-    runs-on: ubuntu-latest
-    needs: build
-    if: startsWith(github.ref, 'refs/tags/')
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
-        with:
-          go-version: '1.26'
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@e435ccd777264be153ace6237001ef4d979d3a7a
-        with:
-          distribution: goreleaser
-          version: latest
-          args: release --clean
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
-
-  release-smoke-test:
-    # Pulls the just-published Linux/amd64 archive, extracts it, runs
-    # `roady --version` and `roady demo` against it. Catches broken
-    # release artifacts before users do.
-    runs-on: ubuntu-latest
-    needs: release
-    if: startsWith(github.ref, 'refs/tags/')
-    steps:
-      - name: Wait for assets to settle
-        run: sleep 30
-
-      - name: Download release artifact
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          TAG="${GITHUB_REF_NAME}"
-          gh release download "$TAG" \
-            --repo "${GITHUB_REPOSITORY}" \
-            --pattern 'roady_Linux_x86_64.tar.gz' \
-            --output roady-release.tar.gz
-
-      - name: Extract + smoke test
-        run: |
-          set -euo pipefail
-          mkdir -p smoke
-          tar -xzf roady-release.tar.gz -C smoke
-          ./smoke/roady --version
-          # roady demo writes to ./roady-demo by default; isolate it.
-          mkdir -p smoke-run && cd smoke-run
-          ../smoke/roady demo
-          test -f roady-demo/.roady/spec.yaml
-          test -f roady-demo/.roady/plan.json
-          ../smoke/roady -C roady-demo status
-          echo "Smoke test passed."

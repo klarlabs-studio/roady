@@ -44,8 +44,10 @@
 <span class="text-gray-500"># 5. Ask the question that matters</span>
 <span class="text-violet-400">roady drift detect</span>          <span class="text-gray-500"># has reality diverged from intent?</span>
 
-<span class="text-gray-500"># Bonus — live Kanban (since v0.12); auth-token optional, drop for localhost</span>
-<span class="text-violet-400">roady dashboard serve</span>      <span class="text-gray-500"># open http://localhost:3000/kanban</span>
+<span class="text-gray-500"># 6. Keep everyone else informed (since v0.13)</span>
+<span class="text-violet-400">roady report</span>                <span class="text-gray-500"># progress doc: markdown, html, or json</span>
+<span class="text-violet-400">roady notify digest</span>         <span class="text-gray-500"># push one summary to Slack</span>
+<span class="text-violet-400">roady audit trail</span> task-42   <span class="text-gray-500"># which agent did this, and what proves it</span>
 
 <span class="text-gray-500"># Bonus — multiple projects per repo (since v0.11)</span>
 <span class="text-violet-400">roady</span> -P feature-auth <span class="text-violet-400">init</span> --template minimal

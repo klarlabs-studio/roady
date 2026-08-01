@@ -14,7 +14,7 @@ The project is in the **Implementation / Alpha** phase. The `docs/` directory co
 
 *   **`docs/vision.md`**: The high-level philosophy and "North Star".
 *   **`docs/prd.md` (Product Requirements Document)**: Detailed capabilities for Roady Core.
-*   **`docs/roadmap.md`**: The problem-driven roadmap.
+*   **`ROADMAP.md`**: The public roadmap.
 *   **`docs/tdd.md` (Technical Design Document)**: Architectural overview.
 
 ## Architecture & Design
