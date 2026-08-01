@@ -109,31 +109,6 @@ roady notify digest --since 7d              # send
 One chat-sized summary instead of a message per task transition. Run it from
 cron or CI.
 
-## Live Kanban dashboard
-
-```bash
-roady dashboard serve --port 3000
-open http://localhost:3000/kanban
-```
-
-Five status columns (Backlog · Ready · In Progress · Blocked · Done).
-Click **Start / Complete / Block / Unblock / Reopen** or drag cards
-between columns — every drop is a real task transition. The board
-reloads within ~200 ms via Server-Sent Events.
-
-`/org/kanban` merges every project under the repo into a single
-cross-project board, so one agent juggling many feature streams sees
-the whole pipeline at once.
-
-For shared / remote use:
-
-```bash
-roady dashboard serve --port 3000 --auth-token "$(openssl rand -hex 16)"
-```
-
-Token accepted via `Authorization: Bearer`, `Cookie: roady_token`, or a
-one-time `?token=<value>` handshake. See [`docs/dashboard.md`](docs/dashboard.md).
-
 ## Nested sub-projects
 
 One repository can host many Roady projects in parallel:
@@ -176,9 +151,10 @@ Claude.md, spec-kit, Backlog.md, Linear, GitHub Projects.
 ## Everything else
 
 The headline workflow is intentionally short. Roady supports billing
-rates, debt scoring, dependency graphs, multi-project org dashboards,
-plugin syncers, fsnotify watch mode, web dashboards, D3 visualisations,
-realtime SSE streaming, webhook + Slack notifications, and more — see
+rates, debt scoring, dependency graphs, cross-project org views,
+plugin syncers, fsnotify watch mode, an interactive TUI (`roady
+dashboard`), inline MCP App UIs rendered by your agent, webhook +
+Slack notifications, and more — see
 [`docs/advanced.md`](docs/advanced.md) for the full catalogue grouped by
 audience (solo dev / small team / org).
 

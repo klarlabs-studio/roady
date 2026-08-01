@@ -32,6 +32,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Completion estimates are withheld below three velocity data points rather
   than printing a date nobody should plan around.
 
+### Removed — BREAKING
+
+- The web dashboard is gone: `roady dashboard serve`, `roady dashboard
+  open`, the `/kanban` and `/org/kanban` boards, `/api/*` endpoints, the
+  SSE stream, action endpoints, and the shared-token auth. The whole
+  `pkg/infrastructure/dashboard` package and `docs/dashboard.md` are
+  removed.
+
+  Rationale: an agent can render and update a human-readable view from
+  the same data through Roady's MCP Apps, and people who are not in an
+  agent client are better served by a document than by a server they
+  have to reach. Replacements:
+
+  - `roady report --format html -o status.html` — shareable progress
+  - `roady notify digest` — push a summary to a channel
+  - `roady dashboard` — the interactive TUI, unchanged
+
 ### Fixed
 
 - Service-load warnings printed to stdout, corrupting `--json` output on every

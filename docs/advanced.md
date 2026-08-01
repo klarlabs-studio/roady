@@ -61,12 +61,16 @@ cleanly on Ctrl-C.
   glob patterns and an auto-sync flag that runs drift detect on each
   change.
 
-### Interactive dashboards
+### Interactive views
 
 - `roady dashboard` — TUI built with bubbletea/lipgloss.
-- `roady dashboard serve` / `roady dashboard open` — web dashboard
-  with D3 visualisations (force-directed task DAG, burndown, drift
-  bars, debt gauge, dependency network).
+- **MCP Apps** — 15 inline UIs (`ui://roady/status`, `plan`, `drift`,
+  `forecast`, `debt`, `deps`, …) rendered by your agent client when it
+  calls the matching tool, with D3 visualisations and action buttons
+  that call back into Roady. No server, no port, no login.
+
+The web dashboard (`roady dashboard serve`) was removed; see
+`roady report` and `roady notify digest` below.
 
 ### Shell completions + interactive setup
 
