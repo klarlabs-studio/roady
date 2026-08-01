@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — `plan prune` left orphaned execution state
+
+`roady plan prune` removed tasks from `plan.json` and left their entries in
+`state.json`, so the two files disagreed about what the project consisted of
+and nothing reconciled them. Roady's own repository carried 113 such entries.
+Prune now drops state for tasks it removed — the history lives in
+`events.jsonl` and is untouched — and writes nothing when there is nothing to
+drop, so a no-op prune does not bump the state version and provoke a spurious
+locking conflict. The audit event records how many tasks were pruned and
+retained.
+
+Both writers to `events.jsonl` now stamp `hash_algo`. Only `AuditService` did
+initially, which left half the log unversioned and defeated the point of
+versioning it. A test pins the two constants together across packages.
+
 ### Fixed — the audit chain could not verify its own history
 
 Dogfooding `roady audit verify` on Roady's own repository found 105 integrity

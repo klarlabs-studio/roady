@@ -13,6 +13,11 @@ import (
 	"github.com/google/uuid"
 )
 
+// HashAlgoCurrent mirrors domain.HashAlgoCurrent. Both writers to
+// events.jsonl stamp the same value, so verification can treat the log
+// uniformly rather than guessing which half an entry came from.
+const HashAlgoCurrent = "sha256-canonical-v1"
+
 // FileEventStore implements EventStore using a JSON Lines file.
 type FileEventStore struct {
 	mu       sync.RWMutex
@@ -62,6 +67,7 @@ func (s *FileEventStore) Append(event *events.BaseEvent) (err error) {
 
 	// Chain to previous event
 	event.PrevHash = s.lastHash
+	event.HashAlgo = HashAlgoCurrent
 	event.Hash = event.CalculateHash()
 
 	// Open file in append mode with restricted permissions

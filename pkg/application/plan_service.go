@@ -195,15 +195,62 @@ func (s *PlanService) PrunePlan() error {
 		}
 	}
 
+	before := len(plan.Tasks)
 	plan.Tasks = s.reconciler.FilterValidTasks(plan.Tasks, validTaskIDs, validFeatureIDs)
 	plan.UpdatedAt = time.Now()
+
 	if err := s.audit.Log("plan.prune", "cli", map[string]any{
-		"plan_id": plan.ID,
-		"spec_id": plan.SpecID,
+		"plan_id":        plan.ID,
+		"spec_id":        plan.SpecID,
+		"tasks_pruned":   before - len(plan.Tasks),
+		"tasks_retained": len(plan.Tasks),
 	}); err != nil {
 		return fmt.Errorf("write audit log: %w", err)
 	}
-	return s.repo.SavePlan(plan)
+
+	if err := s.repo.SavePlan(plan); err != nil {
+		return err
+	}
+
+	// Prune used to stop here, leaving state.json describing tasks the plan
+	// no longer contains. The two files then disagreed about what the
+	// project even consists of, and nothing reconciled them — Roady's own
+	// repository carried 113 such entries. Execution state for a task that
+	// does not exist is not history worth keeping; the history lives in
+	// events.jsonl, which is untouched.
+	return s.pruneOrphanedState(plan)
+}
+
+// pruneOrphanedState drops execution state for tasks no longer in the plan.
+// It writes nothing when there is nothing to drop, so a no-op prune does not
+// bump the state version and provoke a spurious optimistic-locking conflict
+// for a concurrent writer.
+func (s *PlanService) pruneOrphanedState(plan *planning.Plan) error {
+	state, err := s.repo.LoadState()
+	if err != nil || state == nil {
+		// No state yet is not an error: a plan can be pruned before any
+		// task has been started.
+		return nil //nolint:nilerr // absent state has nothing to prune
+	}
+
+	live := make(map[string]bool, len(plan.Tasks))
+	for _, t := range plan.Tasks {
+		live[t.ID] = true
+	}
+
+	removed := 0
+	for id := range state.TaskStates {
+		if !live[id] {
+			delete(state.TaskStates, id)
+			removed++
+		}
+	}
+
+	if removed == 0 {
+		return nil
+	}
+
+	return s.repo.SaveState(state)
 }
 
 func (s *PlanService) RejectPlan() error {

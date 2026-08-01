@@ -34,6 +34,11 @@ type BaseEvent struct {
 	Metadata       map[string]interface{} `json:"metadata,omitempty"`
 	PrevHash       string                 `json:"prev_hash,omitempty"`
 	Hash           string                 `json:"hash,omitempty"`
+
+	// HashAlgo names the algorithm used for Hash. Both writers to
+	// events.jsonl must stamp it, or half the log stays unversioned and the
+	// stamp cannot be relied on to tell an algorithm change from tampering.
+	HashAlgo string `json:"hash_algo,omitempty"`
 }
 
 // Version returns the event version as an int.
