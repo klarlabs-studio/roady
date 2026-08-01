@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-08-01
+
+Coordination and stakeholder reporting without a UI, agent-traceable audit
+trails, and bidirectional tracker sync. Three breaking changes, all listed
+below.
+
+MCP schema version is now **2.0.0** (see `docs/mcp-schema-changelog.md`).
+
 ### Added — coordination
 
 - `roady task mine`, `roady task assigned <name>`, and `roady task unassigned`

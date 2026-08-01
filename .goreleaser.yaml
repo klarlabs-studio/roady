@@ -102,7 +102,7 @@ checksum:
   name_template: 'checksums.txt'
 
 snapshot:
-  name_template: "{{ incpatch .Version }}-next"
+  version_template: "{{ incpatch .Version }}-next"
 
 changelog:
   sort: asc
@@ -112,6 +112,12 @@ changelog:
       - '^test:'
       - '^chore\(\.roady\):'
 
+# NOTE: `brews` is deprecated in favour of `homebrew_casks`, but migrating
+# would change how users install: a formula becomes a cask, and everyone on
+# `brew install felixgeelhaar/tap/roady` would have to uninstall and
+# reinstall. Deprecated is not removed, so this stays until the migration is
+# done deliberately. The CI GoReleaser version is pinned (see ci.yml) so a
+# future `latest` that drops `brews` cannot break a release unannounced.
 brews:
   - name: roady
     repository:

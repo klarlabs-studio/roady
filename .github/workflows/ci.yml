@@ -128,7 +128,11 @@ jobs:
         uses: goreleaser/goreleaser-action@e435ccd777264be153ace6237001ef4d979d3a7a
         with:
           distribution: goreleaser
-          version: latest
+          # Pinned rather than `latest`: .goreleaser.yaml still uses the
+          # deprecated `brews` block, and a `latest` that removes it would
+          # break a release with no warning. Bump deliberately, alongside
+          # migrating to homebrew_casks.
+          version: '~> v2.16'
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
