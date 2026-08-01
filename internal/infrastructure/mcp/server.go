@@ -8,7 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/felixgeelhaar/roady/internal/infrastructure/config"
 	"github.com/felixgeelhaar/roady/internal/infrastructure/wiring"
 	"github.com/felixgeelhaar/roady/pkg/application"
 	"github.com/felixgeelhaar/roady/pkg/domain"
@@ -44,7 +43,6 @@ type Server struct {
 	policySvc   *application.PolicyService
 	taskSvc     *application.TaskService
 	billingSvc  *application.BillingService
-	aiSvc       *application.AIPlanningService
 	gitSvc      *application.GitService
 	syncSvc     *application.SyncService
 	auditSvc    *application.EventSourcedAuditService
@@ -80,24 +78,13 @@ func mcpErr(friendly string) error {
 	return fmt.Errorf("%s", friendly)
 }
 
-// requireAI is a nil-guard for AI-dependent handlers. Returns a clear
-// error instead of letting a nil-pointer dereference bubble up as a
-// cryptic panic (even though the recover middleware would catch it).
-// Checks both the AI service and the underlying provider — the service
-// is always constructed but the provider may be nil when not configured.
-func requireAI(svc *wiring.AppServices) error {
-	if svc == nil || svc.AI == nil {
-		return mcpErr("AI provider not configured. Set ROADY_AI_PROVIDER or configure ai.yaml.")
-	}
-	// Provider is set when services are built via BuildAppServices.
-	// In the fallback path (tests), Provider may be nil even though
-	// the AI service has an injected provider — that's OK.
-	if svc.Provider == nil && svc.Workspace == nil {
-		// Fallback construction (no Workspace) — trust the AI service.
-		return nil
-	}
-	if svc.Provider == nil {
-		return mcpErr("AI provider not configured. Set ROADY_AI_PROVIDER or configure ai.yaml.")
+// requirePrompt guards the prompt-building handlers. It replaces the old
+// requireAI nil-check: the provider is gone, but a services struct built
+// against an unreadable project can still arrive without a PromptService,
+// and a handler that dereferences it panics rather than answering.
+func requirePrompt(svc *wiring.AppServices) error {
+	if svc == nil || svc.Prompt == nil {
+		return mcpErr("Project services are unavailable. Ensure the path points at an initialized Roady project.")
 	}
 	return nil
 }
@@ -133,7 +120,6 @@ func (s *Server) servicesForPath(pathOverride, project string) (*wiring.AppServi
 			Policy:     s.policySvc,
 			Task:       s.taskSvc,
 			Billing:    s.billingSvc,
-			AI:         s.aiSvc,
 			Git:        s.gitSvc,
 			Sync:       s.syncSvc,
 			Audit:      s.auditSvc,
@@ -209,7 +195,6 @@ func NewServer(root string) (*Server, error) {
 		policySvc:   services.Policy,
 		taskSvc:     services.Task,
 		billingSvc:  services.Billing,
-		aiSvc:       services.AI,
 		gitSvc:      services.Git,
 		syncSvc:     services.Sync,
 		auditSvc:    services.Audit,
@@ -621,12 +606,6 @@ func (s *Server) registerTools() {
 		Handler(s.handleGetSnapshot)
 
 	// Tool: roady_cost_estimate (v0.10.0 - pre-flight cost projection)
-	s.tool("roady_cost_estimate").
-		Description("Estimate input/output tokens and USD cost for an AI operation (generate_plan, smart_decompose, review_spec, explain_drift, query) before running it.").
-		UIResource("ui://roady/cost").
-		OutputSchema(application.CostEstimate{}).
-		Handler(s.handleCostEstimate)
-
 	// Tool: roady_tasks (v0.10.0 - unified task listing)
 	// Supersedes roady_get_ready_tasks, roady_get_blocked_tasks, and
 	// roady_get_in_progress_tasks. Takes a status enum (ready, in_progress,
@@ -812,24 +791,83 @@ func (s *Server) handleSync(ctx context.Context, args SyncArgs) (any, error) {
 	return results, nil
 }
 
-func (s *Server) handleExplainDrift(ctx context.Context, args ExplainDriftArgs) (string, error) {
+func (s *Server) handleExplainSpec(ctx context.Context, args ExplainSpecArgs) (any, error) {
 	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
 	if err != nil {
-		return "", mcpErr("Failed to load project at the given path.")
+		return nil, mcpErr("Failed to load project at the given path.")
 	}
-	if err := requireAI(svc); err != nil {
-		return "", err
+	if err := requirePrompt(svc); err != nil {
+		return nil, err
+	}
+	req, err := svc.Prompt.ExplainSpec(ctx)
+	if err != nil {
+		return nil, mcpErr(err.Error())
+	}
+	return req, nil
+}
+
+func (s *Server) handleQuery(ctx context.Context, args QueryArgs) (any, error) {
+	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
+	if err != nil {
+		return nil, mcpErr("Failed to load project at the given path.")
+	}
+	if err := requirePrompt(svc); err != nil {
+		return nil, err
+	}
+	req, err := svc.Prompt.QueryProject(ctx, args.Question)
+	if err != nil {
+		return nil, mcpErr(err.Error())
+	}
+	return req, nil
+}
+
+func (s *Server) handleSuggestPriorities(ctx context.Context, args SuggestPrioritiesArgs) (any, error) {
+	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
+	if err != nil {
+		return nil, mcpErr("Failed to load project at the given path.")
+	}
+	if err := requirePrompt(svc); err != nil {
+		return nil, err
+	}
+	req, err := svc.Prompt.SuggestPriorities(ctx)
+	if err != nil {
+		return nil, mcpErr(err.Error())
+	}
+	return req, nil
+}
+
+func (s *Server) handleReviewSpec(ctx context.Context, args ReviewSpecArgs) (any, error) {
+	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
+	if err != nil {
+		return nil, mcpErr("Failed to load project at the given path.")
+	}
+	if err := requirePrompt(svc); err != nil {
+		return nil, err
+	}
+	req, err := svc.Prompt.ReviewSpec(ctx)
+	if err != nil {
+		return nil, mcpErr(err.Error())
+	}
+	return req, nil
+}
+
+func (s *Server) handleExplainDrift(ctx context.Context, args ExplainDriftArgs) (any, error) {
+	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
+	if err != nil {
+		return nil, mcpErr("Failed to load project at the given path.")
+	}
+	if err := requirePrompt(svc); err != nil {
+		return nil, err
 	}
 	report, err := svc.Drift.DetectDrift(ctx)
 	if err != nil {
-		return "", mcpErr("Failed to detect drift. Ensure both spec and plan exist.")
+		return nil, mcpErr("Failed to detect drift. Ensure both spec and plan exist.")
 	}
-	ctx = withMCPStreaming(ctx)
-	result, err := svc.AI.ExplainDrift(ctx, report)
+	req, err := svc.Prompt.ExplainDrift(ctx, report)
 	if err != nil {
-		return "", mcpErr("Failed to generate drift explanation. Check your AI provider configuration.")
+		return nil, mcpErr(err.Error())
 	}
-	return result, nil
+	return req, nil
 }
 
 func (s *Server) handleAcceptDrift(ctx context.Context, args AcceptDriftArgs) (string, error) {
@@ -886,77 +924,10 @@ func (s *Server) handleApprovePlan(ctx context.Context, args ApprovePlanArgs) (s
 	return "Plan approved successfully", nil
 }
 
-func (s *Server) handleExplainSpec(ctx context.Context, args ExplainSpecArgs) (string, error) {
-	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
-	if err != nil {
-		return "", mcpErr("Failed to load project at the given path.")
-	}
-	if err := requireAI(svc); err != nil {
-		return "", err
-	}
-	ctx = withMCPStreaming(ctx)
-	result, err := svc.AI.ExplainSpec(ctx)
-	if err != nil {
-		return "", mcpErr("Failed to explain spec. Check your AI provider configuration.")
-	}
-	return result, nil
-}
-
 type QueryArgs struct {
 	Question    string `json:"question" jsonschema:"description=A natural language question about the project"`
 	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
 	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
-}
-
-func (s *Server) handleQuery(ctx context.Context, args QueryArgs) (string, error) {
-	if args.Question == "" {
-		return "", mcpErr("A question is required.")
-	}
-	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
-	if err != nil {
-		return "", mcpErr("Failed to load project at the given path.")
-	}
-	if err := requireAI(svc); err != nil {
-		return "", err
-	}
-	ctx = withMCPStreaming(ctx)
-	answer, err := svc.AI.QueryProject(ctx, args.Question)
-	if err != nil {
-		return "", mcpErr("Failed to answer query. Check your AI provider configuration.")
-	}
-	return answer, nil
-}
-
-func (s *Server) handleSuggestPriorities(ctx context.Context, args SuggestPrioritiesArgs) (any, error) {
-	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
-	if err != nil {
-		return nil, mcpErr("Failed to load project at the given path.")
-	}
-	if err := requireAI(svc); err != nil {
-		return nil, err
-	}
-	ctx = withMCPStreaming(ctx)
-	suggestions, err := svc.AI.SuggestPriorities(ctx)
-	if err != nil {
-		return nil, mcpErr("Failed to suggest priorities. Check your AI provider configuration and ensure a plan exists.")
-	}
-	return suggestions, nil
-}
-
-func (s *Server) handleReviewSpec(ctx context.Context, args ReviewSpecArgs) (any, error) {
-	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
-	if err != nil {
-		return nil, mcpErr("Failed to load project at the given path.")
-	}
-	if err := requireAI(svc); err != nil {
-		return nil, err
-	}
-	ctx = withMCPStreaming(ctx)
-	review, err := svc.AI.ReviewSpec(ctx)
-	if err != nil {
-		return nil, mcpErr("Failed to review spec. Check your AI provider configuration.")
-	}
-	return review, nil
 }
 
 type TransitionTaskArgs struct {
@@ -1529,56 +1500,6 @@ func (s *Server) handleGetSnapshot(ctx context.Context, args GetSnapshotArgs) (a
 	}, nil
 }
 
-// handleCostEstimate returns a pre-flight token + USD projection for one of
-// the AI operations Roady can launch. Configuration (provider, model) is
-// read from .roady/ai.yaml and overridden by env vars at provider load time;
-// here we only need provider/model identifiers, not a live provider.
-func (s *Server) handleCostEstimate(ctx context.Context, args CostEstimateArgs) (any, error) {
-	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
-	if err != nil {
-		return nil, mcpErr("Failed to load project at the given path.")
-	}
-
-	root := s.root
-	if args.ProjectPath != "" {
-		root = args.ProjectPath
-	}
-
-	provider, model := resolveProviderModel(root, svc.Provider)
-	estimator := application.NewCostEstimator(svc.Workspace.Repo, provider, model)
-	estimate, err := estimator.Estimate(args.Operation)
-	if err != nil {
-		return nil, mcpErr(err.Error())
-	}
-	return estimate, nil
-}
-
-// resolveProviderModel determines (provider, model) for cost estimation.
-// Preference order: live wired provider's ID (split on ":"), then ai.yaml,
-// then ROADY_AI_* env vars. Returns ("", "") when no source is configured;
-// the estimator treats that as "pricing unknown" and reports zero cost.
-func resolveProviderModel(root string, p domainProviderLike) (string, string) {
-	if p != nil {
-		id := p.ID()
-		if before, after, ok := strings.Cut(id, ":"); ok {
-			return before, after
-		}
-		if id != "" {
-			return id, ""
-		}
-	}
-	if cfg, err := config.LoadAIConfig(root); err == nil && cfg != nil {
-		return cfg.Provider, cfg.Model
-	}
-	return "", ""
-}
-
-// domainProviderLike is the minimal subset of ai.Provider needed here, kept
-// as a local interface so the helper is independently testable.
-type domainProviderLike interface {
-	ID() string
-}
-
 // handleTasks is the unified task-listing handler introduced in v0.10.0.
 // The legacy per-status handlers below delegate to it so the response shape
 // stays identical and a single code path serves both old and new tool names.
@@ -1718,19 +1639,14 @@ func (s *Server) handleSmartDecompose(ctx context.Context, args SmartDecomposeAr
 	if err != nil {
 		return nil, mcpErr("Failed to load project at the given path.")
 	}
-	if err := requireAI(svc); err != nil {
+	if err := requirePrompt(svc); err != nil {
 		return nil, err
 	}
-	root := s.root
-	if args.ProjectPath != "" {
-		root = args.ProjectPath
-	}
-	ctx = withMCPStreaming(ctx)
-	result, err := svc.AI.SmartDecompose(ctx, root)
+	req, err := svc.Prompt.DecomposeSpec(ctx)
 	if err != nil {
-		return nil, mcpErr(fmt.Sprintf("smart decompose failed: %s", err))
+		return nil, mcpErr(err.Error())
 	}
-	return result, nil
+	return req, nil
 }
 
 // --- Team Handlers ---

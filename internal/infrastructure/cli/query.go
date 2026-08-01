@@ -1,8 +1,6 @@
 package cli
 
 import (
-	"context"
-	"fmt"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -17,26 +15,17 @@ var queryCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		if services.AI == nil {
-			return MapError(fmt.Errorf("AI service not available; configure an AI provider"))
-		}
-
 		question := strings.Join(args, " ")
-		var answer string
-		err = withAIProgress(cmd.Context(), "AI query", func(ctx context.Context) error {
-			a, qerr := services.AI.QueryProject(ctx, question)
-			answer = a
-			return qerr
-		})
+		req, err := services.Prompt.QueryProject(cmd.Context(), question)
 		if err != nil {
-			return MapError(fmt.Errorf("failed to query project: %w", err))
+			return MapError(err)
 		}
 
-		fmt.Println(answer)
-		return nil
+		return printPromptRequest(req, promptJSON)
 	},
 }
 
 func init() {
+	addPromptJSONFlag(queryCmd)
 	RootCmd.AddCommand(queryCmd)
 }

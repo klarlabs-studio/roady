@@ -65,9 +65,6 @@ var toolBehaviours = map[string]toolBehaviour{
 	"roady_plugin_status":   {readOnly: true, idempotent: true, openWorld: true},
 	"roady_plugin_validate": {readOnly: true, idempotent: true, openWorld: true},
 
-	// Estimation runs no model but reads provider pricing tables.
-	"roady_cost_estimate": {readOnly: true, idempotent: true},
-
 	// --- AI: look like reads, but record token usage to the audit log -----
 	// Marking these read-only would be the exact mistake the spec warns
 	// about, and would also hide their cost from clients that surface it.

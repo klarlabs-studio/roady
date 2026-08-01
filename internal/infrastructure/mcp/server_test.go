@@ -145,7 +145,10 @@ func TestServerHandlersExercise(t *testing.T) {
 		t.Fatalf("explain spec: %v", err)
 	}
 
-	if _, err := server.handleExplainDrift(ctx, ExplainDriftArgs{}); err != nil {
+	// A project with no drift legitimately has nothing to explain; the
+	// handler says so rather than assembling an empty prompt.
+	if _, err := server.handleExplainDrift(ctx, ExplainDriftArgs{}); err != nil &&
+		!strings.Contains(err.Error(), "no drift issues") {
 		t.Fatalf("explain drift: %v", err)
 	}
 

@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/felixgeelhaar/roady/pkg/application"
-	domainai "github.com/felixgeelhaar/roady/pkg/domain/ai"
 	"github.com/felixgeelhaar/roady/pkg/domain/events"
 	"github.com/felixgeelhaar/roady/pkg/storage"
 )
@@ -20,7 +19,6 @@ type AppServices struct {
 	Policy     *application.PolicyService
 	Task       *application.TaskService
 	Billing    *application.BillingService
-	AI         *application.AIPlanningService
 	Git        *application.GitService
 	Sync       *application.SyncService
 	Audit      *application.EventSourcedAuditService // Event-sourced audit with dispatcher and projections
@@ -31,13 +29,14 @@ type AppServices struct {
 	Plugin     *application.PluginService
 	Team       *application.TeamService
 	Report     *application.ReportService // Stakeholder progress reports
+	Prompt     *application.PromptService // Builds model prompts; Roady runs no inference
 	Publisher  *storage.InMemoryEventPublisher
-	Provider   domainai.Provider
 }
 
-// BuildAppServices constructs the workbench of services and AI provider wiring for a repo root.
-// If the AI provider cannot be loaded (e.g. not configured), the server still starts —
-// only AI-dependent tools will return errors.
+// BuildAppServices constructs the workbench of services for a repo root.
+//
+// Roady runs no inference of its own: PromptService assembles the context a
+// model needs and hands it to the caller, which already has one.
 func BuildAppServices(root string) (*AppServices, error) {
 	return BuildAppServicesForProject(root, "")
 }
@@ -50,34 +49,11 @@ func BuildAppServicesForProject(root, project string) (*AppServices, error) {
 	if err != nil {
 		return nil, err
 	}
-	provider, loadErr := LoadAIProvider(root)
-	// provider may be nil here — AI-dependent handlers must guard against this.
-
-	return buildServicesWithProvider(workspace, provider, loadErr)
+	return buildServices(workspace)
 }
 
-// BuildAppServicesWithProvider allows callers to supply a custom AI provider resolver.
-// Operates on the root project; sub-project callers should use BuildAppServicesWithProviderForProject.
-func BuildAppServicesWithProvider(root string, resolver func(string) (domainai.Provider, error)) (*AppServices, error) {
-	return BuildAppServicesWithProviderForProject(root, "", resolver)
-}
-
-// BuildAppServicesWithProviderForProject is the sub-project-aware variant of BuildAppServicesWithProvider.
-func BuildAppServicesWithProviderForProject(root, project string, resolver func(string) (domainai.Provider, error)) (*AppServices, error) {
-	workspace, err := NewWorkspaceForProject(root, project)
-	if err != nil {
-		return nil, err
-	}
-	provider, err := resolver(root)
-	if err != nil {
-		return nil, fmt.Errorf("AI provider resolver failed: %w", err)
-	}
-
-	return buildServicesWithProvider(workspace, provider, nil)
-}
-
-// buildServicesWithProvider is the shared implementation for building app services.
-func buildServicesWithProvider(workspace *Workspace, provider domainai.Provider, loadErr error) (*AppServices, error) {
+// buildServices is the shared implementation for building app services.
+func buildServices(workspace *Workspace) (*AppServices, error) {
 	// Create event store and publisher for event-sourced audit.
 	// Events live next to the project's other files (so sub-projects have isolated event streams).
 	eventStore, err := storage.NewFileEventStore(workspace.Repo.ProjectBase())
@@ -107,7 +83,6 @@ func buildServicesWithProvider(workspace *Workspace, provider domainai.Provider,
 	planSvc := application.NewPlanService(workspace.Repo, auditSvc)
 	taskSvc := application.NewTaskService(workspace.Repo, auditSvc, policySvc)
 	driftSvc := application.NewDriftService(workspace.Repo, auditSvc, storage.NewCodebaseInspector(), policySvc)
-	aiSvc := application.NewAIPlanningService(workspace.Repo, provider, auditSvc, planSvc)
 	debtSvc := application.NewDebtService(driftSvc, auditSvc)
 
 	// Create velocity projection for forecasting and hydrate from stored events
@@ -153,7 +128,6 @@ func buildServicesWithProvider(workspace *Workspace, provider domainai.Provider,
 		Policy:     policySvc,
 		Task:       taskSvc,
 		Billing:    application.NewBillingService(workspace.Repo, auditSvc),
-		AI:         aiSvc,
 		Git:        application.NewGitService(workspace.Repo, taskSvc),
 		Sync:       application.NewSyncServiceWithPlugins(workspace.Repo, workspace.Repo, taskSvc),
 		Audit:      auditSvc,
@@ -164,9 +138,9 @@ func buildServicesWithProvider(workspace *Workspace, provider domainai.Provider,
 		Plugin:     application.NewPluginService(workspace.Repo),
 		Team:       application.NewTeamService(workspace.Repo, auditSvc),
 		Report:     application.NewReportService(planSvc, forecastSvc, driftSvc, debtSvc, auditSvc),
+		Prompt:     application.NewPromptService(workspace.Repo),
 		Publisher:  publisher,
-		Provider:   provider,
 	}
 
-	return services, loadErr
+	return services, nil
 }

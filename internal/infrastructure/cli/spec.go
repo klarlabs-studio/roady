@@ -1,11 +1,7 @@
 package cli
 
 import (
-	"bufio"
 	"fmt"
-	"io"
-	"os"
-	"strings"
 
 	"github.com/felixgeelhaar/roady/internal/infrastructure/wiring"
 	"github.com/felixgeelhaar/roady/pkg/application"
@@ -19,32 +15,23 @@ var specCmd = &cobra.Command{
 
 var specExplainCmd = &cobra.Command{
 	Use:   "explain",
-	Short: "Provide an AI-generated explanation of the current spec",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		cwd, err := getProjectRoot()
-		if err != nil {
-			return fmt.Errorf("resolve project path: %w", err)
-		}
-		workspace := wiring.NewWorkspace(cwd)
-		repo := workspace.Repo
-		audit := workspace.Audit
+	Short: "Emit a prompt that explains the current spec",
+	Long: `Assemble a prompt that explains the current specification.
 
-		provider, err := wiring.LoadAIProvider(cwd)
+Roady does not call a model. It gathers the spec context and hands you the
+prompt; run it with whatever model you already have.`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		services, err := loadServicesForCurrentDir()
 		if err != nil {
 			return err
 		}
-		planSvc := application.NewPlanService(repo, audit)
-		service := application.NewAIPlanningService(repo, provider, audit, planSvc)
 
-		explanation, err := service.ExplainSpec(cmd.Context())
+		req, err := services.Prompt.ExplainSpec(cmd.Context())
 		if err != nil {
-			return MapError(fmt.Errorf("failed to explain spec: %w", err))
+			return MapError(err)
 		}
 
-		fmt.Println("\n--- Spec Explanation ---")
-		fmt.Println(explanation)
-		fmt.Println("-------------------------")
-		return nil
+		return printPromptRequest(req, promptJSON)
 	},
 }
 
@@ -125,19 +112,9 @@ var specAnalyzeCmd = &cobra.Command{
 		}
 
 		if reconcileSpec {
-			audit := workspace.Audit
-			provider, err := wiring.LoadAIProvider(cwd)
-			if err != nil {
-				return err
-			}
-			planSvc := application.NewPlanService(repo, audit)
-			aiSvc := application.NewAIPlanningService(repo, provider, audit, planSvc)
-
-			fmt.Println("Reconciling specification using AI...")
-			spec, err = aiSvc.ReconcileSpec(cmd.Context(), spec)
-			if err != nil {
-				return fmt.Errorf("failed to reconcile spec: %w", err)
-			}
+			return fmt.Errorf("--reconcile called a language model to tidy the parsed spec; " +
+				"Roady no longer runs inference. Run 'roady spec explain' to get the prompt, " +
+				"reconcile with your own model, and write the result back with 'roady spec add'")
 		}
 
 		fmt.Printf("Successfully analyzed directory and generated spec '%s' with %d features.\n", spec.Title, len(spec.Features))
@@ -173,123 +150,18 @@ var specReviewCmd = &cobra.Command{
 	Use:   "review",
 	Short: "Perform an AI-powered quality review of the current spec",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cwd, err := getProjectRoot()
-		if err != nil {
-			return fmt.Errorf("resolve project path: %w", err)
-		}
-		workspace := wiring.NewWorkspace(cwd)
-		repo := workspace.Repo
-		audit := workspace.Audit
-
-		provider, err := wiring.LoadAIProvider(cwd)
+		services, err := loadServicesForCurrentDir()
 		if err != nil {
 			return err
 		}
-		planSvc := application.NewPlanService(repo, audit)
-		service := application.NewAIPlanningService(repo, provider, audit, planSvc)
 
-		review, err := service.ReviewSpec(cmd.Context())
+		req, err := services.Prompt.ReviewSpec(cmd.Context())
 		if err != nil {
-			return MapError(fmt.Errorf("failed to review spec: %w", err))
+			return MapError(err)
 		}
 
-		fmt.Printf("\n--- Spec Quality Review (Score: %d/100) ---\n", review.Score)
-		fmt.Println(review.Summary)
-		if len(review.Findings) > 0 {
-			fmt.Println("\nFindings:")
-			for _, f := range review.Findings {
-				featureTag := ""
-				if f.FeatureID != "" {
-					featureTag = fmt.Sprintf(" [%s]", f.FeatureID)
-				}
-				fmt.Printf("  [%s] %s%s: %s\n", f.Severity, f.Category, featureTag, f.Title)
-				fmt.Printf("         → %s\n", f.Suggestion)
-			}
-		}
-		fmt.Println("-------------------------------------------")
-		return nil
+		return printPromptRequest(req, promptJSON)
 	},
-}
-
-var specParseCmd = &cobra.Command{
-	Use:   "parse",
-	Short: "Parse raw LLM output into a structured spec and plan in one operation",
-	Long: `Parse unstructured LLM-generated content into a structured ProductSpec 
-and execution Plan in a single AI call. 
-
-This command accepts:
-  - Text from stdin: cat file.txt | roady spec parse
-  - A file path: roady spec parse path/to/llm-output.txt
-  - Direct input: roady spec parse "Feature: Login..."`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		cwd, err := getProjectRoot()
-		if err != nil {
-			return fmt.Errorf("resolve project path: %w", err)
-		}
-
-		var rawText string
-		switch {
-		case len(args) > 0:
-			rawText = args[0]
-		case hasStdin():
-			rawText = readStdin()
-		default:
-			return fmt.Errorf("no input provided: pipe text via stdin, provide a file path, or pass text directly as an argument")
-		}
-
-		if rawText == "" {
-			return fmt.Errorf("empty input")
-		}
-
-		workspace := wiring.NewWorkspace(cwd)
-		repo := workspace.Repo
-		audit := workspace.Audit
-
-		provider, err := wiring.LoadAIProvider(cwd)
-		if err != nil {
-			return err
-		}
-		planSvc := application.NewPlanService(repo, audit)
-		aiSvc := application.NewAIPlanningService(repo, provider, audit, planSvc)
-
-		fmt.Println("Parsing LLM output...")
-		spec, plan, err := aiSvc.ImportFromLLM(cmd.Context(), rawText)
-		if err != nil {
-			return MapError(fmt.Errorf("failed to parse LLM output: %w", err))
-		}
-
-		fmt.Printf("\nSuccessfully created spec '%s' with %d features.\n", spec.Title, len(spec.Features))
-		if plan != nil {
-			fmt.Printf("Created plan with %d tasks.\n", len(plan.Tasks))
-		}
-		return nil
-	},
-}
-
-func hasStdin() bool {
-	stat, err := os.Stdin.Stat()
-	if err != nil {
-		return false
-	}
-	return (stat.Mode() & os.ModeCharDevice) == 0
-}
-
-func readStdin() string {
-	reader := bufio.NewReader(os.Stdin)
-	var lines []string
-	for {
-		line, err := reader.ReadString('\n')
-		if err != nil && err != io.EOF {
-			break
-		}
-		if line != "" {
-			lines = append(lines, line)
-		}
-		if err == io.EOF {
-			break
-		}
-	}
-	return strings.Join(lines, "")
 }
 
 func init() {
@@ -300,6 +172,5 @@ func init() {
 	specCmd.AddCommand(specExplainCmd)
 	specCmd.AddCommand(specReviewCmd)
 	specCmd.AddCommand(specAnalyzeCmd)
-	specCmd.AddCommand(specParseCmd)
 	RootCmd.AddCommand(specCmd)
 }

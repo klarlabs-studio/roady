@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 
@@ -27,20 +26,12 @@ var driftExplainCmd = &cobra.Command{
 			return MapError(fmt.Errorf("failed to detect drift: %w", err))
 		}
 
-		var explanation string
-		err = withAIProgress(cmd.Context(), "AI drift explanation", func(ctx context.Context) error {
-			s, eerr := services.AI.ExplainDrift(ctx, report)
-			explanation = s
-			return eerr
-		})
+		req, err := services.Prompt.ExplainDrift(cmd.Context(), report)
 		if err != nil {
-			return MapError(fmt.Errorf("failed to explain drift: %w", err))
+			return MapError(err)
 		}
 
-		fmt.Println("\n--- Drift Analysis ---")
-		fmt.Println(explanation)
-		fmt.Println("----------------------")
-		return nil
+		return printPromptRequest(req, promptJSON)
 	},
 }
 
@@ -107,6 +98,7 @@ var driftAcceptCmd = &cobra.Command{
 func init() {
 	driftDetectCmd.Flags().StringP("output", "o", "text", "Output format (text, json)")
 	driftCmd.AddCommand(driftDetectCmd)
+	addPromptJSONFlag(driftExplainCmd)
 	driftCmd.AddCommand(driftExplainCmd)
 	driftCmd.AddCommand(driftAcceptCmd)
 	RootCmd.AddCommand(driftCmd)

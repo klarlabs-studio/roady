@@ -181,7 +181,6 @@ func TestServer_RegistersCanonicalAndDeprecatedToolNames(t *testing.T) {
 		// Canonical recurring-drift + deprecation alias.
 		"roady_drift_recurring",
 		// Cost estimator (new in v0.10).
-		"roady_cost_estimate",
 	}
 
 	for _, name := range expected {
@@ -189,33 +188,4 @@ func TestServer_RegistersCanonicalAndDeprecatedToolNames(t *testing.T) {
 			t.Errorf("expected tool %q to be registered", name)
 		}
 	}
-}
-
-func TestHandleCostEstimate_DefaultsAndDispatch(t *testing.T) {
-	server := setupCoordinatorTestServer(t)
-	ctx := context.Background()
-
-	t.Run("default_operation", func(t *testing.T) {
-		result, err := server.handleCostEstimate(ctx, CostEstimateArgs{})
-		if err != nil {
-			t.Fatalf("handleCostEstimate: %v", err)
-		}
-		if result == nil {
-			t.Fatal("expected non-nil estimate")
-		}
-	})
-
-	t.Run("explicit_operation", func(t *testing.T) {
-		for _, op := range []string{"generate_plan", "smart_decompose", "review_spec", "explain_drift", "query"} {
-			if _, err := server.handleCostEstimate(ctx, CostEstimateArgs{Operation: op}); err != nil {
-				t.Errorf("handleCostEstimate(%q): %v", op, err)
-			}
-		}
-	})
-
-	t.Run("invalid_operation", func(t *testing.T) {
-		if _, err := server.handleCostEstimate(ctx, CostEstimateArgs{Operation: "bogus"}); err == nil {
-			t.Fatal("expected error for unknown operation")
-		}
-	})
 }

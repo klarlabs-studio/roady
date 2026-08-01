@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — BREAKING: Roady no longer calls language models
+
+Roady embedded provider clients and ran inference itself. An agent invoking
+Roady already has a model, a key, a budget, and more context than Roady can
+reconstruct from files — so a second model meant a second credential, a
+second bill, and a worse answer.
+
+The model-assisted operations survive as prompt builders: Roady assembles
+the context and returns it, the caller runs inference, and results come back
+through the named write-back tool. See `docs/prompts.md`.
+
+- **Removed** `pkg/ai` and the Anthropic / OpenAI / Gemini / Ollama clients,
+  `pkg/domain/ai`, `AIPlanningService`, `.roady/ai.yaml`, `ROADY_AI_PROVIDER`
+  / `ROADY_AI_MODEL`, and all API-key handling. No key is needed for anything.
+- **Changed** `roady_plan_decompose`, `roady_explain_spec`, `roady_review_spec`,
+  `roady_query`, `roady_suggest_priorities`, and `roady_explain_drift` to
+  return a prompt request (`operation`, `system`, `prompt`, `expected_format`,
+  `write_back`, `guidance`) instead of model output. These now work with no
+  configuration at all.
+- **Changed** the matching CLI commands to print the prompt on stdout and the
+  framing on stderr, so it pipes cleanly. `--json` emits the whole request.
+- **Removed** `roady_cost_estimate` — Roady spends no tokens and cannot
+  project a bill for a model it does not call.
+- **Removed** `roady spec parse` and `roady spec analyze --reconcile`, whose
+  only purpose was having a model structure text.
+- **Changed** `roady watch --auto-sync` to regenerate with the deterministic
+  planner. An unattended file watcher is the last place that should silently
+  spend tokens.
+- `allow_ai: false` still refuses these operations; the intent behind it does
+  not change because inference moved to the caller.
+
 ## [0.14.1] - 2026-08-01
 
 Patch release so the published tag sits on a commit with green CI. No
