@@ -516,6 +516,13 @@ func (s *Server) registerTools() {
 		OutputSchema(forecastResp{}).
 		Handler(s.handleForecast)
 
+	// Tool: roady_org_members
+	s.tool("roady_org_members").
+		Description("List the repositories belonging to this workspace, from the repos: list in .roady/org.yaml when declared, otherwise by walking the tree. Reports declared members that cannot be reached.").
+		UIResource("ui://roady/org").
+		OutputSchema(org.MemberSet{}).
+		Handler(s.handleOrgMembers)
+
 	// Tool: roady_org_status (Horizon 4)
 	s.tool("roady_org_status").
 		Description("Get a status overview of all Roady projects in the directory tree").
@@ -822,6 +829,18 @@ func (s *Server) handleOrgStatus(ctx context.Context, args GetSpecArgs) (any, er
 		return mcpErr("Failed to aggregate org metrics."), nil
 	}
 	return metrics, nil
+}
+
+func (s *Server) handleOrgMembers(ctx context.Context, args GetSpecArgs) (any, error) {
+	orgSvc := s.orgSvc
+	if orgSvc == nil {
+		return mcpErr("Org service not available."), nil
+	}
+	set, err := orgSvc.ResolveMembers()
+	if err != nil {
+		return mcpErr("Failed to resolve workspace members. Check the repos: list in .roady/org.yaml."), nil
+	}
+	return set, nil
 }
 
 func (s *Server) handleGitSync(ctx context.Context, args GitSyncArgs) (any, error) {

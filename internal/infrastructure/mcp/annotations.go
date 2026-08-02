@@ -42,6 +42,7 @@ var toolBehaviours = map[string]toolBehaviour{
 	"roady_get_usage":        {readOnly: true, idempotent: true},
 	"roady_status":           {readOnly: true, idempotent: true},
 	"roady_tasks":            {readOnly: true, idempotent: true},
+	"roady_org_members":      {readOnly: true, idempotent: true},
 	"roady_check_policy":     {readOnly: true, idempotent: true},
 	"roady_detect_drift":     {readOnly: true, idempotent: true},
 	"roady_debt_report":      {readOnly: true, idempotent: true},

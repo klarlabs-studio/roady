@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — workspace member repositories
+
+`.roady/org.yaml` has carried a `repos:` list since the type was introduced
+and nothing ever read it. A workspace could declare its members and Roady
+would quietly walk the tree instead — missing any repository outside the root,
+silently including any scratch checkout inside it, and answering a different
+question from the one asked.
+
+- A declared list is now authoritative, and can name repositories outside the
+  workspace directory, which is the reason to declare them at all. Relative
+  and absolute paths both work.
+- Discovery remains the behaviour when nothing is declared, so a workspace
+  that never needed the distinction does not have to start.
+- `roady org status` and `roady org drift` enumerate from the membership,
+  covering each member's root project and its sub-projects.
+- A declared member that cannot be reached — missing, not a directory, or
+  holding no Roady project — is reported with the reason and how to fix it,
+  and carried on the reports as a warning. A cross-repo view that silently
+  omits a repository looks like coverage, which is the failure declaring
+  members exists to prevent.
+- New: `roady org members`, and `roady_org_members` over MCP.
+
 ## [0.18.0] - 2026-08-02
 
 Five bugs found by running Roady on a real 118-feature project, all reported
