@@ -76,7 +76,7 @@ func TestPlanService_FailurePaths(t *testing.T) {
 	tasks := []planning.Task{
 		{ID: "t1", Title: "T1", DependsOn: []string{"t1"}},
 	}
-	_, err = service.UpdatePlan(tasks)
+	_, _, err = service.UpdatePlan(tasks)
 	if err == nil {
 		t.Error("Expected error for DAG cycle")
 	}
@@ -146,7 +146,7 @@ func TestPlanService_UpdatePlanLocksSpec(t *testing.T) {
 		t.Fatalf("save spec: %v", err)
 	}
 
-	_, err := service.UpdatePlan([]planning.Task{
+	_, _, err := service.UpdatePlan([]planning.Task{
 		{ID: "task-f1", Title: "Implement Feature 1", FeatureID: "f1"},
 	})
 	if err != nil {
@@ -425,7 +425,7 @@ func TestPlanService_UpdatePlanKeepsOrphans(t *testing.T) {
 	}
 	service := application.NewPlanService(repo, application.NewAuditService(repo))
 
-	updated, err := service.UpdatePlan([]planning.Task{
+	updated, _, err := service.UpdatePlan([]planning.Task{
 		{ID: "task-new", Title: "New Task", FeatureID: "feature-1"},
 	})
 	if err != nil {
@@ -484,7 +484,7 @@ func TestPlanService_GovernanceEvents(t *testing.T) {
 	if err := service.RejectPlan(); err != nil {
 		t.Fatalf("reject plan failed: %v", err)
 	}
-	if _, err := service.UpdatePlan([]planning.Task{
+	if _, _, err := service.UpdatePlan([]planning.Task{
 		{ID: "task-update", Title: "Updated", FeatureID: "feature-gov"},
 	}); err != nil {
 		t.Fatalf("update plan failed: %v", err)
@@ -645,7 +645,7 @@ func TestPlanService_UpdatePlanFiltersInvalidTasks(t *testing.T) {
 		{ID: "task-valid", FeatureID: "feature-filter", Title: "Valid"},
 		{ID: "task-nofeature", Title: "No Feature"},
 	}
-	plan, err := service.UpdatePlan(tasks)
+	plan, _, err := service.UpdatePlan(tasks)
 	if err != nil {
 		t.Fatalf("UpdatePlan failed: %v", err)
 	}
@@ -948,7 +948,7 @@ func TestPlanService_ReconcilePlanKeepsOrphans(t *testing.T) {
 	if err := repo.SavePlan(plan); err != nil {
 		t.Fatalf("save plan: %v", err)
 	}
-	if _, err := service.UpdatePlan([]planning.Task{
+	if _, _, err := service.UpdatePlan([]planning.Task{
 		{ID: "task-new", FeatureID: "f1", Title: "New Task"},
 	}); err != nil {
 		t.Fatalf("UpdatePlan failed: %v", err)

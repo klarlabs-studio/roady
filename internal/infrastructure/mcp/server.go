@@ -1178,11 +1178,27 @@ func (s *Server) handleUpdatePlan(ctx context.Context, args UpdatePlanArgs) (any
 	if err != nil {
 		return mcpErr("Failed to load project at the given path."), nil
 	}
-	plan, err := svc.Plan.UpdatePlan(args.Tasks)
+	plan, warnings, err := svc.Plan.UpdatePlan(args.Tasks)
 	if err != nil {
 		return mcpErr("Failed to update plan. Ensure the task list is valid and a spec exists."), nil
 	}
-	return fmt.Sprintf("Plan updated with %d tasks. Plan ID: %s", len(plan.Tasks), plan.ID), nil
+
+	// Warnings name tasks whose feature link Roady could not resolve. The
+	// agent that wrote them is the one able to correct them, and it is about
+	// to move on, so they are reported now rather than left for a later
+	// drift run to discover.
+	result := map[string]any{
+		"message":    fmt.Sprintf("Plan updated with %d tasks. Plan ID: %s", len(plan.Tasks), plan.ID),
+		"task_count": len(plan.Tasks),
+		"plan_id":    plan.ID,
+	}
+	if len(warnings) > 0 {
+		result["warnings"] = warnings
+		result["hint"] = "Each warning names a task whose feature_id does not match any feature in the spec. " +
+			"Drift will report these as orphans. Use the feature's id (not its title) from roady_get_spec, " +
+			"or add the missing feature with roady_add_feature."
+	}
+	return result, nil
 }
 
 func (s *Server) handleDetectDrift(ctx context.Context, args DetectDriftArgs) (any, error) {

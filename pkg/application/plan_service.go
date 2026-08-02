@@ -96,14 +96,22 @@ func (s *PlanService) GeneratePlan(ctx context.Context) (*planning.Plan, error) 
 		}
 	}
 
-	return s.ReconcilePlan(heuristicTasks)
+	// The links here are built from feat.ID above, so there is nothing for
+	// the resolver to repair or report.
+	plan, _, err := s.ReconcilePlan(heuristicTasks)
+	return plan, err
 }
 
-// UpdatePlan allows external agents (AI) to provide a specific list of tasks.
-func (s *PlanService) UpdatePlan(tasks []planning.Task) (*planning.Plan, error) {
-	plan, err := s.ReconcilePlan(tasks)
+// UpdatePlan replaces the plan's tasks with a caller-supplied set, which is
+// how an external agent writes a plan back.
+//
+// The warnings it returns name links Roady could not make sense of. They are
+// not errors — the plan is written either way — but a caller that ignores
+// them has written a plan that drift will report as orphaned.
+func (s *PlanService) UpdatePlan(tasks []planning.Task) (*planning.Plan, []string, error) {
+	plan, warnings, err := s.ReconcilePlan(tasks)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	if err := s.audit.Log("plan.update_smart", "ai", map[string]any{
@@ -111,18 +119,25 @@ func (s *PlanService) UpdatePlan(tasks []planning.Task) (*planning.Plan, error) 
 		"spec_id":    plan.SpecID,
 		"task_count": len(tasks),
 	}); err != nil {
-		return nil, fmt.Errorf("write audit log: %w", err)
+		return nil, nil, fmt.Errorf("write audit log: %w", err)
 	}
 
-	return plan, nil
+	return plan, warnings, nil
 }
 
-// ReconcilePlan merges new tasks with the existing plan state.
-func (s *PlanService) ReconcilePlan(proposedTasks []planning.Task) (*planning.Plan, error) {
+// ReconcilePlan merges new tasks with the existing plan state, returning any
+// feature links it could not resolve.
+func (s *PlanService) ReconcilePlan(proposedTasks []planning.Task) (*planning.Plan, []string, error) {
 	spec, err := s.repo.LoadSpec()
 	if err != nil {
-		return nil, fmt.Errorf("load spec: %w", err)
+		return nil, nil, fmt.Errorf("load spec: %w", err)
 	}
+
+	// Repair the task-to-feature links before anything is stored. Writing a
+	// task whose feature_id holds a title produces a plan that drift reports
+	// as orphaned the moment it is created, and the write is the last point
+	// at which Roady still knows enough to fix it.
+	warnings := resolveFeatureLinks(spec.Features, proposedTasks)
 
 	existingPlan, _ := s.repo.LoadPlan()
 
@@ -130,18 +145,18 @@ func (s *PlanService) ReconcilePlan(proposedTasks []planning.Task) (*planning.Pl
 		SpecID: spec.ID,
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	if err := s.repo.SavePlan(newPlan); err != nil {
-		return nil, fmt.Errorf("failed to save plan: %w", err)
+		return nil, nil, fmt.Errorf("failed to save plan: %w", err)
 	}
 
 	if err := s.repo.SaveSpecLock(spec); err != nil {
-		return nil, fmt.Errorf("save spec lock: %w", err)
+		return nil, nil, fmt.Errorf("save spec lock: %w", err)
 	}
 
-	return newPlan, nil
+	return newPlan, warnings, nil
 }
 
 func (s *PlanService) GetPlan() (*planning.Plan, error) {
