@@ -111,9 +111,64 @@
       "feature_id": "cross-repo-planning",
       "origin": "heuristic",
       "source": {}
+    },
+    {
+      "id": "task-safe-generated-ids",
+      "title": "Generated ids are safe to use as ids (Field-reported reliability)",
+      "description": "Feature and task ids must be usable as a path component, a URL segment and a shell argument. Improving the derivation must not re-identify features that already exist. (#74)",
+      "priority": "high",
+      "estimate": "1d",
+      "depends_on": [],
+      "feature_id": "field-reliability",
+      "origin": "heuristic",
+      "source": {}
+    },
+    {
+      "id": "task-backlog-writes-to-project",
+      "title": "Documentation is written to the project it belongs to (Field-reported reliability)",
+      "description": "add_feature must resolve docs/backlog.md against the project root rather than the process working directory, and must not report a sync that did not happen. (#71)",
+      "priority": "high",
+      "estimate": "0.5d",
+      "depends_on": [],
+      "feature_id": "field-reliability",
+      "origin": "heuristic",
+      "source": {}
+    },
+    {
+      "id": "task-resolved-feature-links",
+      "title": "Plan writes resolve the feature they name (Field-reported reliability)",
+      "description": "A task written back with a feature title, or a legacy id, must be linked to the right feature; a link that resolves to nothing must be reported to the caller rather than stored silently. (#73)",
+      "priority": "high",
+      "estimate": "1d",
+      "depends_on": [],
+      "feature_id": "field-reliability",
+      "origin": "heuristic",
+      "source": {}
+    },
+    {
+      "id": "task-paged-task-listings",
+      "title": "Task listings fit in the caller context (Field-reported reliability)",
+      "description": "roady_tasks must page and project its results, and must say when it truncated rather than returning a partial list that looks complete. (#75)",
+      "priority": "medium",
+      "estimate": "1d",
+      "depends_on": [],
+      "feature_id": "field-reliability",
+      "origin": "heuristic",
+      "source": {}
+    },
+    {
+      "id": "task-mcp-errors-reach-agent",
+      "title": "MCP errors carry the actionable message (Field-reported reliability)",
+      "description": "A domain error must reach the MCP client as the message the CLI gives, not as a bare internal error. (#72)",
+      "priority": "high",
+      "estimate": "0.5d",
+      "depends_on": [],
+      "feature_id": "field-reliability",
+      "origin": "heuristic",
+      "source": {}
     }
   ],
   "approval_status": "approved",
   "created_at": "2026-01-31T18:00:00+01:00",
-  "updated_at": "2026-08-02T11:33:38.462291+02:00"
+  "updated_at": "2026-08-02T13:44:39.23137+02:00"
 }

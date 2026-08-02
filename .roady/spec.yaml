@@ -106,6 +106,43 @@ features:
     description: Status, report, and drift span every member repo in one view.
     priority: low
     estimate: 2d
+- id: field-reliability
+  title: Field-reported reliability
+  description: 'Defects found by running Roady on a real 118-feature project and reported as GitHub issues.
+    Four of the five shared a shape: Roady knew enough to get the answer right and stored or reported
+    something else without saying so.'
+  requirements:
+  - id: safe-generated-ids
+    title: Generated ids are safe to use as ids
+    description: Feature and task ids must be usable as a path component, a URL segment and a shell argument.
+      Improving the derivation must not re-identify features that already exist. (#74)
+    priority: high
+    estimate: 1d
+  - id: backlog-writes-to-project
+    title: Documentation is written to the project it belongs to
+    description: add_feature must resolve docs/backlog.md against the project root rather than the process
+      working directory, and must not report a sync that did not happen. (#71)
+    priority: high
+    estimate: 0.5d
+  - id: resolved-feature-links
+    title: Plan writes resolve the feature they name
+    description: A task written back with a feature title, or a legacy id, must be linked to the right
+      feature; a link that resolves to nothing must be reported to the caller rather than stored silently.
+      (#73)
+    priority: high
+    estimate: 1d
+  - id: paged-task-listings
+    title: Task listings fit in the caller context
+    description: roady_tasks must page and project its results, and must say when it truncated rather
+      than returning a partial list that looks complete. (#75)
+    priority: medium
+    estimate: 1d
+  - id: mcp-errors-reach-agent
+    title: MCP errors carry the actionable message
+    description: A domain error must reach the MCP client as the message the CLI gives, not as a bare
+      internal error. (#72)
+    priority: high
+    estimate: 0.5d
 constraints:
 - id: backward-compat
   description: Maintain backward compatibility with existing spec.yaml and plan.json formats
