@@ -517,6 +517,54 @@ func (s *Server) registerTools() {
 		OutputSchema(forecastResp{}).
 		Handler(s.handleForecast)
 
+	// Parity tools: these operations existed only on the CLI, so an agent could
+	// read a project but not maintain one — prune a stale plan, reject a bad
+	// one, verify the audit chain, or rebuild state after a loss.
+	s.tool("roady_plan_prune").
+		Description("Remove tasks from the plan that no longer correspond to anything in the spec.").
+		UIResource("ui://roady/plan").
+		Handler(s.handlePlanPrune)
+
+	s.tool("roady_plan_reject").
+		Description("Reject the current plan, returning it to an unapproved state so it cannot be executed.").
+		UIResource("ui://roady/plan").
+		Handler(s.handlePlanReject)
+
+	s.tool("roady_audit_verify").
+		Description("Verify the integrity of the hash-chained audit log. Reports every break rather than only the first.").
+		UIResource("ui://roady/state").
+		Handler(s.handleAuditVerify)
+
+	s.tool("roady_spec_validate").
+		Description("Validate the current spec and report every problem found.").
+		UIResource("ui://roady/spec").
+		Handler(s.handleSpecValidate)
+
+	s.tool("roady_spec_import").
+		Description("Import a single markdown document as the product spec. Use roady_spec_analyze for a directory.").
+		UIResource("ui://roady/spec").
+		Handler(s.handleSpecImport)
+
+	s.tool("roady_state_rebuild").
+		Description("Rebuild execution state from the immutable event log, for recovery after state.json is lost or corrupted.").
+		UIResource("ui://roady/state").
+		Handler(s.handleStateRebuild)
+
+	s.tool("roady_timeline").
+		Description("Return the project's event timeline, newest last.").
+		UIResource("ui://roady/status").
+		Handler(s.handleTimeline)
+
+	s.tool("roady_debt_history").
+		Description("Drift snapshots over a window of days, for seeing whether debt is accumulating or clearing.").
+		UIResource("ui://roady/debt").
+		Handler(s.handleDebtHistory)
+
+	s.tool("roady_debt_score").
+		Description("Debt score for one component, or the top debtors when no component is given.").
+		UIResource("ui://roady/debt").
+		Handler(s.handleDebtScore)
+
 	// Tool: roady_report — stakeholder progress, the answer to "keep leadership
 	// informed". It was CLI-only, so the agents expected to produce it had to
 	// shell out; the same gap roady_audit_trail closed in 0.17.0.
@@ -977,6 +1025,200 @@ func (s *Server) handleSpecAnalyze(ctx context.Context, args SpecAnalyzeArgs) (a
 		"count":    len(productSpec.Features),
 		"hint":     "The spec is written to .roady/spec.yaml. Run roady_generate_plan to turn it into tasks.",
 	}, nil
+}
+
+// --- Parity handlers: CLI-only operations an agent could not reach ---
+
+type PlanMutateArgs struct {
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+}
+
+func (s *Server) handlePlanPrune(ctx context.Context, args PlanMutateArgs) (any, error) {
+	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
+	if err != nil {
+		return mcpErr("Failed to load project at the given path."), nil
+	}
+	before, _ := svc.Plan.GetPlan()
+	countBefore := 0
+	if before != nil {
+		countBefore = len(before.Tasks)
+	}
+	if err := svc.Plan.PrunePlan(); err != nil {
+		return mcpErr(fmt.Sprintf("Failed to prune the plan: %v", err)), nil
+	}
+	after, _ := svc.Plan.GetPlan()
+	countAfter := 0
+	if after != nil {
+		countAfter = len(after.Tasks)
+	}
+	return map[string]any{
+		"pruned":         countBefore - countAfter,
+		"tasks_retained": countAfter,
+		"message":        fmt.Sprintf("Pruned %d task(s); %d retained.", countBefore-countAfter, countAfter),
+	}, nil
+}
+
+func (s *Server) handlePlanReject(ctx context.Context, args PlanMutateArgs) (any, error) {
+	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
+	if err != nil {
+		return mcpErr("Failed to load project at the given path."), nil
+	}
+	if err := svc.Plan.RejectPlan(); err != nil {
+		return mcpErr(fmt.Sprintf("Failed to reject the plan: %v", err)), nil
+	}
+	return "Plan rejected. It cannot be executed until it is approved again.", nil
+}
+
+func (s *Server) handleAuditVerify(ctx context.Context, args PlanMutateArgs) (any, error) {
+	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
+	if err != nil {
+		return mcpErr("Failed to load project at the given path."), nil
+	}
+	// Deliberately the same verifier the CLI uses. EventSourcedAuditService
+	// carries a second implementation that still checks the log as a strict
+	// linear sequence, so it reports tampering for the branch-and-merge shape
+	// concurrent appends legitimately produce — the case AuditService was
+	// fixed for in 0.14.0. Two verifiers disagreeing about whether an audit
+	// chain is intact is worse than having one, especially in the subsystem
+	// whose entire value is being trustworthy.
+	violations, err := svc.Workspace.Audit.VerifyIntegrity()
+	if err != nil {
+		return mcpErr(fmt.Sprintf("Failed to verify the audit chain: %v", err)), nil
+	}
+	// Reported as data rather than an error: a broken chain is a finding the
+	// caller must act on, not a failed call.
+	return map[string]any{
+		"intact":     len(violations) == 0,
+		"violations": violations,
+		"count":      len(violations),
+	}, nil
+}
+
+func (s *Server) handleSpecValidate(ctx context.Context, args PlanMutateArgs) (any, error) {
+	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
+	if err != nil {
+		return mcpErr("Failed to load project at the given path."), nil
+	}
+	productSpec, err := svc.Spec.GetSpec()
+	if err != nil || productSpec == nil {
+		return mcpErr("Failed to load the spec. Ensure the project is initialized."), nil
+	}
+	problems := productSpec.Validate()
+	messages := make([]string, 0, len(problems))
+	for _, p := range problems {
+		messages = append(messages, p.Error())
+	}
+	return map[string]any{
+		"valid":    len(messages) == 0,
+		"problems": messages,
+		"count":    len(messages),
+	}, nil
+}
+
+type SpecImportArgs struct {
+	Path        string `json:"path" jsonschema:"description=Markdown file to import as the spec, relative to the project or absolute."`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+}
+
+func (s *Server) handleSpecImport(ctx context.Context, args SpecImportArgs) (any, error) {
+	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
+	if err != nil {
+		return mcpErr("Failed to load project at the given path."), nil
+	}
+	path := strings.TrimSpace(args.Path)
+	if path == "" {
+		return mcpErr("A path is required: pass path, e.g. \"docs/spec.md\"."), nil
+	}
+	if !filepath.IsAbs(path) {
+		path = filepath.Join(s.rootFor(args.ProjectPath), path)
+	}
+	productSpec, err := svc.Spec.ImportFromMarkdown(path)
+	if err != nil {
+		return mcpErr(fmt.Sprintf("Failed to import %s: %v", path, err)), nil
+	}
+	return map[string]any{
+		"title":    productSpec.Title,
+		"features": len(productSpec.Features),
+	}, nil
+}
+
+func (s *Server) handleStateRebuild(ctx context.Context, args PlanMutateArgs) (any, error) {
+	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
+	if err != nil {
+		return mcpErr("Failed to load project at the given path."), nil
+	}
+	rebuilt, result, err := application.NewStateRebuildService(svc.Workspace.Repo).Rebuild()
+	if err != nil {
+		return mcpErr(fmt.Sprintf("Failed to rebuild state: %v", err)), nil
+	}
+	out := map[string]any{"tasks": len(rebuilt.TaskStates)}
+	if result != nil {
+		out["result"] = result
+	}
+	return out, nil
+}
+
+func (s *Server) handleTimeline(ctx context.Context, args PlanMutateArgs) (any, error) {
+	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
+	if err != nil {
+		return mcpErr("Failed to load project at the given path."), nil
+	}
+	timeline := svc.Audit.GetTimeline()
+	return map[string]any{"events": timeline, "count": len(timeline)}, nil
+}
+
+type DebtWindowArgs struct {
+	WindowDays  int    `json:"window_days,omitempty" jsonschema:"description=How many days of history to include. Defaults to 30."`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+}
+
+func (s *Server) handleDebtHistory(ctx context.Context, args DebtWindowArgs) (any, error) {
+	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
+	if err != nil {
+		return mcpErr("Failed to load project at the given path."), nil
+	}
+	window := args.WindowDays
+	if window <= 0 {
+		window = 30
+	}
+	history, err := svc.Debt.GetDriftHistory(window)
+	if err != nil {
+		return mcpErr("Failed to load drift history."), nil
+	}
+	return map[string]any{"window_days": window, "snapshots": history, "count": len(history)}, nil
+}
+
+type DebtScoreArgs struct {
+	Component   string `json:"component,omitempty" jsonschema:"description=Component id to score. Omit for the top debtors across the project."`
+	Limit       int    `json:"limit,omitempty" jsonschema:"description=How many top debtors to return when no component is given. Defaults to 10."`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+}
+
+func (s *Server) handleDebtScore(ctx context.Context, args DebtScoreArgs) (any, error) {
+	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
+	if err != nil {
+		return mcpErr("Failed to load project at the given path."), nil
+	}
+	if component := strings.TrimSpace(args.Component); component != "" {
+		score, sErr := svc.Debt.GetDebtScore(component)
+		if sErr != nil {
+			return mcpErr(fmt.Sprintf("Failed to score %s: %v", component, sErr)), nil
+		}
+		return score, nil
+	}
+	limit := args.Limit
+	if limit <= 0 {
+		limit = 10
+	}
+	top, err := svc.Debt.GetTopDebtors(ctx, limit)
+	if err != nil {
+		return mcpErr("Failed to load top debtors."), nil
+	}
+	return map[string]any{"top_debtors": top, "count": len(top)}, nil
 }
 
 func (s *Server) handleGitSync(ctx context.Context, args GitSyncArgs) (any, error) {

@@ -324,3 +324,145 @@ func TestRootForAndProjectDirName(t *testing.T) {
 		t.Errorf("projectDirName(root) = %q, want %q", got, filepath.Base(server.root))
 	}
 }
+
+// Parity: an agent must be able to maintain a project, not only read one.
+// These operations existed solely on the CLI, so an agent could approve a plan
+// but never reject one, detect a broken audit chain only as a side effect, and
+// never prune, validate, import or recover.
+func TestServer_ParityToolsAreRegistered(t *testing.T) {
+	server := setupCoordinatorTestServer(t)
+
+	registered := make(map[string]bool)
+	for _, tool := range server.mcpServer.Tools() {
+		registered[tool.Name] = true
+	}
+
+	for _, name := range []string{
+		"roady_plan_prune", "roady_plan_reject", "roady_audit_verify",
+		"roady_spec_validate", "roady_spec_import", "roady_state_rebuild",
+		"roady_timeline", "roady_debt_history", "roady_debt_score",
+	} {
+		if !registered[name] {
+			t.Errorf("%s is not registered; the capability remains CLI-only", name)
+		}
+	}
+}
+
+// Every registered tool must carry behaviour annotations. An unannotated tool
+// leaves a client unable to tell a read from a destructive write.
+func TestServer_EveryToolIsAnnotated(t *testing.T) {
+	server := setupCoordinatorTestServer(t)
+
+	for _, tool := range server.mcpServer.Tools() {
+		if _, ok := toolBehaviours[tool.Name]; !ok {
+			t.Errorf("tool %q has no entry in toolBehaviours", tool.Name)
+		}
+	}
+}
+
+func TestParityHandlers_ReturnResults(t *testing.T) {
+	server := setupCoordinatorTestServer(t)
+	ctx := context.Background()
+
+	t.Run("audit verify reports findings as data", func(t *testing.T) {
+		res, err := server.handleAuditVerify(ctx, PlanMutateArgs{})
+		if err != nil {
+			t.Fatalf("handleAuditVerify: %v", err)
+		}
+		out, ok := res.(map[string]any)
+		if !ok {
+			t.Fatalf("got %T, want a map", res)
+		}
+		// A broken chain is a finding to act on, not a failed call.
+		if _, has := out["intact"]; !has {
+			t.Error("no intact flag; a caller cannot tell whether the chain verified")
+		}
+	})
+
+	t.Run("spec validate", func(t *testing.T) {
+		res, err := server.handleSpecValidate(ctx, PlanMutateArgs{})
+		if err != nil || res == nil {
+			t.Fatalf("handleSpecValidate: %v", err)
+		}
+	})
+
+	t.Run("timeline", func(t *testing.T) {
+		res, err := server.handleTimeline(ctx, PlanMutateArgs{})
+		if err != nil || res == nil {
+			t.Fatalf("handleTimeline: %v", err)
+		}
+	})
+
+	t.Run("debt history defaults its window", func(t *testing.T) {
+		res, err := server.handleDebtHistory(ctx, DebtWindowArgs{})
+		if err != nil {
+			t.Fatalf("handleDebtHistory: %v", err)
+		}
+		out, _ := res.(map[string]any)
+		if out["window_days"] != 30 {
+			t.Errorf("window_days = %v, want the 30-day default", out["window_days"])
+		}
+	})
+
+	t.Run("debt score without a component returns top debtors", func(t *testing.T) {
+		res, err := server.handleDebtScore(ctx, DebtScoreArgs{})
+		if err != nil || res == nil {
+			t.Fatalf("handleDebtScore: %v", err)
+		}
+	})
+
+	t.Run("spec import requires a path", func(t *testing.T) {
+		res, err := server.handleSpecImport(ctx, SpecImportArgs{})
+		assertToolError(t, res, err, "path")
+	})
+
+	t.Run("plan reject then prune", func(t *testing.T) {
+		if _, err := server.handlePlanReject(ctx, PlanMutateArgs{}); err != nil {
+			t.Fatalf("handlePlanReject: %v", err)
+		}
+		res, err := server.handlePlanPrune(ctx, PlanMutateArgs{})
+		if err != nil {
+			t.Fatalf("handlePlanPrune: %v", err)
+		}
+		out, _ := res.(map[string]any)
+		if _, has := out["tasks_retained"]; !has {
+			t.Error("prune did not report how many tasks it kept")
+		}
+	})
+}
+
+// The CLI and MCP must return the same verdict on the same log. They did not:
+// roady_audit_verify used EventSourcedAuditService, whose verifier still
+// checks the log as a strict linear sequence and so reports tampering for the
+// branch-and-merge shape concurrent appends legitimately produce — the case
+// AuditService was fixed for in 0.14.0. On a freshly seeded project the CLI
+// said "intact and verified" while MCP reported a violation, at the same
+// moment, about the same file.
+func TestAuditVerify_AgreesWithTheCLIVerifier(t *testing.T) {
+	server := setupCoordinatorTestServer(t)
+
+	res, err := server.handleAuditVerify(context.Background(), PlanMutateArgs{})
+	if err != nil {
+		t.Fatalf("handleAuditVerify: %v", err)
+	}
+	out, ok := res.(map[string]any)
+	if !ok {
+		t.Fatalf("got %T, want a map", res)
+	}
+
+	svc, err := server.servicesForPath("", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := svc.Workspace.Audit.VerifyIntegrity()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if got := out["count"].(int); got != len(want) {
+		t.Errorf("MCP reported %d violations, the CLI verifier reports %d", got, len(want))
+	}
+	if intact := out["intact"].(bool); intact != (len(want) == 0) {
+		t.Errorf("intact = %v, CLI verifier says %v", intact, len(want) == 0)
+	}
+}
