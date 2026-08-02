@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/felixgeelhaar/roady/pkg/domain/org"
+	"github.com/felixgeelhaar/roady/pkg/storage"
 )
 
 // ResolveMembers returns the repositories belonging to this workspace.
@@ -95,4 +96,53 @@ func (s *OrgService) discoverMembers() (*org.MemberSet, error) {
 		})
 	}
 	return set, nil
+}
+
+// memberProjects enumerates every Roady project belonging to the workspace:
+// each member's root project, plus its named sub-projects under
+// .roady/projects/<name>/.
+//
+// It returns the member set alongside, so callers can report members that
+// could not be reached instead of quietly aggregating over the rest.
+func (s *OrgService) memberProjects() ([]DiscoveredProject, *org.MemberSet, error) {
+	set, err := s.ResolveMembers()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if !set.IsDeclared() {
+		// Nothing was declared, so the walk is the membership — and it
+		// already enumerates sub-projects as it goes.
+		projects, err := s.DiscoverProjectsWithSub()
+		return projects, set, err
+	}
+
+	var projects []DiscoveredProject
+	for _, m := range set.Usable() {
+		projects = append(projects, DiscoveredProject{Path: m.Path})
+		projects = append(projects, s.subProjectsOf(m.Path)...)
+	}
+	return projects, set, nil
+}
+
+// subProjectsOf lists the named sub-projects stored under a repository's
+// .roady/projects/ directory.
+func (s *OrgService) subProjectsOf(repoRoot string) []DiscoveredProject {
+	entries, err := os.ReadDir(filepath.Join(repoRoot, ".roady", storage.ProjectsDir))
+	if err != nil {
+		return nil
+	}
+
+	var projects []DiscoveredProject
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		name := entry.Name()
+		if err := storage.ValidateProjectName(name); err != nil {
+			continue
+		}
+		projects = append(projects, DiscoveredProject{Path: repoRoot, SubProject: name})
+	}
+	return projects
 }

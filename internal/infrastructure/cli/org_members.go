@@ -80,3 +80,15 @@ func init() {
 	orgMembersCmd.Flags().BoolVar(&orgMembersJSON, "json", false, "Output as JSON")
 	orgCmd.AddCommand(orgMembersCmd)
 }
+
+// printMemberWarnings reports declared members an org-level view could not
+// reach.
+//
+// They go to stderr so a piped report stays a report, and they are never
+// dropped: a cross-repo view that silently omits a repository looks like
+// coverage, which is the failure the declaration was meant to prevent.
+func printMemberWarnings(warnings []string) {
+	for _, w := range warnings {
+		fmt.Fprintf(os.Stderr, "warning: %s\n", w)
+	}
+}

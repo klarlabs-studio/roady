@@ -27,6 +27,11 @@ type ProjectDriftSummary struct {
 type CrossDriftReport struct {
 	Projects    []ProjectDriftSummary `json:"projects"`
 	TotalIssues int                   `json:"total_issues"`
+
+	// Warnings names declared members this report could not reach. A
+	// cross-repo report that quietly omits a repository is worse than no
+	// report: it looks like coverage.
+	Warnings []string `json:"warnings,omitempty"`
 }
 
 // OrgMetrics aggregates metrics across all projects in an organization.
@@ -38,4 +43,7 @@ type OrgMetrics struct {
 	TotalVerified int              `json:"total_verified"`
 	TotalWIP      int              `json:"total_wip"`
 	AvgProgress   float64          `json:"avg_progress"`
+
+	// Warnings names declared members these metrics could not reach.
+	Warnings []string `json:"warnings,omitempty"`
 }

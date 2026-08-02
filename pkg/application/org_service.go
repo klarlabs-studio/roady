@@ -60,23 +60,7 @@ func (s *OrgService) DiscoverProjectsWithSub() ([]DiscoveredProject, error) {
 			repoRoot := filepath.Dir(path)
 			projects = append(projects, DiscoveredProject{Path: repoRoot})
 
-			// Look for sub-projects under .roady/projects/<name>/
-			projectsDir := filepath.Join(path, storage.ProjectsDir)
-			if entries, err := os.ReadDir(projectsDir); err == nil {
-				for _, entry := range entries {
-					if !entry.IsDir() {
-						continue
-					}
-					name := entry.Name()
-					if err := storage.ValidateProjectName(name); err != nil {
-						continue
-					}
-					projects = append(projects, DiscoveredProject{
-						Path:       repoRoot,
-						SubProject: name,
-					})
-				}
-			}
+			projects = append(projects, s.subProjectsOf(repoRoot)...)
 			return filepath.SkipDir
 		}
 		return nil
@@ -84,10 +68,15 @@ func (s *OrgService) DiscoverProjectsWithSub() ([]DiscoveredProject, error) {
 	return projects, err
 }
 
-// AggregateMetrics collects metrics from all discovered projects, including
-// sub-projects under each repo's .roady/projects/<name>/.
+// AggregateMetrics collects metrics across the workspace's member
+// repositories, including sub-projects under each repo's
+// .roady/projects/<name>/.
+//
+// Membership comes from org.yaml when it declares repos, so the aggregate
+// covers repositories outside this directory and excludes checkouts inside it
+// that nobody claimed. Without a declaration it walks the tree as before.
 func (s *OrgService) AggregateMetrics() (*org.OrgMetrics, error) {
-	projects, err := s.DiscoverProjectsWithSub()
+	projects, members, err := s.memberProjects()
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +88,8 @@ func (s *OrgService) AggregateMetrics() (*org.OrgMetrics, error) {
 	}
 
 	metrics := &org.OrgMetrics{
-		OrgName: orgName,
+		OrgName:  orgName,
+		Warnings: members.Problems(),
 	}
 
 	for _, p := range projects {
@@ -258,15 +248,15 @@ func (s *OrgService) LoadMergedPolicy(projectPath string) (*policy.PolicyConfig,
 	return merged, nil
 }
 
-// DetectCrossDrift discovers projects (including sub-projects) and aggregates
-// drift reports.
+// DetectCrossDrift aggregates drift reports across the workspace's member
+// repositories, including their sub-projects.
 func (s *OrgService) DetectCrossDrift() (*org.CrossDriftReport, error) {
-	projects, err := s.DiscoverProjectsWithSub()
+	projects, members, err := s.memberProjects()
 	if err != nil {
 		return nil, err
 	}
 
-	report := &org.CrossDriftReport{}
+	report := &org.CrossDriftReport{Warnings: members.Problems()}
 
 	for _, p := range projects {
 		repo, repoErr := storage.NewFilesystemRepositoryForProject(p.Path, p.SubProject)

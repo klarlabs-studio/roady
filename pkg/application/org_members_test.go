@@ -170,3 +170,87 @@ func TestResolveMembersEmptyReposListFallsBackToDiscovery(t *testing.T) {
 		t.Error("an org.yaml with no repos should not produce a declared set")
 	}
 }
+
+// Aggregation must cover exactly the declared membership. Walking the tree
+// instead means a sibling repository is invisible to org status and org
+// drift, and a scratch checkout inside the workspace silently counts towards
+// the numbers leadership reads.
+func TestAggregateMetricsCoversDeclaredMembersOnly(t *testing.T) {
+	base := t.TempDir()
+	root := filepath.Join(base, "workspace")
+	sibling := filepath.Join(base, "shared-lib")
+	for _, p := range []string{root, filepath.Join(root, "api"), filepath.Join(root, "scratch"), sibling} {
+		initRoadyProject(t, p)
+	}
+
+	writeOrgConfig(t, root, &org.OrgConfig{
+		Name:  "acme",
+		Repos: []string{"./api", "../shared-lib"},
+	})
+
+	metrics, err := application.NewOrgService(root).AggregateMetrics()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	names := map[string]bool{}
+	for _, p := range metrics.Projects {
+		names[filepath.Base(p.Path)] = true
+	}
+
+	if !names["api"] {
+		t.Error("declared member api is missing from the aggregate")
+	}
+	if !names["shared-lib"] {
+		t.Error("declared member outside the root is missing from the aggregate")
+	}
+	if names["scratch"] {
+		t.Error("an undeclared repository inside the workspace was counted")
+	}
+	if metrics.TotalProjects != 2 {
+		t.Errorf("TotalProjects = %d, want 2", metrics.TotalProjects)
+	}
+}
+
+func TestDetectCrossDriftCoversDeclaredMembersOnly(t *testing.T) {
+	base := t.TempDir()
+	root := filepath.Join(base, "workspace")
+	sibling := filepath.Join(base, "shared-lib")
+	for _, p := range []string{root, filepath.Join(root, "api"), filepath.Join(root, "scratch"), sibling} {
+		initRoadyProject(t, p)
+	}
+
+	writeOrgConfig(t, root, &org.OrgConfig{
+		Name:  "acme",
+		Repos: []string{"./api", "../shared-lib"},
+	})
+
+	report, err := application.NewOrgService(root).DetectCrossDrift()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(report.Projects) != 2 {
+		t.Errorf("covered %d projects, want the 2 declared members", len(report.Projects))
+	}
+	for _, p := range report.Projects {
+		if filepath.Base(p.Path) == "scratch" {
+			t.Error("an undeclared repository was included in cross-repo drift")
+		}
+	}
+}
+
+// Aggregation with no org.yaml keeps walking the tree.
+func TestAggregateMetricsFallsBackToDiscovery(t *testing.T) {
+	root := t.TempDir()
+	initRoadyProject(t, filepath.Join(root, "api"))
+	initRoadyProject(t, filepath.Join(root, "web"))
+
+	metrics, err := application.NewOrgService(root).AggregateMetrics()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if metrics.TotalProjects != 2 {
+		t.Errorf("TotalProjects = %d, want 2 from discovery", metrics.TotalProjects)
+	}
+}

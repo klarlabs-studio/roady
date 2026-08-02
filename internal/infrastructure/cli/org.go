@@ -34,6 +34,7 @@ var orgStatusCmd = &cobra.Command{
 
 		if len(metrics.Projects) == 0 {
 			fmt.Println("No Roady projects found.")
+			printMemberWarnings(metrics.Warnings)
 			return nil
 		}
 
@@ -101,6 +102,7 @@ var orgStatusCmd = &cobra.Command{
 
 		fmt.Printf("Organizational Status (%d projects)\n", metrics.TotalProjects)
 		fmt.Println(t.View())
+		printMemberWarnings(metrics.Warnings)
 		return nil
 	},
 }
@@ -160,6 +162,7 @@ var orgDriftCmd = &cobra.Command{
 
 		if len(report.Projects) == 0 {
 			fmt.Println("No Roady projects found.")
+			printMemberWarnings(report.Warnings)
 			return nil
 		}
 
@@ -180,6 +183,7 @@ var orgDriftCmd = &cobra.Command{
 			}
 			fmt.Printf("  %-30s %s\n", p.Name, status)
 		}
+		printMemberWarnings(report.Warnings)
 		return nil
 	},
 }
