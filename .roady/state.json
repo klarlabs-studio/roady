@@ -1,17 +1,27 @@
 {
   "project_id": "test-refactor",
-  "version": 130,
+  "version": 133,
   "task_states": {
     "task-dispatch-contract": {
-      "status": "in_progress",
+      "status": "done",
       "path": "",
       "owner": "Felix Geelhaar",
+      "evidence": [
+        "b135518"
+      ],
       "started_at": "2026-08-02T12:34:24.999674+02:00",
-      "elapsed_minutes": 0
+      "completed_at": "2026-08-02T12:43:22.934363+02:00",
+      "elapsed_minutes": 8
     },
     "task-dispatch-hook": {
-      "status": "pending",
+      "status": "done",
       "path": "",
+      "owner": "Felix Geelhaar",
+      "evidence": [
+        "b135518"
+      ],
+      "started_at": "2026-08-02T12:43:22.98742+02:00",
+      "completed_at": "2026-08-02T12:43:23.037746+02:00",
       "elapsed_minutes": 0
     },
     "task-patch-prompt": {
@@ -91,5 +101,5 @@
       "elapsed_minutes": 0
     }
   },
-  "updated_at": "2026-08-02T12:34:24.999674+02:00"
+  "updated_at": "2026-08-02T12:43:23.037747+02:00"
 }
