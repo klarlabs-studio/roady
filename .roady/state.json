@@ -1,6 +1,6 @@
 {
   "project_id": "test-refactor",
-  "version": 116,
+  "version": 127,
   "task_states": {
     "task-dispatch-contract": {
       "status": "pending",
@@ -18,30 +18,58 @@
       "elapsed_minutes": 0
     },
     "task-pr-drift-gate": {
-      "status": "pending",
+      "status": "done",
       "path": "",
+      "owner": "Felix Geelhaar",
+      "evidence": [
+        "3c1df1b"
+      ],
+      "started_at": "2026-08-02T11:32:49.678607+02:00",
+      "completed_at": "2026-08-02T11:32:49.702995+02:00",
       "elapsed_minutes": 0
     },
     "task-pr-followup": {
-      "status": "pending",
+      "status": "done",
       "path": "",
+      "owner": "Felix Geelhaar",
+      "evidence": [
+        "3c1df1b"
+      ],
+      "started_at": "2026-08-02T11:32:49.730257+02:00",
+      "completed_at": "2026-08-02T11:32:49.755359+02:00",
       "elapsed_minutes": 0
     },
     "task-xdep-ready": {
-      "status": "pending",
+      "status": "done",
       "path": "",
+      "owner": "Felix Geelhaar",
+      "evidence": [
+        "8cc57d2"
+      ],
+      "started_at": "2026-08-02T11:32:49.625725+02:00",
+      "completed_at": "2026-08-02T11:32:49.651901+02:00",
       "elapsed_minutes": 0
     },
     "task-xdep-syntax": {
-      "status": "pending",
+      "status": "done",
       "path": "",
-      "owner": "verify-check",
-      "started_at": "2026-08-01T17:44:32.652402+02:00",
+      "owner": "Felix Geelhaar",
+      "evidence": [
+        "8cc57d2"
+      ],
+      "started_at": "2026-08-02T11:32:49.510464+02:00",
+      "completed_at": "2026-08-02T11:32:49.540515+02:00",
       "elapsed_minutes": 0
     },
     "task-xdep-validation": {
-      "status": "pending",
+      "status": "done",
       "path": "",
+      "owner": "Felix Geelhaar",
+      "evidence": [
+        "8cc57d2"
+      ],
+      "started_at": "2026-08-02T11:32:49.568817+02:00",
+      "completed_at": "2026-08-02T11:32:49.594474+02:00",
       "elapsed_minutes": 0
     },
     "task-xrepo-aggregate": {
@@ -55,5 +83,5 @@
       "elapsed_minutes": 0
     }
   },
-  "updated_at": "2026-08-01T17:44:51.145292+02:00"
+  "updated_at": "2026-08-02T11:32:49.755359+02:00"
 }
