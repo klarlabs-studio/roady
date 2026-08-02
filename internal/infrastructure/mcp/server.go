@@ -1177,7 +1177,14 @@ func (s *Server) handleTimeline(ctx context.Context, args PlanMutateArgs) (any, 
 	if err != nil {
 		return mcpErr("Failed to load project at the given path."), nil
 	}
-	timeline := svc.Audit.GetTimeline()
+	// The same source the CLI reads. svc.Audit is the event-sourced service,
+	// whose GetTimeline returns a projection with different fields — so the
+	// two surfaces answered "what happened here" with different data, in the
+	// change that claimed to close the parity gap.
+	timeline, err := svc.Workspace.Audit.GetTimeline()
+	if err != nil {
+		return mcpErr("Failed to load the timeline. Ensure an event log exists."), nil
+	}
 	return map[string]any{"events": timeline, "count": len(timeline)}, nil
 }
 

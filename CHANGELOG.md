@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — roady_timeline read a different source than the CLI
+
+`roady status timeline` reads the raw event log; `roady_timeline` read the
+event-sourced projection, which carries different fields. The two surfaces
+described the same history differently — introduced by the change that claimed
+to close the parity gap. Both now read the same source.
+
+### Removed — dead AI telemetry
+
+`GetAITelemetry` existed twice, on both audit services, and was called from
+nowhere. It aggregates token counts from event types Roady stopped producing in
+0.15.0, so on any project since it returns zeros regardless of what happened —
+a metric that cannot distinguish "no usage" from "not measured". Removed rather
+than reconciled.
+
 ### Fixed — one audit-chain verifier, not two
 
 Two services write to `events.jsonl` and both answer "is this log intact?".

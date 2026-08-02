@@ -517,3 +517,33 @@ func TestHandleSemanticDrift_ReturnsQuestionsWithTheRequest(t *testing.T) {
 	}
 	assertToolError(t, res, err, "")
 }
+
+// roady_timeline must read what `roady status timeline` reads. It first used
+// the event-sourced projection while the CLI used the raw event log, so the
+// two surfaces described the same history with different fields — introduced
+// by the change that claimed to close the parity gap.
+func TestTimeline_ReadsTheSameSourceAsTheCLI(t *testing.T) {
+	server := setupCoordinatorTestServer(t)
+
+	res, err := server.handleTimeline(context.Background(), PlanMutateArgs{})
+	if err != nil {
+		t.Fatalf("handleTimeline: %v", err)
+	}
+	out, ok := res.(map[string]any)
+	if !ok {
+		t.Fatalf("got %T, want a map", res)
+	}
+
+	svc, err := server.servicesForPath("", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := svc.Workspace.Audit.GetTimeline()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if got := out["count"].(int); got != len(want) {
+		t.Errorf("MCP reports %d events, the CLI's source has %d", got, len(want))
+	}
+}
