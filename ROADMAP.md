@@ -9,7 +9,21 @@ intended **open-core boundary** for a future hosted product.
 
 ---
 
-## Now (v0.17.0 — shipped)
+## Now (v0.19.0 — shipped)
+
+- **Semantic drift** — `roady drift semantic` frames the question of whether
+  an implementation still means what its requirement says; the caller's model
+  answers it and `roady_record_semantic_drift` records divergence.
+- **CLI/MCP parity** — 69 tools; every CLI operation an agent should be able
+  to perform is reachable over MCP.
+
+## Earlier (v0.18.0 — shipped)
+
+- Five field-reported defects: id sanitisation, feature-link resolution,
+  documentation written to the project rather than the server's cwd, paged
+  task listings, and MCP errors carrying the actionable message.
+
+## Earlier (v0.17.0 — shipped)
 
 - **`roady_audit_trail` over MCP** — the evidence trail was CLI-only, so
   the agents the GRC work targets could not ask "which agent worked on
@@ -80,23 +94,14 @@ intended **open-core boundary** for a future hosted product.
 - `roady demo` for <1s aha; `roady init --interactive` default in TTY;
   empty-state ladder on `roady status`
 
-## Next (v0.17.x)
+## Next
 
-- **Cross-project task dependencies** — `@project:task-id` syntax in
-  `DependsOn` so an org-level plan can express "feature-payments task
-  X waits on feature-auth task Y".
-- **Drift explainer follow-ups**: synthesised "explain + propose patch"
-  output that lands a PR-ready diff for accepted drift.
-- **Per-task subagent dispatch**: `roady task start` can hand a ready
-  task to a subagent (Claude Code `Task` tool, Codex `agent run`, etc.)
-  with the spec source attached and a deterministic completion hook.
-- **Spec-to-PR loop**: CI integration that auto-detects drift on PR
-  merge and either accepts or opens a follow-up issue.
+Nothing declared. The roadmap below is what remains after v0.19.0 shipped the
+cross-project dependencies, subagent dispatch, spec-to-PR loop, drift patch
+prompts, cross-repo planning and semantic drift that were listed here.
 
-## Soon (v0.17+)
-
-- **Cross-repo planning**: a single `.roady/` workspace can declare
-  member repos, share spec context, and aggregate plan state.
+The most useful input now is field use: v0.18.0 came entirely from one person
+running Roady on a real 118-feature project for a day.
 
 ## Later
 

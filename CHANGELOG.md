@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.19.0] - 2026-08-02
+
+Semantic drift, and the surfaces reaching parity.
+
+Roady could tell you a task was missing or an id orphaned; it could not tell
+you whether the code that exists still does what the requirement asked for.
+That question needs a reader, so Roady now frames it and the caller's model
+answers it. Alongside that, an enumeration of every CLI command against the
+tool surface closed the operations an agent could not reach — it could read a
+project but not maintain one.
+
+Three of the fixes below came from comparing the CLI and MCP against each
+other rather than from either one failing.
+
 ### Added — semantic drift
 
 The structural checks decide by comparing artifacts: a task is missing, an id
@@ -32,6 +46,77 @@ caller has the working tree in view and Roady does not.
   requirement with no task is structural drift the other checks already report.
 - The issue hint discloses that a language model reached the verdict, so nobody
   reads it as mechanically established.
+
+### Added — MCP parity with the CLI
+
+An enumeration of all 105 CLI commands against the tool surface found 12
+operations an agent could not reach. Eleven are now tools; the rest are
+inherently local (shell completion, the TUI, the server itself). An agent could
+read a project but not maintain one: approve a plan and never reject it, prune
+nothing, validate nothing, recover from nothing.
+
+- `roady_report` — the stakeholder progress report as markdown, self-contained
+  html, or json. This is the answer to "keep leadership informed", and an agent
+  could not produce one.
+- `roady_spec_analyze` — build the spec from a directory of documents. An agent
+  could read, amend and explain a spec but never create one, so the entry point
+  to the whole workflow was unreachable.
+- `roady_plan_prune`, `roady_plan_reject`, `roady_audit_verify`,
+  `roady_spec_validate`, `roady_spec_import`, `roady_state_rebuild`,
+  `roady_timeline`, `roady_debt_history`, `roady_debt_score`.
+- Every registered tool is asserted to carry behaviour annotations, so nothing
+  ships without telling a client whether it writes.
+
+MCP schema 3.4.0; 69 tools.
+
+### Fixed — the CLI and MCP gave different answers
+
+Three places where one question had two implementations, found by comparing the
+surfaces rather than by either one failing.
+
+- **Audit chain verification.** `roady_audit_verify` first used
+  `EventSourcedAuditService`, which still checks the log as a strict linear
+  sequence and so reports tampering for the branch-and-merge shape concurrent
+  appends legitimately produce — the case `AuditService` was fixed for in
+  0.14.0. On the same project at the same moment the CLI said "intact and
+  verified" while MCP reported a violation. The handler now uses the verifier
+  the CLI uses, and a test asserts the two agree. (`EventSourcedAuditService`
+  still carries the stale copy; that is recorded, not yet fixed.)
+- **The `since` window.** The CLI parsed with `fmt.Sscanf`, which stops at the
+  first non-digit and reports no error, so `--since 7xd` silently meant seven
+  days there while the identical string was rejected over MCP. Both now use
+  `application.ParseSince`, which refuses malformed input rather than guessing.
+- **Report titles.** A relative `project_path` titled the report `.`.
+
+### Fixed — plan/STALE read a timestamp nothing maintained (#76)
+
+`plan.json` carries an `updated_at` that drift reads to decide whether the
+repository has left the plan behind. Every writer had to set it by hand and
+approving a plan did not, so a plan could be rewritten while its timestamp
+stayed months old. A field only some writers maintain is a field that lies.
+
+- Stamped in `SavePlan`, the one funnel every plan mutation passes through, so
+  no present or future writer can forget. `CreatedAt` is untouched; reads do
+  not disturb it.
+- The message reported what it could not know. "The plan has not changed in N
+  days" was disprovable by looking at a file you had just edited; it now says
+  what it measured — last updated N days ago, M commits since.
+- The hint offered one remedy, regenerating, which is the one action a curated
+  plan must not take: the reconciler keeps tasks it did not propose but
+  replaces any task whose id matches a spec requirement, so hand-written titles
+  and descriptions on those are lost. The non-destructive routes come first
+  now, and regenerating is stated with its cost.
+- Not taken: the reported suggestion to fall back to the file's mtime. A fresh
+  clone rewrites mtimes, so that would read as "updated now" on every checkout
+  and suppress the detector exactly where it matters most.
+
+### Fixed — .gitignore hid the workspace Roady says you should commit
+
+Roady's own `.gitignore` carried a blanket `.roady/` rule. The state files were
+tracked only because they predated it; anything written afterwards —
+`policy.yaml`, `rates.yaml`, a sub-project under `projects/` — would have been
+swallowed silently, in the one repository where that should be caught first.
+Only genuinely machine-local files are ignored now.
 
 ### Added — workspace member repositories
 
