@@ -517,6 +517,18 @@ func (s *Server) registerTools() {
 		OutputSchema(forecastResp{}).
 		Handler(s.handleForecast)
 
+	// Tool: roady_semantic_drift — the question the structural detectors
+	// cannot ask. Roady frames it; the caller's model answers it.
+	s.tool("roady_semantic_drift").
+		Description("Build the prompt for judging whether implementations still mean what their requirements say. Returns the framed question and the requirements it covers; send the judgements back with roady_record_semantic_drift.").
+		UIResource("ui://roady/drift").
+		Handler(s.handleSemanticDrift)
+
+	s.tool("roady_record_semantic_drift").
+		Description("Record semantic-drift judgements. Divergences become drift issues; agreement records nothing.").
+		UIResource("ui://roady/drift").
+		Handler(s.handleRecordSemanticDrift)
+
 	// Parity tools: these operations existed only on the CLI, so an agent could
 	// read a project but not maintain one — prune a stale plan, reject a bad
 	// one, verify the audit chain, or rebuild state after a loss.
@@ -1219,6 +1231,44 @@ func (s *Server) handleDebtScore(ctx context.Context, args DebtScoreArgs) (any, 
 		return mcpErr("Failed to load top debtors."), nil
 	}
 	return map[string]any{"top_debtors": top, "count": len(top)}, nil
+}
+
+func (s *Server) handleSemanticDrift(ctx context.Context, args PlanMutateArgs) (any, error) {
+	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
+	if err != nil {
+		return mcpErr("Failed to load project at the given path."), nil
+	}
+	req, questions, err := svc.Prompt.SemanticDrift(ctx)
+	if err != nil {
+		return mcpErr(err.Error()), nil
+	}
+	// The questions come back with the prompt so the caller can pass them to
+	// the write-back unchanged. Without them Roady cannot attach a judgement
+	// to anything, and a model returning ids it invented would go unnoticed.
+	return map[string]any{"request": req, "questions": questions}, nil
+}
+
+type RecordSemanticDriftArgs struct {
+	Judgements  []drift.SemanticJudgement `json:"judgements" jsonschema:"description=One judgement per requirement: requirement_id, agrees, and an explanation when agrees is false."`
+	Questions   []drift.SemanticQuestion  `json:"questions" jsonschema:"description=The questions roady_semantic_drift returned, passed back unchanged."`
+	ProjectPath string                    `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
+	Project     string                    `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+}
+
+func (s *Server) handleRecordSemanticDrift(ctx context.Context, args RecordSemanticDriftArgs) (any, error) {
+	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
+	if err != nil {
+		return mcpErr("Failed to load project at the given path."), nil
+	}
+	report, err := svc.Drift.RecordSemanticDrift(ctx, args.Judgements, args.Questions)
+	if err != nil {
+		return mcpErr(err.Error()), nil
+	}
+	return map[string]any{
+		"divergent": len(report.Issues),
+		"issues":    report.Issues,
+		"judged":    len(args.Judgements),
+	}, nil
 }
 
 func (s *Server) handleGitSync(ctx context.Context, args GitSyncArgs) (any, error) {

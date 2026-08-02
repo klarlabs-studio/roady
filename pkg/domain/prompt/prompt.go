@@ -27,6 +27,7 @@ const (
 	OpQueryProject      Operation = "query_project"
 	OpExplainDrift      Operation = "explain_drift"
 	OpPatchDrift        Operation = "patch_drift"
+	OpSemanticDrift     Operation = "semantic_drift"
 )
 
 // Request is everything needed to run one inference and return the result to

@@ -8,7 +8,9 @@ import (
 
 	"github.com/felixgeelhaar/roady/pkg/domain"
 	"github.com/felixgeelhaar/roady/pkg/domain/drift"
+	"github.com/felixgeelhaar/roady/pkg/domain/planning"
 	"github.com/felixgeelhaar/roady/pkg/domain/prompt"
+	"github.com/felixgeelhaar/roady/pkg/domain/spec"
 )
 
 // PromptService assembles the context a language model needs, and hands it
@@ -350,5 +352,159 @@ func driftSeverityRank(s drift.Severity) int {
 		return 2
 	default:
 		return 3
+	}
+}
+
+// SemanticDrift builds the question every other drift check cannot ask.
+//
+// The structural detectors decide by comparing artifacts: a task is missing,
+// an id is orphaned, a file does not exist. None of them can tell whether code
+// that exists still does what the requirement asked for — "sessions expire
+// after 30 minutes" is structurally satisfied by an implementation that
+// expires them after thirty days. Answering that needs a reader.
+//
+// So Roady assembles the pairing and hands it over: the requirement's own
+// words, where the work landed, and the doc:line to check against. It does not
+// judge. The caller's model has the working tree in view and Roady does not,
+// which is the same reason PatchDrift returns a request rather than a diff.
+//
+// Only requirements something claims to implement are asked about. A
+// requirement with no task is structural drift the other detectors already
+// report, and asking a model about absent code invites a confident answer
+// about nothing.
+func (s *PromptService) SemanticDrift(_ context.Context) (*prompt.Request, []drift.SemanticQuestion, error) {
+	if err := s.checkPolicy(); err != nil {
+		return nil, nil, err
+	}
+
+	productSpec, err := s.repo.LoadSpec()
+	if err != nil {
+		return nil, nil, fmt.Errorf("load spec: %w", err)
+	}
+	if productSpec == nil {
+		return nil, nil, fmt.Errorf("no spec found; run 'roady spec analyze' first")
+	}
+	plan, err := s.repo.LoadPlan()
+	if err != nil || plan == nil {
+		return nil, nil, fmt.Errorf("no plan found; run 'roady plan generate' first")
+	}
+	state, _ := s.repo.LoadState()
+
+	questions := buildSemanticQuestions(productSpec, plan, state)
+	if len(questions) == 0 {
+		return nil, nil, fmt.Errorf("no implemented requirements to judge: semantic drift compares a requirement against the work that claims to satisfy it, and nothing here does yet")
+	}
+
+	var b strings.Builder
+	b.WriteString("For each requirement below, decide whether the implementation still means what the requirement says. " +
+		"Read the cited source and the listed paths before answering — structural presence is not agreement. " +
+		"Answer only about the requirements listed; do not invent ids.\n\n")
+	for _, q := range questions {
+		fmt.Fprintf(&b, "- requirement_id: %s\n  feature: %s\n  requirement: %s\n", q.RequirementID, q.FeatureID, q.Requirement)
+		if q.Citation != "" {
+			fmt.Fprintf(&b, "  stated at: %s\n", q.Citation)
+		}
+		fmt.Fprintf(&b, "  implemented by: %s (%s)\n", q.TaskID, q.Status)
+		if len(q.Paths) > 0 {
+			fmt.Fprintf(&b, "  paths: %s\n", strings.Join(q.Paths, ", "))
+		}
+		if len(q.Evidence) > 0 {
+			fmt.Fprintf(&b, "  evidence: %s\n", strings.Join(q.Evidence, ", "))
+		}
+	}
+
+	return &prompt.Request{
+		Operation: prompt.OpSemanticDrift,
+		System: "You judge whether an implementation still satisfies a written requirement. " +
+			"You are the reader Roady cannot be: it compares artifacts, you compare meaning. " +
+			"Say a requirement is satisfied only if the behaviour matches what it asks for, and when it does not, say concretely what differs.",
+		Prompt: b.String(),
+		ExpectedFormat: `A JSON array of judgements: ` +
+			`[{"requirement_id": "...", "agrees": true|false, "explanation": "required when agrees is false"}]`,
+		WriteBack: "roady_record_semantic_drift",
+		Guidance: "Run this yourself against the working tree, then send the judgements to roady_record_semantic_drift. " +
+			"Divergences become drift issues; agreement records nothing.",
+	}, questions, nil
+}
+
+// buildSemanticQuestions pairs each requirement with the task claiming to
+// implement it. The heuristic planner names tasks task-<requirement-id>, which
+// is the same mapping the dispatch brief uses to recover intent.
+func buildSemanticQuestions(productSpec *spec.ProductSpec, plan *planning.Plan, state *planning.ExecutionState) []drift.SemanticQuestion {
+	tasks := make(map[string]planning.Task, len(plan.Tasks))
+	for _, t := range plan.Tasks {
+		tasks[t.ID] = t
+	}
+
+	questions := make([]drift.SemanticQuestion, 0)
+	for _, feature := range productSpec.Features {
+		// A feature with no requirements is the shape `spec analyze` produces
+		// from a document whose headings carry the intent and whose bullets
+		// become prose. The heuristic planner names that task task-<feature-id>,
+		// so semantic drift asks about the feature itself rather than finding
+		// nothing to ask about — which is what it did until this was run
+		// against a spec built the ordinary way.
+		if len(feature.Requirements) == 0 {
+			text := strings.TrimSpace(feature.Description)
+			if text == "" {
+				text = strings.TrimSpace(feature.Title)
+			}
+			q := drift.SemanticQuestion{
+				RequirementID: feature.ID,
+				FeatureID:     feature.ID,
+				Requirement:   text,
+			}
+			if !feature.Source.IsZero() {
+				q.Citation = fmt.Sprintf("%s:%d", feature.Source.Doc, feature.Source.Line)
+			}
+			applyTaskContext(&q, tasks, state, "task-"+feature.ID)
+			if q.Answerable() {
+				questions = append(questions, q)
+			}
+			continue
+		}
+
+		for _, req := range feature.Requirements {
+			text := strings.TrimSpace(req.Description)
+			if text == "" {
+				text = strings.TrimSpace(req.Title)
+			}
+
+			q := drift.SemanticQuestion{
+				RequirementID: req.ID,
+				FeatureID:     feature.ID,
+				Requirement:   text,
+			}
+			if !req.Source.IsZero() {
+				q.Citation = fmt.Sprintf("%s:%d", req.Source.Doc, req.Source.Line)
+			}
+
+			applyTaskContext(&q, tasks, state, "task-"+req.ID)
+
+			if q.Answerable() {
+				questions = append(questions, q)
+			}
+		}
+	}
+	return questions
+}
+
+// applyTaskContext attaches the task claiming to implement a requirement, and
+// what execution recorded about it.
+func applyTaskContext(q *drift.SemanticQuestion, tasks map[string]planning.Task, state *planning.ExecutionState, taskID string) {
+	task, ok := tasks[taskID]
+	if !ok {
+		return
+	}
+	q.TaskID = task.ID
+	if state == nil {
+		return
+	}
+	if result, has := state.TaskStates[task.ID]; has {
+		q.Status = string(result.Status)
+		if result.Path != "" {
+			q.Paths = []string{result.Path}
+		}
+		q.Evidence = result.Evidence
 	}
 }

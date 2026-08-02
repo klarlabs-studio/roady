@@ -146,3 +146,36 @@ func (s *DriftService) AcceptDrift() error {
 
 	return nil
 }
+
+// RecordSemanticDrift stores the judgements a caller's model returned for
+// SemanticDrift, turning divergences into drift issues.
+//
+// The verdict comes from outside Roady, so it is recorded as what it is: an
+// audited assertion by a named caller, not something Roady established by
+// comparing artifacts. Agreement records nothing — this reports drift, not a
+// tally of everything checked.
+func (s *DriftService) RecordSemanticDrift(ctx context.Context, judgements []drift.SemanticJudgement, questions []drift.SemanticQuestion) (*drift.Report, error) {
+	if len(judgements) == 0 {
+		return nil, fmt.Errorf("no judgements to record")
+	}
+	if len(questions) == 0 {
+		return nil, fmt.Errorf("no questions to match the judgements against; call semantic drift first and pass back the questions it returned")
+	}
+
+	issues := drift.IssuesFrom(judgements, questions)
+	report := &drift.Report{Issues: issues, CreatedAt: time.Now()}
+
+	if s.audit != nil {
+		// Recorded whether or not anything diverged: that the check ran, and
+		// on how many requirements, is itself the evidence a reviewer needs.
+		if err := s.audit.Log("drift.semantic_recorded", "ai", map[string]interface{}{
+			"judgements": len(judgements),
+			"questions":  len(questions),
+			"divergent":  len(issues),
+		}); err != nil {
+			return nil, fmt.Errorf("write audit log: %w", err)
+		}
+	}
+
+	return report, nil
+}

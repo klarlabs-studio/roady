@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/felixgeelhaar/roady/pkg/domain"
+	"github.com/felixgeelhaar/roady/pkg/domain/drift"
 	"github.com/felixgeelhaar/roady/pkg/domain/planning"
 	"github.com/felixgeelhaar/roady/pkg/domain/spec"
 	"github.com/felixgeelhaar/roady/pkg/storage"
@@ -465,4 +466,54 @@ func TestAuditVerify_AgreesWithTheCLIVerifier(t *testing.T) {
 	if intact := out["intact"].(bool); intact != (len(want) == 0) {
 		t.Errorf("intact = %v, CLI verifier says %v", intact, len(want) == 0)
 	}
+}
+
+func TestServer_SemanticDriftToolsAreRegistered(t *testing.T) {
+	server := setupCoordinatorTestServer(t)
+	registered := make(map[string]bool)
+	for _, tool := range server.mcpServer.Tools() {
+		registered[tool.Name] = true
+	}
+	for _, name := range []string{"roady_semantic_drift", "roady_record_semantic_drift"} {
+		if !registered[name] {
+			t.Errorf("%s is not registered", name)
+		}
+	}
+}
+
+// Recording a judgement without the questions it answers must be refused:
+// Roady cannot attach the verdict to anything, and silently storing it would
+// produce an issue pointing at nothing.
+func TestRecordSemanticDrift_RequiresQuestions(t *testing.T) {
+	server := setupCoordinatorTestServer(t)
+	res, err := server.handleRecordSemanticDrift(context.Background(), RecordSemanticDriftArgs{
+		Judgements: []drift.SemanticJudgement{{RequirementID: "r", Agrees: false, Explanation: "x"}},
+	})
+	assertToolError(t, res, err, "questions")
+}
+
+// The prompt and the questions must come back together: without the questions
+// the caller has nothing to pass to the write-back, and Roady could not attach
+// a judgement to anything.
+func TestHandleSemanticDrift_ReturnsQuestionsWithTheRequest(t *testing.T) {
+	server := setupCoordinatorTestServer(t)
+
+	res, err := server.handleSemanticDrift(context.Background(), PlanMutateArgs{})
+	if err != nil {
+		t.Fatalf("handleSemanticDrift: %v", err)
+	}
+
+	// The fixture's spec has a feature with no implemented work, so Roady
+	// refuses rather than asking a model about nothing. That refusal is the
+	// documented behaviour and must be actionable.
+	if out, ok := res.(map[string]any); ok {
+		if _, has := out["questions"]; !has {
+			t.Error("a successful request came back without its questions")
+		}
+		if _, has := out["request"]; !has {
+			t.Error("no request returned")
+		}
+		return
+	}
+	assertToolError(t, res, err, "")
 }

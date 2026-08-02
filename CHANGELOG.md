@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — semantic drift
+
+The structural checks decide by comparing artifacts: a task is missing, an id
+is orphaned, a file does not exist. None of them can tell whether code that
+exists still does what the requirement asked for. "Sessions expire after 30
+minutes" is structurally satisfied by an implementation that expires them after
+thirty days.
+
+Answering that needs a reader, so Roady frames the question and hands it over —
+the requirement's own words, where the work landed, the doc:line to check
+against — and the caller's model answers it. Roady runs no inference; the
+caller has the working tree in view and Roady does not.
+
+- `roady drift semantic` and `roady_semantic_drift` build the request and
+  return the requirements it covers.
+- `roady_record_semantic_drift` takes the judgements back. Divergences become
+  drift issues under the new `SEMANTIC` category; agreement records nothing,
+  because this reports drift rather than a tally of what was checked.
+- A judgement naming a requirement that was never asked about is discarded — a
+  model returning ids it invented is a known failure — and a divergence
+  reported without an explanation is refused, since it cannot be acted on.
+- Only requirements something claims to implement are asked about. A
+  requirement with no task is structural drift the other checks already report.
+- The issue hint discloses that a language model reached the verdict, so nobody
+  reads it as mechanically established.
+
 ### Added — workspace member repositories
 
 `.roady/org.yaml` has carried a `repos:` list since the type was introduced
