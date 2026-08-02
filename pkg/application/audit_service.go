@@ -95,24 +95,6 @@ func (s *AuditService) VerifyIntegrity() ([]string, error) {
 	return domain.VerifyChain(entries), nil
 }
 
-// orUnidentified names an entry that arrived without an ID, which is itself
-// a sign it did not come from Roady.
-func orUnidentified(id string) string {
-	if id == "" {
-		return "no id"
-	}
-	return id
-}
-
-// shortHash trims a hash for human-readable findings while staying long
-// enough to identify the event.
-func shortHash(h string) string {
-	if len(h) <= 12 {
-		return h
-	}
-	return h[:12]
-}
-
 // GetVelocity returns the average verified tasks per day over the last 7 days.
 func (s *AuditService) GetVelocity() (float64, error) {
 	events, err := s.repo.LoadEvents()
