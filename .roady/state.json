@@ -1,10 +1,12 @@
 {
   "project_id": "test-refactor",
-  "version": 129,
+  "version": 130,
   "task_states": {
     "task-dispatch-contract": {
-      "status": "pending",
+      "status": "in_progress",
       "path": "",
+      "owner": "Felix Geelhaar",
+      "started_at": "2026-08-02T12:34:24.999674+02:00",
       "elapsed_minutes": 0
     },
     "task-dispatch-hook": {
@@ -89,5 +91,5 @@
       "elapsed_minutes": 0
     }
   },
-  "updated_at": "2026-08-02T11:42:48.405062+02:00"
+  "updated_at": "2026-08-02T12:34:24.999674+02:00"
 }

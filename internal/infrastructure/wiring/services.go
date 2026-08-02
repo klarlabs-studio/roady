@@ -31,6 +31,7 @@ type AppServices struct {
 	Report     *application.ReportService     // Stakeholder progress reports
 	Prompt     *application.PromptService     // Builds model prompts; Roady runs no inference
 	AuditTrail *application.AuditTrailService // Evidence trails for GRC review
+	Dispatch   *application.DispatchService   // Hands a ready task to a subagent
 	Publisher  *storage.InMemoryEventPublisher
 }
 
@@ -125,6 +126,10 @@ func buildServices(workspace *Workspace) (*AppServices, error) {
 	// dependency search root as the repo they live in.
 	depSvc := application.NewDependencyService(workspace.Repo, workspace.Repo.Root())
 
+	dispatchSvc := application.NewDispatchService(workspace.Repo, planSvc, taskSvc)
+	// Attribute a dispatched claim to the subagent, not to the dispatcher.
+	dispatchSvc.SetAuditProvenance(workspace.Audit, auditSvc)
+
 	services := &AppServices{
 		Workspace:  workspace,
 		Init:       application.NewInitService(workspace.Repo, auditSvc),
@@ -146,6 +151,7 @@ func buildServices(workspace *Workspace) (*AppServices, error) {
 		Report:     application.NewReportService(planSvc, forecastSvc, driftSvc, debtSvc, auditSvc),
 		Prompt:     application.NewPromptService(workspace.Repo),
 		AuditTrail: application.NewAuditTrailService(auditSvc, workspace.Audit, planSvc, workspace.Repo),
+		Dispatch:   dispatchSvc,
 		Publisher:  publisher,
 	}
 

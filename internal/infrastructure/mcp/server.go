@@ -352,6 +352,16 @@ type TasksArgs struct {
 	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
 }
 
+// DispatchTaskArgs hands a ready task to a subagent.
+type DispatchTaskArgs struct {
+	TaskID      string `json:"task_id" jsonschema:"description=The ready task to hand over."`
+	Agent       string `json:"agent" jsonschema:"description=Name of the subagent taking the task. Recorded as the owner and against the completion transition."`
+	Session     string `json:"session_id,omitempty" jsonschema:"description=Session ID to record the subagent's work under, so its events group separately from the dispatcher's."`
+	DryRun      bool   `json:"dry_run,omitempty" jsonschema:"description=Build the brief without claiming the task."`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+}
+
 // AuditTrailArgs selects what to build an evidence trail about. Exactly one
 // of TaskID, Agent, or Session identifies the subject; combining TaskID with
 // Agent narrows to what that agent did to that task.
@@ -560,6 +570,12 @@ func (s *Server) registerTools() {
 		Description("Return drift items that have remained unresolved for more than 7 days. Canonical name; supersedes roady_sticky_drift.").
 		UIResource("ui://roady/debt").
 		Handler(s.handleStickyDrift)
+
+	// Tool: roady_dispatch_task
+	s.tool("roady_dispatch_task").
+		Description("Hand a ready task to a subagent. Returns the originating feature and requirement, the doc:line citation that motivated the task, what counts as done, and the exact call that records completion against that agent. Claims the task unless dry_run. Only ready tasks can be dispatched.").
+		UIResource("ui://roady/plan").
+		Handler(s.handleDispatchTask)
 
 	// Tool: roady_audit_trail
 	s.tool("roady_audit_trail").
@@ -1488,6 +1504,31 @@ func (s *Server) handleDebtSummary(ctx context.Context, args GetSpecArgs) (any, 
 		return mcpErr("Failed to get debt summary. Ensure drift detection has been run."), nil
 	}
 	return summary, nil
+}
+
+// handleDispatchTask prepares a task for handoff.
+//
+// The completion contract is the point: work a subagent does that never lands
+// as a recorded transition is invisible to the audit trail, so the brief names
+// the exact call and fills in the agent and session.
+func (s *Server) handleDispatchTask(ctx context.Context, args DispatchTaskArgs) (any, error) {
+	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
+	if err != nil {
+		return mcpErr("Failed to load project at the given path."), nil
+	}
+	if svc.Dispatch == nil {
+		return mcpErr("Dispatch is unavailable. Ensure the path points at an initialized Roady project."), nil
+	}
+
+	brief, err := svc.Dispatch.Dispatch(ctx, args.TaskID, application.DispatchOptions{
+		Agent:   args.Agent,
+		Session: args.Session,
+		Start:   !args.DryRun,
+	})
+	if err != nil {
+		return mcpErr(err.Error()), nil
+	}
+	return brief, nil
 }
 
 // handleAuditTrail answers "which agent worked on this, and what proves it".

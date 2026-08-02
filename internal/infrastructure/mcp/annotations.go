@@ -88,7 +88,9 @@ var toolBehaviours = map[string]toolBehaviour{
 
 	// State moves that are reversible through the FSM.
 	"roady_transition_task": {},
-	"roady_approve_plan":    {idempotent: true},
+	// Claims the task by default, so not read-only; reversible via stop.
+	"roady_dispatch_task": {},
+	"roady_approve_plan":  {idempotent: true},
 
 	// --- Destructive: overwrite or delete ---------------------------------
 	// Plan generation replaces the existing task DAG, so unapproved local

@@ -6,6 +6,26 @@
 - **Minor** (1.x.0): New optional fields (`omitempty`), new tools, fields deprecated
 - **Major** (x.0.0): Required fields added/removed, tool signatures changed
 
+## v3.2.0 — Subagent dispatch
+
+**Minor**: a new tool, no existing signature changed.
+
+### Added
+
+- `roady_dispatch_task` — hands a ready task to a subagent with the context it
+  would otherwise have to reconstruct: the originating feature and
+  requirement, the `doc:line` citation that motivated the task, what counts as
+  done, and the exact call that records completion **against that agent**.
+
+  Takes `task_id`, `agent`, an optional `session_id`, and `dry_run`. Claims the
+  task unless `dry_run`. Only ready tasks are dispatchable — handing out work
+  whose prerequisites are unmet produces an agent that blocks, or one that
+  implements against something that does not exist yet.
+
+  Not read-only: it claims the task by default. Reversible with `stop`.
+
+55 tools in this version.
+
 ## v3.1.0 — Audit trails over MCP
 
 **Minor** per the rules above: a new tool, no existing signature changed.

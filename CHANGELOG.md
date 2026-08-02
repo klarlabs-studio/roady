@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — per-task subagent dispatch
+
+`roady task dispatch <id> --agent <name> [--session <id>]`, and
+`roady_dispatch_task` over MCP.
+
+An agent told to "work on task-42" has to reconstruct why the task exists,
+what counts as finished, and how to report back. Roady already holds all
+three, so a dispatch hands them over: the originating feature and requirement,
+the `doc:line` citation, and the exact call that closes the task.
+
+- The completion contract carries the agent and session, because work a
+  subagent does that never lands as a recorded transition is invisible — the
+  task stays in progress and nothing attributes it.
+- The claim is recorded under the subagent's identity too, so one piece of
+  work does not split across two sessions in the audit trail.
+- Only ready tasks dispatch, and a refusal says which case applies: already
+  done, already claimed and by whom, blocked, or waiting on a named dependency.
+- `--dry-run` builds the brief without claiming; `--json` emits it for an
+  agent to consume.
+- Gaps are surfaced rather than papered over: a task with no citation, no
+  acceptance criteria, or nothing but a title warns on stderr.
+
+MCP schema 3.2.0.
+
 ### Added — drift as a CI gate
 
 - `roady drift detect --fail-on <severity>` controls what makes the command
