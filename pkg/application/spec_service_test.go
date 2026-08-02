@@ -210,8 +210,8 @@ func TestSpecService_AddFeature(t *testing.T) {
 	if err != nil {
 		t.Fatalf("AddFeature failed: %v", err)
 	}
-	if len(updated.Features) != 2 {
-		t.Fatalf("expected 2 features, got %d", len(updated.Features))
+	if len(updated.Spec.Features) != 2 {
+		t.Fatalf("expected 2 features, got %d", len(updated.Spec.Features))
 	}
 	content, err := os.ReadFile(filepath.Join(tempDir, "docs", "backlog.md"))
 	if err != nil {
@@ -219,5 +219,116 @@ func TestSpecService_AddFeature(t *testing.T) {
 	}
 	if !strings.Contains(string(content), "Feature 2") {
 		t.Fatalf("expected backlog to include feature, got %q", string(content))
+	}
+}
+
+// Improving the slugifier must not silently re-id features that already
+// exist. A task's feature_id points at the old id, so a re-analysis that
+// renamed every feature would orphan the entire plan — the exact failure
+// mode reported in issue #73, arrived at from the other direction.
+func TestSpecService_AnalyzePreservesExistingFeatureIDs(t *testing.T) {
+	tempDir := t.TempDir()
+	repo := storage.NewFilesystemRepository(tempDir)
+	if err := repo.Initialize(); err != nil {
+		t.Fatal(err)
+	}
+
+	// A spec written by an older Roady, carrying an id the naive slugifier
+	// produced.
+	legacyID := "phase-a-—-pilot-finalization-(2-weeks)"
+	if err := repo.SaveSpec(&spec.ProductSpec{
+		ID:      "analyzed-spec",
+		Version: "0.1.0",
+		Features: []spec.Feature{{
+			ID:    legacyID,
+			Title: "Phase A — Pilot Finalization (2 weeks)",
+		}},
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	docs := filepath.Join(tempDir, "docs")
+	if err := os.MkdirAll(docs, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	md := "# Product\n\n## Phase A — Pilot Finalization (2 weeks)\nShip it.\n\n## Brand New Feature (v2)\nSomething else.\n"
+	if err := os.WriteFile(filepath.Join(docs, "spec.md"), []byte(md), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	result, err := application.NewSpecService(repo).AnalyzeDirectory(docs)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	byTitle := map[string]string{}
+	for _, f := range result.Features {
+		byTitle[f.Title] = f.ID
+	}
+
+	if got := byTitle["Phase A — Pilot Finalization (2 weeks)"]; got != legacyID {
+		t.Errorf("existing feature was re-identified: got %q, want the original %q", got, legacyID)
+	}
+
+	// A feature Roady has not seen before gets a clean id.
+	if got := byTitle["Brand New Feature (v2)"]; got != "brand-new-feature-v2" {
+		t.Errorf("new feature id = %q, want %q", got, "brand-new-feature-v2")
+	}
+}
+
+// The MCP server runs from wherever it was started, which is routinely a
+// different repository from the one named by project_path. Resolving the
+// backlog document relatively wrote one project's feature text into another
+// project's working tree — and reported success. See issue #71.
+func TestSpecService_AddFeatureWritesBacklogToProjectNotWorkingDir(t *testing.T) {
+	project := t.TempDir()
+	elsewhere := t.TempDir()
+
+	// Stand where the server would be standing: an unrelated repository.
+	original, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(original) })
+	if err := os.Chdir(elsewhere); err != nil {
+		t.Fatal(err)
+	}
+
+	repo := storage.NewFilesystemRepository(project)
+	if err := repo.Initialize(); err != nil {
+		t.Fatal(err)
+	}
+	if err := repo.SaveSpec(&spec.ProductSpec{ID: "s", Version: "0.1.0"}); err != nil {
+		t.Fatal(err)
+	}
+
+	result, err := application.NewSpecService(repo).AddFeature("Payment Retries", "Retry failed charges.")
+	if err != nil {
+		t.Fatalf("AddFeature: %v", err)
+	}
+
+	if len(result.Warnings) > 0 {
+		t.Fatalf("unexpected warnings: %v", result.Warnings)
+	}
+	if !result.Synced() {
+		t.Fatal("AddFeature reported no backlog sync")
+	}
+
+	// The backlog belongs to the project...
+	inProject := filepath.Join(project, "docs", "backlog.md")
+	body, err := os.ReadFile(inProject) //nolint:gosec // test-controlled path
+	if err != nil {
+		t.Fatalf("backlog missing from the project: %v", err)
+	}
+	if !strings.Contains(string(body), "Payment Retries") {
+		t.Errorf("backlog does not mention the feature: %q", body)
+	}
+	if result.BacklogPath != inProject {
+		t.Errorf("BacklogPath = %q, want %q", result.BacklogPath, inProject)
+	}
+
+	// ...and nothing was created in the directory we happened to stand in.
+	if _, err := os.Stat(filepath.Join(elsewhere, "docs")); !os.IsNotExist(err) {
+		t.Errorf("AddFeature created docs/ in the working directory %s", elsewhere)
 	}
 }

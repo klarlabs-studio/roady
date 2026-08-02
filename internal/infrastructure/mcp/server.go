@@ -952,11 +952,22 @@ func (s *Server) handleAddFeature(ctx context.Context, args AddFeatureArgs) (any
 	if err != nil {
 		return mcpErr("Failed to load project at the given path."), nil
 	}
-	spec, err := svc.Spec.AddFeature(args.Title, args.Description)
+	result, err := svc.Spec.AddFeature(args.Title, args.Description)
 	if err != nil {
 		return mcpErr("Failed to add feature. Ensure the project is initialized with a valid spec."), nil
 	}
-	return fmt.Sprintf("Successfully added feature '%s'. Intent synced to docs/backlog.md. Total features: %d", args.Title, len(spec.Features)), nil
+
+	// Report what actually happened. Announcing the backlog sync
+	// unconditionally hid a write that had gone to the wrong repository
+	// entirely, and there is no reason for a caller to learn that later.
+	msg := fmt.Sprintf("Successfully added feature '%s'. Total features: %d", args.Title, len(result.Spec.Features))
+	if result.Synced() {
+		msg += fmt.Sprintf(". Intent synced to %s", result.BacklogPath)
+	}
+	for _, w := range result.Warnings {
+		msg += fmt.Sprintf(". Warning: %s", w)
+	}
+	return msg, nil
 }
 
 func (s *Server) handleGetUsage(ctx context.Context, args GetUsageArgs) (any, error) {

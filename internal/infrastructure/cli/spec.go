@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/felixgeelhaar/roady/internal/infrastructure/wiring"
 	"github.com/felixgeelhaar/roady/pkg/application"
@@ -135,13 +136,18 @@ var specAddCmd = &cobra.Command{
 		service := application.NewSpecService(repo)
 
 		title, desc := args[0], args[1]
-		spec, err := service.AddFeature(title, desc)
+		result, err := service.AddFeature(title, desc)
 		if err != nil {
 			return MapError(fmt.Errorf("failed to add feature: %w", err))
 		}
 
-		fmt.Printf("Successfully added feature '%s'. (Total features: %d)\n", title, len(spec.Features))
-		fmt.Println("Intent synced to docs/backlog.md")
+		fmt.Printf("Successfully added feature '%s'. (Total features: %d)\n", title, len(result.Spec.Features))
+		if result.Synced() {
+			fmt.Printf("Intent synced to %s\n", result.BacklogPath)
+		}
+		for _, w := range result.Warnings {
+			fmt.Fprintf(os.Stderr, "warning: %s\n", w)
+		}
 		return nil
 	},
 }

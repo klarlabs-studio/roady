@@ -1179,11 +1179,11 @@ func TestSpecService_AddFeature_SuccessPath(t *testing.T) {
 	if err != nil {
 		t.Fatalf("AddFeature: %v", err)
 	}
-	if len(updated.Features) != 2 {
-		t.Errorf("expected 2 features, got %d", len(updated.Features))
+	if len(updated.Spec.Features) != 2 {
+		t.Errorf("expected 2 features, got %d", len(updated.Spec.Features))
 	}
-	if updated.Features[1].ID != "new-feature" {
-		t.Errorf("expected feature ID 'new-feature', got %q", updated.Features[1].ID)
+	if updated.Spec.Features[1].ID != "new-feature" {
+		t.Errorf("expected feature ID 'new-feature', got %q", updated.Spec.Features[1].ID)
 	}
 }
 
