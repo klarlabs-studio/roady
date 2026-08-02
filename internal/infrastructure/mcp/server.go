@@ -721,14 +721,14 @@ func (s *Server) registerTools() {
 
 	// Tool: roady_suggest_priorities (v0.8.0)
 	s.tool("roady_suggest_priorities").
-		Description("AI-powered priority suggestions based on spec analysis and task dependencies").
+		Description("Build a prompt asking your model to suggest task priorities. Returns the request; Roady runs no inference.").
 		UIResource("ui://roady/plan").
 		OutputSchema(planning.PrioritySuggestions{}).
 		Handler(s.handleSuggestPriorities)
 
 	// Tool: roady_review_spec (v0.8.0)
 	s.tool("roady_review_spec").
-		Description("Perform an AI-powered quality review of the current specification, returning a score and structured findings").
+		Description("Build a prompt asking your model to review the spec. Returns the request; Roady runs no inference.").
 		UIResource("ui://roady/spec").
 		OutputSchema(spec.SpecReview{}).
 		Handler(s.handleReviewSpec)
@@ -771,7 +771,7 @@ func (s *Server) registerTools() {
 
 	// Tool: roady_plan_decompose (v0.10.0 - canonical name)
 	s.tool("roady_plan_decompose").
-		Description("AI-powered context-aware task decomposition using codebase structure analysis. Canonical name; supersedes roady_smart_decompose.").
+		Description("Build a codebase-aware decomposition prompt for your model. Returns the request; write the result back with roady_update_plan. Canonical name; supersedes roady_smart_decompose.").
 		UIResource("ui://roady/plan").
 		Handler(s.handleSmartDecompose)
 

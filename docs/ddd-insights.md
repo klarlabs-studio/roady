@@ -1,5 +1,11 @@
 # DDD Review & Strategic Ideas
 
+> **Historical.** This review predates v0.15.0, which removed Roady's embedded
+> provider clients entirely. The suggestions below about `.roady/ai.yaml`,
+> `ROADY_AI_*` overrides and `roady init --ai-provider` describe a design that
+> no longer exists: Roady runs no inference and needs no model configuration.
+> Kept for the structural observations, which still hold.
+
 ## Domain-Centric Structure
 - `pkg/domain` defines bounded contexts: `spec`, `planning`, `drift`, `policy`, and `plugin`. Each contains only domain logic plus interfaces that describe intent (e.g., `WorkspaceRepository`, `Policy`, `Task`).
 - `pkg/application` orchestrates domain workflows (init, spec import, drift check, AI planning) and keeps infrastructure access through repository interfaces, which keeps domain layers stable regardless of CLI/MCP wiring.

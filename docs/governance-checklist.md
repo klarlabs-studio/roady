@@ -23,9 +23,12 @@
 5. **Accept drift intentionally** by running `roady drift accept`; this logs `drift.accepted` with the locked `spec_hash` and actor, proving governance consent for spec/plan divergence.
 
 ## Drift, AI, and retries
-- AI-generated plans add extra visibility: `plan.ai_decomposition` records the provider/model/attempt tokens, and `plan.ai_decomposition_retry` notes any retries after invalid JSON.
+- A plan written back after a prompt records `plan.update_smart` with the agent
+  and session behind it, so a reviewer can tell which agent produced it.
 - Any governance event that forms part of a transition should include the `plan_id`/`spec_id` metadata so you can correlate log entries across commands.
-- When you override default providers (e.g., `.roady/ai.yaml` or `ROADY_AI_PROVIDER`), append a short note to the event log by running `roady plan generate --ai` again and calling out the temporary change in the CLI output/pull request so reviewers understand the context.
+- Roady calls no model, so there is no provider to record or override. A plan
+  built from a prompt is attributed to the agent and session that ran it — see
+  `docs/audit-grc.md` — which is what a reviewer needs to know instead.
 
 ## Auditing commands
 - List all governance actions: `jq -c '.action' .roady/events.jsonl`.
@@ -35,5 +38,5 @@
 - For coverage gaps or disputes, compare `.roady/events.jsonl` entries with the spec hash/timestamp in `.roady/spec.yaml`.
 
 ## See also
-- `docs/ai-configuration.md` for how the `roady ai configure` command populates `.roady/ai.yaml`/`.roady/policy.yaml`.
+- `docs/prompts.md` for the operations that hand you a prompt to run, and where to write the answer back.
 - `internal/infrastructure/wiring` so you know which services record audit events for both CLI and MCP.

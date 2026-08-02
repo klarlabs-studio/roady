@@ -1,5 +1,10 @@
 # DDD Refactor Phase 4: Policy Decoupling & Governance
 
+> **Historical.** Written before v0.15.0 removed Roady's embedded provider
+> clients. `roady ai configure`, `.roady/ai.yaml`, `BuildAppServicesWithProvider`
+> and `docs/ai-configuration.md` describe a design that no longer exists —
+> Roady runs no inference. Kept for the layering discussion.
+
 With the new wiring helper in `internal/infrastructure/wiring/services.go`, both CLI and MCP now share a single composition root. That means we can safely continue the roadmap without worrying about divergent adapters or configuration paths.
 
 ## 1. Policy vs Provider Separation

@@ -125,7 +125,7 @@ var planPruneCmd = &cobra.Command{
 
 var planPrioritizeCmd = &cobra.Command{
 	Use:   "prioritize",
-	Short: "Get AI-powered priority suggestions for plan tasks",
+	Short: "Emit a prompt asking your model to suggest task priorities",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		services, err := loadServicesForCurrentDir()
 		if err != nil {
@@ -142,7 +142,7 @@ var planPrioritizeCmd = &cobra.Command{
 
 var planSmartDecomposeCmd = &cobra.Command{
 	Use:   "smart-decompose",
-	Short: "AI-powered context-aware task decomposition using codebase analysis",
+	Short: "Emit a codebase-aware decomposition prompt for your model",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		services, err := loadServicesForCurrentDir()
 		if err != nil {
@@ -159,7 +159,7 @@ var planSmartDecomposeCmd = &cobra.Command{
 
 func init() {
 
-	planGenerateCmd.Flags().BoolVar(&useAI, "ai", false, "Use AI to decompose the spec into tasks")
+	planGenerateCmd.Flags().BoolVar(&useAI, "ai", false, "Emit a decomposition prompt for your own model instead of the heuristic planner (Roady runs no inference)")
 
 	planCmd.AddCommand(planGenerateCmd)
 

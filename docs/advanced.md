@@ -18,16 +18,19 @@ Roady on more than one repo or for more than a week.
 `roady spec analyze docs/` walks any directory of markdown and emits a
 structured spec with feature/requirement source citations
 (`from docs/auth.md:14`). Every task downstream carries the citation.
-Use `--reconcile` to deduplicate semantically via your configured AI
-provider.
+`--reconcile` was removed with the embedded providers: run `roady spec explain`
+to get a prompt, reconcile with your own model, and write the result back with
+`roady spec add`.
 
 ### AI planning workflows
 
-- `roady plan generate --ai` — decompose features into tasks with the
-  configured provider. Tasks are tagged `Origin=ai` and surface as
-  `[AI]` in `roady status` so reviewers can scrutinise them.
-- `roady plan smart-decompose` — codebase-aware decomposition (uses
-  file-tree analysis to ground the prompt).
+- `roady plan generate --ai` — prints a decomposition prompt for your own
+  model instead of running the heuristic planner. Roady calls no provider;
+  write the answer back with `roady_update_plan`. Tasks that arrive that way
+  are tagged `Origin=ai` and surface as `[AI]` in `roady status` so reviewers
+  can scrutinise them.
+- `roady plan smart-decompose` — the same, grounded in a file-tree analysis of
+  the codebase.
 - `roady plan prioritize` — AI suggestions for re-balancing task
   priority based on dependencies + spec.
 - `roady query "how am I doing?"` — natural language Q&A over the

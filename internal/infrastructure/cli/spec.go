@@ -154,7 +154,7 @@ var specAddCmd = &cobra.Command{
 
 var specReviewCmd = &cobra.Command{
 	Use:   "review",
-	Short: "Perform an AI-powered quality review of the current spec",
+	Short: "Emit a prompt asking your model to review the spec",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		services, err := loadServicesForCurrentDir()
 		if err != nil {
@@ -172,7 +172,7 @@ var specReviewCmd = &cobra.Command{
 
 func init() {
 	specCmd.AddCommand(specAddCmd)
-	specAnalyzeCmd.Flags().BoolVar(&reconcileSpec, "reconcile", false, "Use AI to semanticly deduplicate and reconcile the spec")
+	specAnalyzeCmd.Flags().BoolVar(&reconcileSpec, "reconcile", false, "Removed: Roady no longer runs inference. Use 'roady spec explain' and write the result back with 'roady spec add'")
 	specCmd.AddCommand(specImportCmd)
 	specCmd.AddCommand(specValidateCmd)
 	specCmd.AddCommand(specExplainCmd)

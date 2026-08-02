@@ -285,12 +285,18 @@ Example event:
 
 ## Environment Variables
 
-Override provider settings for MCP sessions:
+Roady calls no language model, so there is no provider or API key to configure.
+The `ROADY_AI_PROVIDER` and `*_API_KEY` variables were removed in v0.15.0.
+
+What an MCP session does read:
 
 ```bash
-export ROADY_AI_PROVIDER=openai
-export ROADY_AI_MODEL=gpt-4o
-export OPENAI_API_KEY=sk-...
+export ROADY_AGENT=claude-code            # who is acting, for the audit trail
+export ROADY_SESSION_ID=run-7             # groups a conversation's events
+export ROADY_USER="Ada Lovelace"          # task ownership
 ```
 
-See `docs/ai-configuration.md` for complete configuration options.
+Agent and session are detected automatically for Claude Code, Cursor, Codex and
+Gemini CLI when unset; setting them explicitly overrides the detection. See
+`docs/audit-grc.md` for what a trail attests, and `docs/prompts.md` for the
+operations that hand you a prompt instead of running one.
