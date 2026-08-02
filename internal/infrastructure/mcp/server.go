@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strconv"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -21,6 +21,7 @@ import (
 	"github.com/felixgeelhaar/roady/pkg/domain/project"
 	"github.com/felixgeelhaar/roady/pkg/domain/spec"
 	"github.com/felixgeelhaar/roady/pkg/domain/team"
+	reportrender "github.com/felixgeelhaar/roady/pkg/infrastructure/report"
 	"go.klarlabs.de/mcp"
 	mcpserver "go.klarlabs.de/mcp/server"
 )
@@ -516,6 +517,22 @@ func (s *Server) registerTools() {
 		OutputSchema(forecastResp{}).
 		Handler(s.handleForecast)
 
+	// Tool: roady_report — stakeholder progress, the answer to "keep leadership
+	// informed". It was CLI-only, so the agents expected to produce it had to
+	// shell out; the same gap roady_audit_trail closed in 0.17.0.
+	s.tool("roady_report").
+		Description("Render a stakeholder progress report (progress, forecast, risks, ownership, recent changes) as markdown, self-contained html, or json.").
+		UIResource("ui://roady/status").
+		Handler(s.handleReport)
+
+	// Tool: roady_spec_analyze — build a spec from a directory of documents.
+	// Without it an agent could read and amend a spec but never create one from
+	// source material, so the entry point to the whole workflow was unreachable.
+	s.tool("roady_spec_analyze").
+		Description("Analyze a directory of markdown documents and generate the product spec from them. Existing feature ids are preserved.").
+		UIResource("ui://roady/spec").
+		Handler(s.handleSpecAnalyze)
+
 	// Tool: roady_org_members
 	s.tool("roady_org_members").
 		Description("List the repositories belonging to this workspace, from the repos: list in .roady/org.yaml when declared, otherwise by walking the tree. Reports declared members that cannot be reached.").
@@ -841,6 +858,125 @@ func (s *Server) handleOrgMembers(ctx context.Context, args GetSpecArgs) (any, e
 		return mcpErr("Failed to resolve workspace members. Check the repos: list in .roady/org.yaml."), nil
 	}
 	return set, nil
+}
+
+// rootFor resolves the project directory a tool call addresses, mirroring
+// servicesForPath: an explicit project_path wins, otherwise the server root.
+// Paths must never resolve against the process working directory, which is
+// routinely a different repository from the one being addressed.
+func (s *Server) rootFor(pathOverride string) string {
+	if strings.TrimSpace(pathOverride) != "" {
+		return pathOverride
+	}
+	return s.root
+}
+
+// projectDirName names a project after its directory, resolving first so a
+// relative path like "." does not title the report ".".
+func projectDirName(root string) string {
+	abs, err := filepath.Abs(root)
+	if err != nil {
+		abs = root
+	}
+	if base := filepath.Base(abs); base != "." && base != string(filepath.Separator) {
+		return base
+	}
+	return "Project"
+}
+
+type ReportArgs struct {
+	Format      string `json:"format,omitempty" jsonschema:"description=markdown (default), html for a self-contained shareable page, or json for the structured report.,enum=markdown,enum=html,enum=json"`
+	Since       string `json:"since,omitempty" jsonschema:"description=Only include changes since this point: 7d, 2w, or an absolute date like 2026-07-01."`
+	Name        string `json:"name,omitempty" jsonschema:"description=Project name for the report header. Defaults to the project directory name."`
+	MaxChanges  int    `json:"max_changes,omitempty" jsonschema:"description=Cap the change list. Defaults to 25."`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+}
+
+func (s *Server) handleReport(ctx context.Context, args ReportArgs) (any, error) {
+	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
+	if err != nil {
+		return mcpErr("Failed to load project at the given path."), nil
+	}
+
+	since, err := application.ParseSince(args.Since, time.Now())
+	if err != nil {
+		return mcpErr(err.Error()), nil
+	}
+
+	name := strings.TrimSpace(args.Name)
+	if name == "" {
+		name = projectDirName(s.rootFor(args.ProjectPath))
+	}
+
+	rep, err := svc.Report.Generate(ctx, application.ReportOptions{
+		Project:    name,
+		Since:      since,
+		MaxChanges: args.MaxChanges,
+	})
+	if err != nil {
+		return mcpErr("Failed to generate the report. Ensure a plan and state exist."), nil
+	}
+
+	switch strings.ToLower(strings.TrimSpace(args.Format)) {
+	case "", "markdown", "md":
+		return reportrender.Markdown(rep), nil
+	case "html":
+		rendered, rerr := reportrender.HTML(rep)
+		if rerr != nil {
+			return mcpErr("Failed to render the report as html."), nil
+		}
+		return rendered, nil
+	case "json":
+		// Returned as the structured report so a caller can read fields
+		// directly rather than re-parsing rendered text.
+		return rep, nil
+	default:
+		return mcpErr(fmt.Sprintf("Unknown format %q: use markdown, html, or json.", args.Format)), nil
+	}
+}
+
+type SpecAnalyzeArgs struct {
+	Dir         string `json:"dir" jsonschema:"description=Directory of markdown documents to analyze, relative to the project or absolute. Example: docs/"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+}
+
+func (s *Server) handleSpecAnalyze(ctx context.Context, args SpecAnalyzeArgs) (any, error) {
+	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
+	if err != nil {
+		return mcpErr("Failed to load project at the given path."), nil
+	}
+
+	dir := strings.TrimSpace(args.Dir)
+	if dir == "" {
+		return mcpErr("A directory is required: pass dir, e.g. \"docs/\"."), nil
+	}
+	// Resolve against the project rather than the server's working directory,
+	// which is routinely a different repository entirely.
+	if !filepath.IsAbs(dir) {
+		dir = filepath.Join(s.rootFor(args.ProjectPath), dir)
+	}
+
+	productSpec, err := svc.Spec.AnalyzeDirectory(dir)
+	if err != nil {
+		return mcpErr(fmt.Sprintf("Failed to analyze %s: %v", dir, err)), nil
+	}
+
+	features := make([]map[string]any, 0, len(productSpec.Features))
+	for _, f := range productSpec.Features {
+		features = append(features, map[string]any{
+			"id":           f.ID,
+			"title":        f.Title,
+			"requirements": len(f.Requirements),
+		})
+	}
+	return map[string]any{
+		"title":    productSpec.Title,
+		"features": features,
+		"count":    len(productSpec.Features),
+		"hint":     "The spec is written to .roady/spec.yaml. Run roady_generate_plan to turn it into tasks.",
+	}, nil
 }
 
 func (s *Server) handleGitSync(ctx context.Context, args GitSyncArgs) (any, error) {
@@ -1616,32 +1752,7 @@ func (s *Server) handleAuditTrail(ctx context.Context, args AuditTrailArgs) (any
 // parseTrailSince accepts a relative window (7d, 2w) or an absolute date.
 // Empty means the whole history.
 func parseTrailSince(value string) (time.Time, error) {
-	value = strings.TrimSpace(value)
-	if value == "" {
-		return time.Time{}, nil
-	}
-
-	now := time.Now()
-	if n, ok := strings.CutSuffix(value, "d"); ok {
-		days, convErr := strconv.Atoi(n)
-		if convErr != nil || days <= 0 {
-			return time.Time{}, fmt.Errorf("invalid since %q: expected a form like 7d, 2w, or 2026-07-01", value)
-		}
-		return now.AddDate(0, 0, -days), nil
-	}
-	if n, ok := strings.CutSuffix(value, "w"); ok {
-		weeks, convErr := strconv.Atoi(n)
-		if convErr != nil || weeks <= 0 {
-			return time.Time{}, fmt.Errorf("invalid since %q: expected a form like 7d, 2w, or 2026-07-01", value)
-		}
-		return now.AddDate(0, 0, -weeks*7), nil
-	}
-
-	parsed, parseErr := time.Parse("2006-01-02", value)
-	if parseErr != nil {
-		return time.Time{}, fmt.Errorf("invalid since %q: expected a form like 7d, 2w, or 2026-07-01", value)
-	}
-	return parsed, nil
+	return application.ParseSince(value, time.Now())
 }
 
 func (s *Server) handleStickyDrift(ctx context.Context, args GetSpecArgs) (any, error) {

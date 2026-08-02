@@ -202,3 +202,59 @@ func TestServer_RegistersCanonicalAndDeprecatedToolNames(t *testing.T) {
 		}
 	}
 }
+
+// roady_report and roady_spec_analyze existed only as CLI commands, so an
+// agent could neither produce the stakeholder report the reporting work was
+// built for nor create a spec from source documents — the entry point to the
+// whole workflow. Same gap roady_audit_trail closed in 0.17.0.
+func TestServer_RegistersReportAndSpecAnalyze(t *testing.T) {
+	server := setupCoordinatorTestServer(t)
+
+	registered := make(map[string]bool)
+	for _, tool := range server.mcpServer.Tools() {
+		registered[tool.Name] = true
+	}
+
+	for _, name := range []string{"roady_report", "roady_spec_analyze"} {
+		if !registered[name] {
+			t.Errorf("%s is not registered; the capability is CLI-only", name)
+		}
+	}
+}
+
+func TestHandleReport_Formats(t *testing.T) {
+	server := setupCoordinatorTestServer(t)
+	ctx := context.Background()
+
+	for _, format := range []string{"", "markdown", "html", "json"} {
+		res, err := server.handleReport(ctx, ReportArgs{Format: format})
+		if err != nil {
+			t.Fatalf("handleReport(%q): %v", format, err)
+		}
+		if res == nil {
+			t.Fatalf("handleReport(%q): nil result", format)
+		}
+	}
+}
+
+// A bad format and a malformed since window are caller mistakes: they must
+// come back as an actionable tool error, not a protocol error or a silent
+// default.
+func TestHandleReport_RejectsBadInputActionably(t *testing.T) {
+	server := setupCoordinatorTestServer(t)
+	ctx := context.Background()
+
+	res, err := server.handleReport(ctx, ReportArgs{Format: "bogus"})
+	assertToolError(t, res, err, "bogus")
+
+	// 7xd used to be accepted as "7 days" by the CLI's parser while the MCP
+	// one rejected it; both now share application.ParseSince.
+	res, err = server.handleReport(ctx, ReportArgs{Since: "7xd"})
+	assertToolError(t, res, err, "7xd")
+}
+
+func TestHandleSpecAnalyze_RequiresADirectory(t *testing.T) {
+	server := setupCoordinatorTestServer(t)
+	res, err := server.handleSpecAnalyze(context.Background(), SpecAnalyzeArgs{})
+	assertToolError(t, res, err, "dir")
+}
