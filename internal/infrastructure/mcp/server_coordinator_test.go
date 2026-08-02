@@ -2,6 +2,8 @@ package mcp
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/felixgeelhaar/roady/pkg/domain"
@@ -257,4 +259,68 @@ func TestHandleSpecAnalyze_RequiresADirectory(t *testing.T) {
 	server := setupCoordinatorTestServer(t)
 	res, err := server.handleSpecAnalyze(context.Background(), SpecAnalyzeArgs{})
 	assertToolError(t, res, err, "dir")
+}
+
+// The success path: an agent points the tool at a directory of documents and
+// gets a spec, which is the entry point the CLI-only version denied it.
+func TestHandleSpecAnalyze_BuildsSpecFromDocuments(t *testing.T) {
+	server := setupCoordinatorTestServer(t)
+
+	docs := filepath.Join(server.root, "docs")
+	if err := os.MkdirAll(docs, 0o750); err != nil {
+		t.Fatal(err)
+	}
+	md := "# Payments\n\n## Card Payments (Stripe / Adyen)\nTake cards.\n\n## Refunds & Disputes\nHandle refunds.\n"
+	if err := os.WriteFile(filepath.Join(docs, "spec.md"), []byte(md), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	res, err := server.handleSpecAnalyze(context.Background(), SpecAnalyzeArgs{Dir: "docs"})
+	if err != nil {
+		t.Fatalf("handleSpecAnalyze: %v", err)
+	}
+	out, ok := res.(map[string]any)
+	if !ok {
+		t.Fatalf("got %T, want a summary map", res)
+	}
+	if out["count"] != 2 {
+		t.Errorf("count = %v, want 2", out["count"])
+	}
+	// Ids must be the slugified form, not the raw heading.
+	feats, _ := out["features"].([]map[string]any)
+	if len(feats) != 2 || feats[0]["id"] != "card-payments-stripe-adyen" {
+		t.Errorf("features = %v, want slugified ids", feats)
+	}
+	if out["hint"] == "" {
+		t.Error("no hint telling the caller what to do next")
+	}
+}
+
+// A directory that does not exist is a caller mistake and must say so.
+func TestHandleSpecAnalyze_MissingDirectoryIsActionable(t *testing.T) {
+	server := setupCoordinatorTestServer(t)
+	res, err := server.handleSpecAnalyze(context.Background(), SpecAnalyzeArgs{Dir: "no-such-dir"})
+	assertToolError(t, res, err, "no-such-dir")
+}
+
+func TestRootForAndProjectDirName(t *testing.T) {
+	server := setupCoordinatorTestServer(t)
+
+	if got := server.rootFor(""); got != server.root {
+		t.Errorf("rootFor(\"\") = %q, want the server root", got)
+	}
+	if got := server.rootFor("  "); got != server.root {
+		t.Errorf("rootFor(blank) = %q, want the server root", got)
+	}
+	if got := server.rootFor("/tmp/elsewhere"); got != "/tmp/elsewhere" {
+		t.Errorf("rootFor(override) = %q, want the override", got)
+	}
+
+	// A relative path must not title a report "." — resolve, then take the base.
+	if got := projectDirName("."); got == "." || got == "" {
+		t.Errorf("projectDirName(\".\") = %q, want the resolved directory name", got)
+	}
+	if got := projectDirName(server.root); got != filepath.Base(server.root) {
+		t.Errorf("projectDirName(root) = %q, want %q", got, filepath.Base(server.root))
+	}
 }
