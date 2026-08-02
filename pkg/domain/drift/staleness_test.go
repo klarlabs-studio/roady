@@ -119,16 +119,3 @@ func TestStalenessSeverityScalesWithDivergence(t *testing.T) {
 		t.Errorf("500 commits behind (%s) should outrank 20 (%s)", severe[0].Severity, modest[0].Severity)
 	}
 }
-
-func severityRank(s Severity) int {
-	switch s {
-	case SeverityCritical:
-		return 0
-	case SeverityHigh:
-		return 1
-	case SeverityMedium:
-		return 2
-	default:
-		return 3
-	}
-}

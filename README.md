@@ -115,6 +115,16 @@ roady notify digest --since 7d              # send
 One chat-sized summary instead of a message per task transition. Run it from
 cron or CI.
 
+**Gate CI on drift:**
+
+```bash
+roady drift detect --fail-on high    # exits non-zero only for high + critical
+```
+
+Everything found is still printed; the threshold changes only the exit code.
+See [`docs/spec-to-pr.md`](docs/spec-to-pr.md) for pull-request gating and
+opening follow-up issues after merge.
+
 **Audit — proving what happened:**
 
 ```bash

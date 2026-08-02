@@ -4,12 +4,22 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/felixgeelhaar/roady/pkg/domain/drift"
 	"github.com/spf13/cobra"
 )
 
 var driftCmd = &cobra.Command{
 	Use:   "drift",
 	Short: "Detect drift between specs, plans, and code",
+}
+
+// driftFailOn is the severity at or above which drift fails the command.
+var driftFailOn string
+
+// driftGateError reports how many issues tripped the gate, so a CI log says
+// what to fix rather than only that something is wrong.
+func driftGateError(gating []drift.Issue, threshold drift.Severity) error {
+	return fmt.Errorf("drift detected: %d issue(s) at or above %s", len(gating), threshold)
 }
 
 var driftExplainCmd = &cobra.Command{
@@ -51,11 +61,25 @@ var driftDetectCmd = &cobra.Command{
 			return MapError(fmt.Errorf("failed to detect drift: %w", err))
 		}
 
+		// --fail-on decides what makes the command exit non-zero. Without
+		// it any drift at all fails, which is too blunt for CI: a
+		// low-severity note would block a merge, and a gate that blocks on
+		// noise gets switched off.
+		threshold := drift.SeverityLow
+		if driftFailOn != "" {
+			parsed, pErr := drift.ParseSeverity(driftFailOn)
+			if pErr != nil {
+				return pErr
+			}
+			threshold = parsed
+		}
+		gating := report.AtOrAbove(threshold)
+
 		if outputFormat == "json" {
 			data, _ := json.MarshalIndent(report, "", "  ")
 			fmt.Println(string(data))
-			if len(report.Issues) > 0 {
-				return fmt.Errorf("drift detected")
+			if len(gating) > 0 {
+				return driftGateError(gating, threshold)
 			}
 			return nil
 		}
@@ -73,7 +97,15 @@ var driftDetectCmd = &cobra.Command{
 			}
 		}
 
-		return fmt.Errorf("drift detected")
+		if len(gating) == 0 {
+			// Reported, but below the gate. Say so explicitly rather than
+			// exiting 0 silently and leaving the operator unsure whether
+			// the threshold applied.
+			fmt.Printf("\nNone at or above %s — not failing.\n", threshold)
+			return nil
+		}
+
+		return driftGateError(gating, threshold)
 	},
 }
 
@@ -97,6 +129,7 @@ var driftAcceptCmd = &cobra.Command{
 
 func init() {
 	driftDetectCmd.Flags().StringP("output", "o", "text", "Output format (text, json)")
+	driftDetectCmd.Flags().StringVar(&driftFailOn, "fail-on", "", "Exit non-zero only for drift at or above this severity (low, medium, high, critical)")
 	driftCmd.AddCommand(driftDetectCmd)
 	addPromptJSONFlag(driftExplainCmd)
 	driftCmd.AddCommand(driftExplainCmd)

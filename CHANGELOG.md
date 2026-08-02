@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — drift as a CI gate
+
+- `roady drift detect --fail-on <severity>` controls what makes the command
+  exit non-zero. Without it any drift fails the build, including a
+  low-severity note nobody intends to act on this week — and a gate that
+  blocks a merge on noise gets switched off, which makes it no gate at all.
+- Everything found is still printed; the threshold changes only the exit code.
+  When drift is found below the threshold the command says so, rather than
+  exiting zero silently and leaving the operator unsure the threshold applied.
+- An unrecognised severity string still counts at the lowest threshold, so a
+  typo cannot quietly remove an issue from every gate.
+- `docs/spec-to-pr.md` documents a pull-request gate and a merge-time job that
+  opens a follow-up issue instead of failing a build nobody sees.
+
 ### Added — cross-project task dependencies
 
 An org-level plan can express that a task waits on work in another
