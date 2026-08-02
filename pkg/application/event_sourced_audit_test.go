@@ -68,7 +68,7 @@ func TestEventSourcedAuditService_Projections(t *testing.T) {
 	})
 
 	// Check timeline projection
-	timeline := svc.GetTimeline()
+	timeline := svc.GetProjectedTimeline()
 	if len(timeline) != 2 {
 		t.Errorf("Expected 2 timeline entries, got %d", len(timeline))
 	}

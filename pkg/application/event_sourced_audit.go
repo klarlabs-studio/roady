@@ -126,8 +126,14 @@ func (s *EventSourcedAuditService) Log(action string, actor string, metadata map
 	return nil
 }
 
-// GetTimeline returns the audit timeline from the projection.
-func (s *EventSourcedAuditService) GetTimeline() []events.TimelineEntry {
+// GetProjectedTimeline returns the audit timeline from the projection.
+//
+// Deliberately not called GetTimeline. AuditService.GetTimeline returns the
+// raw event log; this returns rendered projection entries with different
+// fields. Sharing the name made them look interchangeable, and roady_timeline
+// was written against this one while the CLI read the other — so the two
+// surfaces described the same history differently until it was caught.
+func (s *EventSourcedAuditService) GetProjectedTimeline() []events.TimelineEntry {
 	return s.auditProj.GetTimeline()
 }
 
