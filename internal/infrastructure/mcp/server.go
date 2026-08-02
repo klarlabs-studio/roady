@@ -348,6 +348,9 @@ type GetInProgressTasksArgs struct {
 type TasksArgs struct {
 	Status      string `json:"status,omitempty" jsonschema:"description=Which tasks to return: ready (unlocked + pending), in_progress, blocked, unassigned, or all. Defaults to ready.,enum=ready,enum=in_progress,enum=blocked,enum=unassigned,enum=all"`
 	Assignee    string `json:"assignee,omitempty" jsonschema:"description=Only return tasks assigned to this person or agent. Matched case-insensitively. Ignored when status is unassigned."`
+	Limit       int    `json:"limit,omitempty" jsonschema:"description=Maximum tasks to return. Defaults to 50 and is capped at 200."`
+	Offset      int    `json:"offset,omitempty" jsonschema:"description=Number of tasks to skip, for paging through a large plan."`
+	Detail      bool   `json:"detail,omitempty" jsonschema:"description=Include each task's full description. Off by default because descriptions dominate the payload."`
 	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
 	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
 }
@@ -1673,52 +1676,40 @@ func (s *Server) handleTasks(ctx context.Context, args TasksArgs) (any, error) {
 		status = "ready"
 	}
 
+	var (
+		tasks []project.TaskSummary
+		err2  error
+	)
+
 	switch status {
 	case "ready":
-		tasks, err := svc.Plan.GetReadyTasks(ctx)
-		if err != nil {
-			return mcpErr("Failed to get ready tasks. Ensure a plan and state exist."), nil
-		}
-		return filterByAssignee(tasks, args.Assignee), nil
+		tasks, err2 = svc.Plan.GetReadyTasks(ctx)
 	case "in_progress":
-		tasks, err := svc.Plan.GetInProgressTasks(ctx)
-		if err != nil {
-			return mcpErr("Failed to get in-progress tasks. Ensure a plan and state exist."), nil
-		}
-		return filterByAssignee(tasks, args.Assignee), nil
+		tasks, err2 = svc.Plan.GetInProgressTasks(ctx)
 	case "blocked":
-		tasks, err := svc.Plan.GetBlockedTasks(ctx)
-		if err != nil {
-			return mcpErr("Failed to get blocked tasks. Ensure a plan and state exist."), nil
-		}
-		return filterByAssignee(tasks, args.Assignee), nil
+		tasks, err2 = svc.Plan.GetBlockedTasks(ctx)
 	case "unassigned":
-		tasks, err := svc.Plan.GetTasksByOwner(ctx, "")
-		if err != nil {
-			return mcpErr("Failed to get unassigned tasks. Ensure a plan and state exist."), nil
-		}
-		return tasks, nil
+		tasks, err2 = svc.Plan.GetTasksByOwner(ctx, "")
 	case "all":
-		ready, err := svc.Plan.GetReadyTasks(ctx)
-		if err != nil {
-			return mcpErr("Failed to load tasks. Ensure a plan and state exist."), nil
-		}
-		inProgress, err := svc.Plan.GetInProgressTasks(ctx)
-		if err != nil {
-			return mcpErr("Failed to load tasks. Ensure a plan and state exist."), nil
-		}
-		blocked, err := svc.Plan.GetBlockedTasks(ctx)
-		if err != nil {
-			return mcpErr("Failed to load tasks. Ensure a plan and state exist."), nil
-		}
-		return map[string]any{
-			"ready":       filterByAssignee(ready, args.Assignee),
-			"in_progress": filterByAssignee(inProgress, args.Assignee),
-			"blocked":     filterByAssignee(blocked, args.Assignee),
-		}, nil
+		// Every task in one list rather than three, so a single page and a
+		// single set of counts describe the whole answer. Each task carries
+		// its own status, so nothing is lost by flattening.
+		tasks, err2 = svc.Plan.GetTaskSummaries(ctx)
 	default:
 		return mcpErr("Invalid status. Use ready, in_progress, blocked, unassigned, or all."), nil
 	}
+
+	if err2 != nil {
+		return mcpErr(fmt.Sprintf("Failed to get %s tasks. Ensure a plan and state exist.", status)), nil
+	}
+
+	// "unassigned" already filtered on owner; applying it again would drop
+	// everything the moment a caller passed both.
+	if status != "unassigned" {
+		tasks = filterByAssignee(tasks, args.Assignee)
+	}
+
+	return paginateTasks(status, tasks, args.Offset, args.Limit, args.Detail), nil
 }
 
 // filterByAssignee narrows tasks to those owned by assignee. An empty assignee

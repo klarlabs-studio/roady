@@ -146,13 +146,26 @@ func TestHandleTasks_All(t *testing.T) {
 	if err != nil {
 		t.Fatalf("handleTasks(all): %v", err)
 	}
-	bucket, ok := result.(map[string]any)
+
+	// status=all returns one paged list rather than three buckets: a single
+	// set of counts describes the whole answer, and each task still carries
+	// the status that used to be implied by which bucket it sat in.
+	page, ok := result.(taskPage)
 	if !ok {
-		t.Fatalf("expected map result, got %T", result)
+		t.Fatalf("expected a taskPage result, got %T", result)
 	}
-	for _, key := range []string{"ready", "in_progress", "blocked"} {
-		if _, ok := bucket[key]; !ok {
-			t.Errorf("expected %q key in result, missing", key)
+	if page.Status != "all" {
+		t.Errorf("Status = %q, want %q", page.Status, "all")
+	}
+	if page.Limit == 0 {
+		t.Error("page carries no limit, so a caller cannot tell whether it was truncated")
+	}
+	if page.Returned != len(page.Tasks) {
+		t.Errorf("Returned = %d but %d tasks present", page.Returned, len(page.Tasks))
+	}
+	for _, task := range page.Tasks {
+		if task.Status == "" {
+			t.Errorf("task %s carries no status", task.ID)
 		}
 	}
 }
