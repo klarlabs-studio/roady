@@ -98,44 +98,12 @@ func runReport(cmd *cobra.Command, _ []string) error {
 
 // parseSince accepts a relative duration in days or weeks ("7d", "2w") or an
 // absolute date ("2026-07-01"). An empty value means the whole history.
+// parseSince delegates to the shared parser so the CLI and the MCP server
+// cannot drift apart on what `7d` means. They previously had separate copies
+// and disagreed: this one used fmt.Sscanf and silently accepted "7xd" as seven
+// days.
 func parseSince(value string, now time.Time) (time.Time, error) {
-	value = strings.TrimSpace(value)
-	if value == "" {
-		return time.Time{}, nil
-	}
-
-	if n, ok := strings.CutSuffix(value, "d"); ok {
-		days, err := parsePositiveInt(n)
-		if err != nil {
-			return time.Time{}, fmt.Errorf("invalid --since %q: expected a form like 7d, 2w, or 2026-07-01", value)
-		}
-		return now.AddDate(0, 0, -days), nil
-	}
-
-	if n, ok := strings.CutSuffix(value, "w"); ok {
-		weeks, err := parsePositiveInt(n)
-		if err != nil {
-			return time.Time{}, fmt.Errorf("invalid --since %q: expected a form like 7d, 2w, or 2026-07-01", value)
-		}
-		return now.AddDate(0, 0, -weeks*7), nil
-	}
-
-	parsed, err := time.Parse("2006-01-02", value)
-	if err != nil {
-		return time.Time{}, fmt.Errorf("invalid --since %q: expected a form like 7d, 2w, or 2026-07-01", value)
-	}
-	return parsed, nil
-}
-
-func parsePositiveInt(s string) (int, error) {
-	var n int
-	if _, err := fmt.Sscanf(s, "%d", &n); err != nil {
-		return 0, err
-	}
-	if n <= 0 {
-		return 0, fmt.Errorf("must be positive")
-	}
-	return n, nil
+	return application.ParseSince(value, now)
 }
 
 // inferProjectName falls back to the directory name so a report is never
