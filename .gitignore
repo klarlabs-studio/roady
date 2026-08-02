@@ -13,8 +13,18 @@ dist/
 # OS files
 .DS_Store
 
-# Local Roady State
-.roady/
+# Roady's own workspace.
+#
+# Not ignored wholesale. Roady's claim is that .roady/ is durable state you
+# commit, so ignoring all of it in the repository that dogfoods it is the
+# `dist/` mistake above repeating: the five files in there are tracked only
+# because they predate the rule, and anything Roady wrote later — policy.yaml,
+# rates.yaml, a sub-project under projects/ — would have been swallowed
+# silently, in the one repository where that would be noticed last.
+#
+# Ignore only what is genuinely local to one machine.
+.roady/usage.json
+.roady/deadletters.jsonl
 
 # Stray deadletter artifact written when webhook tests run in cwd
 deadletters.jsonl
