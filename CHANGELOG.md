@@ -7,6 +7,86 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.18.0] - 2026-08-02
+
+Five bugs found by running Roady on a real 118-feature project, all reported
+against 0.13.2. Four of them shared a shape: Roady knew enough to get the
+answer right, and stored or reported something else without saying so.
+
+### Fixed — generated ids are safe to use as ids (#74)
+
+Ids were derived by lowercasing a title and replacing spaces, which passed
+through everything else — including `/`, `+`, `(`, `)` and the em-dash. 84 of
+118 feature ids in the reported spec were affected. A feature id becomes a
+path component under `.roady/projects/<name>/`, a URL segment, and an argument
+typed into a shell, so `/` was a latent path-traversal shape and
+`phase-a-—-pilot-finalization-(2-weeks)` could not be pasted into
+`roady task start` without quoting.
+
+- Letters and digits survive; everything else becomes a separator. Latin
+  diacritics fold to ASCII so `Prüfung` and `Prufung` are one id rather than
+  two, scripts with no ASCII equivalent are kept, and length is bounded
+  because ids reach filenames.
+- A title of pure punctuation falls back to a hash of the title rather than an
+  empty id colliding with every other such feature.
+- **Existing ids are preserved.** Because ids derive from titles, fixing the
+  derivation would have renamed every affected feature on the next
+  `spec analyze` and orphaned its tasks — trading the bug for a worse one.
+  Re-analysis matches features by title and keeps the id a feature already
+  has; only new features take the current form.
+
+### Fixed — plan writes resolve the feature they name (#73)
+
+Drift matches tasks to features by id, so a task whose `feature_id` held a
+title was reported as an orphan the moment it was stored: the plan was born
+drifted and nothing said so. 31 of 49 tasks in the reported plan were affected.
+
+- Plan writes now resolve each link against the spec, accepting a feature's
+  id, its title, or either one slugified — which also repairs ids written
+  before the slugifier was fixed.
+- A link matching nothing is left exactly as written, because guessing would
+  attach the task to the wrong feature and that is harder to notice than an
+  orphan. It is returned to the caller instead, since the agent that wrote it
+  is the one able to correct it and is about to move on.
+
+### Fixed — add_feature writes to the project, not the working directory (#71)
+
+`roady_add_feature` resolved `docs/backlog.md` relative to the process working
+directory while honouring `project_path` for everything else. The MCP server
+runs from wherever it was started, so a call naming one repository wrote that
+repository's spec correctly and its feature documentation into an unrelated
+working tree.
+
+- The backlog path resolves against the project root.
+- The call no longer reports success unconditionally. The sync failure went to
+  stderr and was dropped; `AddFeature` now returns what it actually did, and
+  both the CLI and the MCP tool report the sync only when it happened.
+
+### Changed — roady_tasks pages and projects its results (#75)
+
+A 96-task plan serialised to 84,258 characters and exceeded the MCP client's
+tool-result limit — poor behaviour from the tool most likely to be called at
+the start of a session, in a system whose claim is surviving context resets.
+The same plan now answers in 5,742.
+
+- Descriptions are omitted from listings unless `detail=true`. They were the
+  bulk of the payload, and a caller listing tasks wants to identify one and
+  then read that one.
+- `limit` and `offset`, defaulting to 50 and capped at 200.
+- The response is a page rather than a bare array: a truncated array tells the
+  caller it has seen the whole plan, which is worse than the oversized
+  response it replaces. It carries the total, what was returned, whether more
+  exists, and a sentence saying how to get it.
+- **Breaking:** `status=all` returns one flat list rather than `ready` /
+  `in_progress` / `blocked` buckets. Each task carries its own status, so
+  nothing is lost and one set of counts describes the whole answer.
+
+### Fixed — MCP transition errors reach the agent (#72)
+
+Already shipped in 0.15.0 and recorded here for completeness: domain errors
+from `roady_transition_task` reached the client as a bare
+`MCP error -32603: internal error` rather than the CLI's actionable message.
+
 ### Added — per-task subagent dispatch
 
 `roady task dispatch <id> --agent <name> [--session <id>]`, and
