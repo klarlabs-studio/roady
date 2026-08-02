@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — cross-project task dependencies
+
+An org-level plan can express that a task waits on work in another
+sub-project: `@feature-auth:task-signup` in `DependsOn`.
+
+- `planning.ParseDependencyRef` handles the canonical `@project:task` form and
+  the sigil-less `project:task` that predates it, since rejecting the latter
+  would silently reinterpret a real cross-project edge as a dangling local one.
+- Readiness resolves external edges against the named sub-project's state.
+  Previously an external reference was passed to the *local* state lookup,
+  which reported "pending" because no such local task existed — pinning the
+  task as blocked forever with no way to resolve it.
+- Unresolvable and incomplete external dependencies both block, and the
+  resolver distinguishes them: a reference that cannot be found is a broken
+  plan, not work in progress.
+- DAG cycle detection now skips external edges deliberately rather than by
+  accident — the previous code tolerated them only because it silently ignores
+  any dependency it cannot resolve.
+
 ## [0.17.0] - 2026-08-01
 
 Audit trails become answerable by the agents they were built for.

@@ -82,6 +82,9 @@ func buildServices(workspace *Workspace) (*AppServices, error) {
 	// Create services in dependency order
 	policySvc := application.NewPolicyService(workspace.Repo)
 	planSvc := application.NewPlanService(workspace.Repo, auditSvc)
+	// Cross-project dependencies (@project:task-id) resolve against sibling
+	// sub-projects under .roady/projects/.
+	planSvc.GetCoordinator().SetExternalResolver(application.NewSubProjectResolver(workspace.Repo.Root()))
 	taskSvc := application.NewTaskService(workspace.Repo, auditSvc, policySvc)
 	driftSvc := application.NewDriftService(workspace.Repo, auditSvc, storage.NewCodebaseInspector(), policySvc)
 	// Staleness detection needs to know how far the repository has moved.

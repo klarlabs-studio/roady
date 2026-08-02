@@ -79,7 +79,7 @@ func (c *Coordinator) GetProjectSnapshot(ctx context.Context) (*ProjectSnapshot,
 			completedCount++
 		case status.IsPending():
 			// Check if this task is unlocked (all deps complete)
-			if isUnlocked(task, state) {
+			if isUnlocked(task, state, c.externalResolver) {
 				snapshot.UnlockedTasks = append(snapshot.UnlockedTasks, task.ID)
 			}
 		}
@@ -129,7 +129,7 @@ func (c *Coordinator) GetTaskSummaries(ctx context.Context) ([]TaskSummary, erro
 			Owner:       result.Owner,
 			DependsOn:   task.DependsOn,
 			IsBlocked:   status.IsBlocked(),
-			IsUnlocked:  status.IsPending() && isUnlocked(task, state),
+			IsUnlocked:  status.IsPending() && isUnlocked(task, state, c.externalResolver),
 		}
 
 		summaries = append(summaries, summary)
@@ -214,11 +214,39 @@ func (c *Coordinator) GetInProgressTasks(ctx context.Context) ([]TaskSummary, er
 }
 
 // isUnlocked checks if a task has all its dependencies completed.
-func isUnlocked(task planning.Task, state *planning.ExecutionState) bool {
-	for _, depID := range task.DependsOn {
+// ExternalStatusResolver reports the status of a task in another
+// sub-project. Supplied by the application layer, which knows how to reach
+// .roady/projects/<name>/; the domain does not.
+type ExternalStatusResolver interface {
+	ExternalTaskStatus(project, taskID string) (planning.TaskStatus, bool)
+}
+
+// isUnlocked reports whether every dependency is satisfied.
+//
+// Local and cross-project edges are separated deliberately. Passing an
+// external reference like "@auth:task-signup" to the local state lookup
+// returns "pending" — not because the work is pending, but because no such
+// local task exists — which silently pinned the task as blocked forever with
+// no way to resolve it and no explanation.
+func isUnlocked(task planning.Task, state *planning.ExecutionState, resolver ExternalStatusResolver) bool {
+	for _, depID := range task.LocalDependencies() {
 		if !state.GetTaskStatus(depID).IsComplete() {
 			return false
 		}
 	}
+
+	for _, ref := range task.ExternalDependencies() {
+		// Without a resolver the honest answer is "cannot confirm", and an
+		// unconfirmed dependency blocks. Reporting ready would hand an agent
+		// work whose prerequisite may not exist.
+		if resolver == nil {
+			return false
+		}
+		status, found := resolver.ExternalTaskStatus(ref.Project, ref.TaskID)
+		if !found || !status.IsComplete() {
+			return false
+		}
+	}
+
 	return true
 }

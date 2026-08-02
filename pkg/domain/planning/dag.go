@@ -27,7 +27,11 @@ func (p *Plan) ValidateDAG() error {
 			return nil
 		}
 
-		for _, depID := range task.DependsOn {
+		// Only local edges participate in cycle detection. A cross-project
+		// dependency cannot be resolved from inside one plan, and treating
+		// it as an unknown task would have worked here only by accident —
+		// the branch above silently tolerates anything it cannot find.
+		for _, depID := range task.LocalDependencies() {
 			if !visited[depID] {
 				if err := visit(depID); err != nil {
 					return err

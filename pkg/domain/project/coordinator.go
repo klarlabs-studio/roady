@@ -37,6 +37,16 @@ type Coordinator struct {
 	planRepo  PlanRepository
 	stateRepo StateRepository
 	publisher EventPublisher
+
+	// externalResolver answers cross-project dependency lookups. Optional:
+	// a nil resolver makes external dependencies block, which is the safe
+	// reading when their status cannot be confirmed.
+	externalResolver ExternalStatusResolver
+}
+
+// SetExternalResolver supplies cross-project dependency resolution.
+func (c *Coordinator) SetExternalResolver(r ExternalStatusResolver) {
+	c.externalResolver = r
 }
 
 // NewCoordinator creates a new Coordinator.
