@@ -79,9 +79,22 @@ func (d *DriftDetector) DetectStalenessDrift(plan *planning.Plan, activity RepoA
 		Category:    CategoryStale,
 		Severity:    severity,
 		ComponentID: plan.ID,
+		// Say what was measured, not what was inferred from it. The field read
+		// here is a timestamp, so "has not changed" was a claim the check could
+		// not support — and one the operator could disprove by looking at the
+		// file they had just edited.
 		Message: fmt.Sprintf(
-			"The plan has not changed in %d days while %d commits landed. It is unlikely to still describe the work being done.",
+			"The plan was last updated %d days ago; %d commits have landed since. It may no longer describe the work being done.",
 			days, activity.CommitsSincePlan),
-		Hint: "Re-run 'roady spec analyze' and 'roady plan generate' to bring the plan back to what is actually being built, or archive it if the work is finished.",
+		// The non-destructive routes come first. Regenerating is listed last
+		// and with its cost stated: the reconciler keeps tasks it did not
+		// propose, but a task whose id matches a spec requirement is replaced
+		// wholesale, so hand-written titles, descriptions and estimates on
+		// those are lost. A curated plan is exactly the case where that is the
+		// wrong move, and it was previously the only advice offered.
+		Hint: "If the work is finished, verify the remaining tasks or archive the plan. " +
+			"If work landed that no task covers, add it to the spec and reconcile — note that " +
+			"'roady plan generate' keeps tasks it does not propose but overwrites any task whose id " +
+			"matches a spec requirement, so curated titles and descriptions on those are lost.",
 	}}
 }

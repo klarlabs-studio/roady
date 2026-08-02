@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/felixgeelhaar/roady/pkg/domain/planning"
 )
@@ -13,6 +14,16 @@ func (r *FilesystemRepository) SavePlan(p *planning.Plan) error {
 	if err != nil {
 		return err
 	}
+
+	// Stamp the write here, at the one funnel every plan mutation passes
+	// through, rather than leaving each caller to remember. Approving a plan
+	// rewrote plan.json without touching UpdatedAt, so a plan could be modified
+	// while its timestamp stayed months old — and drift, which reads exactly
+	// this field to decide whether the repository has left the plan behind,
+	// then reported it stale at critical severity and pointed the operator at a
+	// regeneration they did not need. A field that only some writers maintain
+	// is a field that lies. See issue #76.
+	p.UpdatedAt = time.Now()
 
 	data, err := json.MarshalIndent(p, "", "  ")
 	if err != nil {

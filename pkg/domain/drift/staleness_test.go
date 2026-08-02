@@ -119,3 +119,43 @@ func TestStalenessSeverityScalesWithDivergence(t *testing.T) {
 		t.Errorf("500 commits behind (%s) should outrank 20 (%s)", severe[0].Severity, modest[0].Severity)
 	}
 }
+
+// The message claimed the plan "has not changed", which is provably false the
+// moment anyone edits it — the field it reads is a timestamp, not a diff. And
+// the hint recommended regenerating, which on a curated plan overwrites every
+// task whose id matches a spec requirement. At critical severity that steered
+// the operator toward destroying the curation that should have cleared the
+// finding. See issue #76.
+func TestStalenessMessageAndHintAreAccurate(t *testing.T) {
+	detector := NewDriftDetector()
+	now := time.Now()
+	plan := &planning.Plan{
+		ID:        "plan-1",
+		UpdatedAt: now.Add(-90 * 24 * time.Hour),
+		Tasks:     []planning.Task{{ID: "t1", Title: "One"}},
+	}
+
+	issues := detector.DetectStalenessDrift(plan, RepoActivity{CommitsSincePlan: 60, LastCommitAt: now}, now)
+	if len(issues) != 1 {
+		t.Fatalf("got %d issues, want 1", len(issues))
+	}
+	msg, hint := issues[0].Message, issues[0].Hint
+
+	// Says what it actually measured.
+	if !strings.Contains(msg, "last updated") {
+		t.Errorf("message does not say what it measured: %q", msg)
+	}
+	if strings.Contains(msg, "has not changed") {
+		t.Errorf("message still claims the plan has not changed: %q", msg)
+	}
+
+	// The hint must not send the operator at a regeneration without saying
+	// what it costs.
+	if strings.Contains(hint, "roady plan generate") && !strings.Contains(hint, "overwrit") {
+		t.Errorf("hint recommends regenerating without naming what it overwrites: %q", hint)
+	}
+	// It should offer the non-destructive route first.
+	if !strings.Contains(hint, "verify") && !strings.Contains(hint, "archive") {
+		t.Errorf("hint offers no non-destructive option: %q", hint)
+	}
+}
