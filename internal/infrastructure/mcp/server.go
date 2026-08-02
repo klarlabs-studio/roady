@@ -282,6 +282,7 @@ type ExplainSpecArgs struct {
 }
 
 type ExplainDriftArgs struct {
+	Patch       bool   `json:"patch,omitempty" jsonschema:"description=Ask for a unified diff that closes the drift instead of an explanation. Intent and staleness drift are excluded: they are decisions about what to build, not changes a diff can make."`
 	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
 	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
 }
@@ -900,7 +901,12 @@ func (s *Server) handleExplainDrift(ctx context.Context, args ExplainDriftArgs) 
 	if err != nil {
 		return mcpErr("Failed to detect drift. Ensure both spec and plan exist."), nil
 	}
-	req, err := svc.Prompt.ExplainDrift(ctx, report)
+	build := svc.Prompt.ExplainDrift
+	if args.Patch {
+		build = svc.Prompt.PatchDrift
+	}
+
+	req, err := build(ctx, report)
 	if err != nil {
 		return mcpErr(err.Error()), nil
 	}

@@ -16,6 +16,9 @@ var driftCmd = &cobra.Command{
 // driftFailOn is the severity at or above which drift fails the command.
 var driftFailOn string
 
+// driftWantPatch switches drift explain from prose to a patch request.
+var driftWantPatch bool
+
 // driftGateError reports how many issues tripped the gate, so a CI log says
 // what to fix rather than only that something is wrong.
 func driftGateError(gating []drift.Issue, threshold drift.Severity) error {
@@ -36,7 +39,14 @@ var driftExplainCmd = &cobra.Command{
 			return MapError(fmt.Errorf("failed to detect drift: %w", err))
 		}
 
-		req, err := services.Prompt.ExplainDrift(cmd.Context(), report)
+		// --patch asks for a diff instead of prose. Same context, different
+		// artifact: one is read, the other is applied and reviewed.
+		build := services.Prompt.ExplainDrift
+		if driftWantPatch {
+			build = services.Prompt.PatchDrift
+		}
+
+		req, err := build(cmd.Context(), report)
 		if err != nil {
 			return MapError(err)
 		}
@@ -131,6 +141,7 @@ func init() {
 	driftDetectCmd.Flags().StringP("output", "o", "text", "Output format (text, json)")
 	driftDetectCmd.Flags().StringVar(&driftFailOn, "fail-on", "", "Exit non-zero only for drift at or above this severity (low, medium, high, critical)")
 	driftCmd.AddCommand(driftDetectCmd)
+	driftExplainCmd.Flags().BoolVar(&driftWantPatch, "patch", false, "Ask for a unified diff that closes the drift, instead of an explanation")
 	addPromptJSONFlag(driftExplainCmd)
 	driftCmd.AddCommand(driftExplainCmd)
 	driftCmd.AddCommand(driftAcceptCmd)

@@ -26,6 +26,7 @@ const (
 	OpSuggestPriorities Operation = "suggest_priorities"
 	OpQueryProject      Operation = "query_project"
 	OpExplainDrift      Operation = "explain_drift"
+	OpPatchDrift        Operation = "patch_drift"
 )
 
 // Request is everything needed to run one inference and return the result to

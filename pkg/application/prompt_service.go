@@ -266,6 +266,80 @@ func (s *PromptService) ExplainDrift(_ context.Context, report *drift.Report) (*
 	}, nil
 }
 
+// PatchDrift builds a request asking for a patch that closes the drift,
+// rather than prose explaining it.
+//
+// The distinction is what the caller does next. ExplainDrift produces
+// something a person reads; this produces something applied and reviewed, so
+// it names the file each issue points at and asks for a unified diff. Roady
+// frames the question and does not answer it — the caller's model has the
+// working tree in view and Roady does not.
+func (s *PromptService) PatchDrift(_ context.Context, report *drift.Report) (*prompt.Request, error) {
+	if err := s.checkPolicy(); err != nil {
+		return nil, err
+	}
+	if report == nil || len(report.Issues) == 0 {
+		return nil, fmt.Errorf("no drift issues to patch")
+	}
+
+	issues := make([]drift.Issue, len(report.Issues))
+	copy(issues, report.Issues)
+	sort.SliceStable(issues, func(i, j int) bool {
+		return driftSeverityRank(issues[i].Severity) < driftSeverityRank(issues[j].Severity)
+	})
+
+	// Only code drift is closable by a diff. Everything else is a planning
+	// decision: intent drift means the spec moved, plan drift means the task
+	// list needs regenerating, staleness means the plan was abandoned. Handing
+	// any of those to a model asking for a patch invites it to rewrite the
+	// specification or the plan to match the code — the exact failure Roady
+	// exists to catch.
+	var patchable, advisory []drift.Issue
+	for _, i := range issues {
+		if i.Type == drift.DriftTypeCode {
+			patchable = append(patchable, i)
+			continue
+		}
+		advisory = append(advisory, i)
+	}
+
+	if len(patchable) == 0 {
+		return nil, fmt.Errorf("the drift found is not patchable: only code drift can be closed by a diff. Spec drift means intent moved ('roady drift accept' or update the spec); plan drift means the task list is out of date ('roady plan generate'); staleness means the plan was abandoned. Use 'roady drift explain' to review it")
+	}
+
+	var b strings.Builder
+	b.WriteString("Produce a patch that closes this drift between the project's intent and its code.\n\n")
+	b.WriteString("Rules:\n")
+	b.WriteString("- Return a unified diff and nothing else.\n")
+	b.WriteString("- Change code to match the stated intent, never the reverse.\n")
+	b.WriteString("- Leave anything you cannot close confidently; a partial patch beats a wrong one.\n\n")
+	b.WriteString("Issues:\n")
+	for _, i := range patchable {
+		fmt.Fprintf(&b, "- [%s/%s] %s: %s\n", i.Severity, i.Type, i.ComponentID, i.Message)
+		if i.Path != "" {
+			fmt.Fprintf(&b, "  file: %s\n", i.Path)
+		}
+		if i.Hint != "" {
+			fmt.Fprintf(&b, "  hint: %s\n", i.Hint)
+		}
+	}
+
+	if len(advisory) > 0 {
+		b.WriteString("\nNot for patching — these are decisions, listed for context only:\n")
+		for _, i := range advisory {
+			fmt.Fprintf(&b, "- [%s/%s] %s\n", i.Severity, i.Type, i.Message)
+		}
+	}
+
+	return &prompt.Request{
+		Operation:      prompt.OpPatchDrift,
+		System:         "You write minimal, reviewable patches. You change code to match intent, never intent to match code.",
+		Prompt:         b.String(),
+		ExpectedFormat: "A unified diff (git apply compatible), and nothing else.",
+		Guidance:       "Produce the diff yourself and open it as a pull request. Once merged, re-run 'roady drift detect' to confirm it closed.",
+	}, nil
+}
+
 func driftSeverityRank(s drift.Severity) int {
 	switch s {
 	case drift.SeverityCritical:

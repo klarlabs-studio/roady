@@ -95,6 +95,24 @@ jobs:
 `|| true` is deliberate: the detector exiting non-zero is the signal to open an
 issue, not a reason to fail the job.
 
+## Asking for the patch
+
+`roady drift explain --patch` returns a request for a unified diff rather than
+prose, with the file each issue points at included.
+
+```bash
+roady drift explain --patch          # the prompt, on stdout
+roady drift explain --patch --json   # the whole request, for an agent
+```
+
+Only **code** drift is offered for patching. Spec drift means intent moved,
+plan drift means the task list needs regenerating, and staleness means the
+plan was abandoned — none of those are things a diff can settle, and handing
+them to a model asking for a patch invites it to rewrite the specification or
+the plan to match the code. That is the failure Roady exists to catch, so the
+command refuses and says which remedy applies instead. Any such issues are
+still listed in the prompt as context.
+
 ## Accepting drift
 
 Drift that reflects a deliberate change is not a defect. `roady drift accept`

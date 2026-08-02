@@ -1,6 +1,6 @@
 {
   "project_id": "test-refactor",
-  "version": 127,
+  "version": 128,
   "task_states": {
     "task-dispatch-contract": {
       "status": "pending",
@@ -13,8 +13,10 @@
       "elapsed_minutes": 0
     },
     "task-patch-prompt": {
-      "status": "pending",
+      "status": "in_progress",
       "path": "",
+      "owner": "Felix Geelhaar",
+      "started_at": "2026-08-02T11:38:04.218008+02:00",
       "elapsed_minutes": 0
     },
     "task-pr-drift-gate": {
@@ -83,5 +85,5 @@
       "elapsed_minutes": 0
     }
   },
-  "updated_at": "2026-08-02T11:32:49.755359+02:00"
+  "updated_at": "2026-08-02T11:38:04.218008+02:00"
 }
