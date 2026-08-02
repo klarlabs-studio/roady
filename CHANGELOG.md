@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — one audit-chain verifier, not two
+
+Two services write to `events.jsonl` and both answer "is this log intact?".
+They disagreed. `AuditService` verified it as a hash-linked graph;
+`EventSourcedAuditService` still required each entry to follow the previous
+line and so reported tampering for the branch-and-merge shape concurrent
+appends legitimately produce — the case `AuditService` was fixed for in 0.14.0
+and this copy never received. On the same file at the same moment the CLI said
+"intact and verified" while MCP reported a violation.
+
+An audit chain whose verdict depends on which code path asked is not evidence
+of anything.
+
+- The graph semantics now live once, in `domain.VerifyChain`. Both services map
+  their event type into `domain.ChainEntry` and delegate; hashing stays with
+  each type, since they hash different fields.
+- `events.BaseEvent` gains `HashMatches` and `Verifiable`, so the event-sourced
+  side can also tell an unknown hash algorithm from tampering rather than
+  calling both "possible tampering".
+- The old copy also built finding indices with `string(rune('0'+i))`, which
+  emits punctuation past index 9.
+- Pinned by tests that a branching and an out-of-order log verify clean, and
+  that a removed parent still does not — mutation-checked by restoring the
+  linear requirement, which fails them.
+
 ## [0.19.0] - 2026-08-02
 
 Semantic drift, and the surfaces reaching parity.

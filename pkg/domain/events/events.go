@@ -276,3 +276,24 @@ const (
 	AggregateTypeSync    = "sync"
 	AggregateTypeBilling = "billing"
 )
+
+// HashAlgoCurrent is the algorithm new events are stamped with. It matches
+// domain.HashAlgoCurrent: both writers append to the same events.jsonl, so a
+// stamp that differed between them would make the version meaningless.
+const HashAlgoCurrent = "sha256-canonical-v1"
+
+// HashMatches reports whether the recorded hash reproduces from the content.
+func (e *BaseEvent) HashMatches() bool {
+	return e.Hash == e.CalculateHash()
+}
+
+// Verifiable reports whether this entry can be checked at all with the
+// algorithms this build knows.
+//
+// An entry stamped with an unknown algorithm is not evidence of tampering — it
+// is evidence that it was written by a different version of Roady. Saying
+// "possible tampering" in that case is a false accusation, and false
+// accusations are how a security signal gets ignored.
+func (e *BaseEvent) Verifiable() bool {
+	return e.HashAlgo == "" || e.HashAlgo == HashAlgoCurrent
+}

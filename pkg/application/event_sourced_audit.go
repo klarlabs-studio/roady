@@ -156,30 +156,37 @@ func (s *EventSourcedAuditService) GetVerificationVelocity() float64 {
 	return s.velProj.GetVerificationVelocity()
 }
 
-// VerifyIntegrity checks the hash chain for tampering.
+// VerifyIntegrity checks the audit chain.
+//
+// It delegates to domain.VerifyChain, the same implementation AuditService
+// uses. This function previously carried its own, which required each entry to
+// follow the previous line and so reported tampering for the branch-and-merge
+// shape concurrent appends legitimately produce — the case AuditService was
+// fixed for in 0.14.0 and this copy never received. The same events.jsonl
+// could be pronounced intact by one service and tampered-with by the other at
+// the same moment, which makes the verdict evidence of nothing.
 func (s *EventSourcedAuditService) VerifyIntegrity() ([]string, error) {
 	evts, err := s.store.LoadAll()
 	if err != nil {
 		return nil, err
 	}
 
-	var violations []string
-	lastHash := ""
-
-	for i, e := range evts {
-		if e.PrevHash != lastHash {
-			violations = append(violations, "Event "+e.ID+": PrevHash mismatch at index "+string(rune('0'+i)))
+	entries := make([]domain.ChainEntry, 0, len(evts))
+	for _, e := range evts {
+		if e == nil {
+			continue
 		}
-
-		expected := e.CalculateHash()
-		if e.Hash != expected {
-			violations = append(violations, "Event "+e.ID+": Hash mismatch - possible tampering")
-		}
-
-		lastHash = e.Hash
+		entries = append(entries, domain.ChainEntry{
+			ID:         e.ID,
+			Hash:       e.Hash,
+			PrevHash:   e.PrevHash,
+			HashAlgo:   e.HashAlgo,
+			Verifiable: e.Verifiable(),
+			Matches:    e.HashMatches(),
+		})
 	}
 
-	return violations, nil
+	return domain.VerifyChain(entries), nil
 }
 
 // LoadEvents returns all events from the store.

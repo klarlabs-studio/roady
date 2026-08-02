@@ -1,7 +1,6 @@
 package application
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/felixgeelhaar/roady/pkg/domain"
@@ -80,75 +79,20 @@ func (s *AuditService) VerifyIntegrity() ([]string, error) {
 		return nil, err
 	}
 
-	var violations []string
-
-	// The log is verified as a hash-linked graph rather than a strict
-	// sequence. Two collaborators appending concurrently produce branches
-	// from a shared parent, and git union-merges them in whatever order the
-	// timestamps fall; requiring each event to follow the previous *line*
-	// rejected every such merge, which is what made concurrent work
-	// impossible.
-	//
-	// Nothing is given up by relaxing order, because CalculateHash covers
-	// PrevHash: altering an event's content or reparenting it breaks that
-	// event's own hash. What the links still prove is that no event which
-	// something else references has been removed.
-	present := make(map[string]bool, len(events))
-	seenIDs := make(map[string]int, len(events))
-	for i := range events {
-		present[events[i].Hash] = true
-		if first, dup := seenIDs[events[i].ID]; dup {
-			violations = append(violations, fmt.Sprintf(
-				"Event %d (%s): duplicate of event %d. The log contains the same event twice.",
-				i, events[i].ID, first))
-			continue
-		}
-		seenIDs[events[i].ID] = i
-	}
-
+	entries := make([]domain.ChainEntry, 0, len(events))
 	for i := range events {
 		e := events[i]
-
-		// 1. An entry with no hash was never in the chain. That is a
-		// different fact from a hash that does not match, and conflating
-		// them reads as tampering when the real cause is usually something
-		// appending to the log without going through Roady.
-		if e.Hash == "" {
-			violations = append(violations, fmt.Sprintf(
-				"Event %d (%s): recorded without a hash, so it is outside the chain. Something appended to events.jsonl directly instead of through roady.",
-				i, orUnidentified(e.ID)))
-			continue
-		}
-
-		// 2. An entry stamped with an algorithm this build does not know
-		// cannot be checked. Report that plainly instead of calling it
-		// tampering.
-		if !e.Verifiable() {
-			violations = append(violations, fmt.Sprintf(
-				"Event %d (%s): written with hash algorithm %q, which this build cannot verify. Upgrade roady or treat this entry as unverified.",
-				i, e.ID, e.HashAlgo))
-			continue
-		}
-
-		// 3. Self-hash. Covers content and parentage together. Either
-		// writer's scheme is accepted — see Event.HashMatches.
-		if !e.HashMatches() {
-			violations = append(violations, fmt.Sprintf(
-				"Event %d (%s): content hash does not reproduce. Either the entry was altered, or it predates a change to the hash algorithm (see docs/audit-grc.md).",
-				i, e.ID))
-			continue
-		}
-
-		// 2. Parent resolution. An empty PrevHash is a root, which a fresh
-		// log and each independently-started branch legitimately have.
-		if e.PrevHash != "" && !present[e.PrevHash] {
-			violations = append(violations, fmt.Sprintf(
-				"Event %d (%s): missing parent %s. An earlier event has been removed.",
-				i, e.ID, shortHash(e.PrevHash)))
-		}
+		entries = append(entries, domain.ChainEntry{
+			ID:         e.ID,
+			Hash:       e.Hash,
+			PrevHash:   e.PrevHash,
+			HashAlgo:   e.HashAlgo,
+			Verifiable: e.Verifiable(),
+			Matches:    e.HashMatches(),
+		})
 	}
 
-	return violations, nil
+	return domain.VerifyChain(entries), nil
 }
 
 // orUnidentified names an entry that arrived without an ID, which is itself
