@@ -9,7 +9,14 @@ intended **open-core boundary** for a future hosted product.
 
 ---
 
-## Now (v0.20.0 — shipped)
+## Now (v0.21.0 — shipped)
+
+- **Derived-state reconciliation** — `roady spec lock` re-captures the drift
+  baseline from the current spec and reconciles execution state with it, and
+  `spec validate` reports when they disagree instead of answering "valid".
+  Found by adopting Roady in an existing project (#77).
+
+## Earlier (v0.20.0 — shipped)
 
 - **Correctness sweep** — one audit-chain verifier instead of two that
   disagreed on the same log; `roady_timeline` reading the same source as the

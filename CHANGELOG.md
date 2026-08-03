@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.0] - 2026-08-03
+
+Adopting Roady in an existing project left its derived state describing the
+template it was initialised from, and every check said fine.
+
+A minor release rather than a patch: it adds `roady spec lock`, `roady_spec_lock`,
+and MCP schema 3.5.0.
+
 ### Fixed — derived state was never reconciled when the spec was replaced (#77)
 
 `roady init` writes `spec.yaml`, `spec.lock.json` and `state.json` together, so
