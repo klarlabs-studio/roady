@@ -42,9 +42,22 @@ scan:
     # are built from are scanned normally.
     # Classification: Acceptable Pattern (generated). Last reviewed: 2026-08-03
     - internal/infrastructure/mcp/dist/
-
-suppressions:
-  - rule_id: TAINT-004
-    paths:
-      - internal/infrastructure/cli/stderr.go
-    reason: "ROADY_MCP_LOG names the log file for the process the operator is already running; no privilege boundary is crossed"
+    # TAINT-004: ROADY_MCP_LOG flows to os.OpenFile. Reviewed and accepted —
+    # the variable names the log file for a process the operator is already
+    # running, so it crosses no privilege boundary.
+    #
+    # This is a whole-file exclusion, which is otherwise against the rule
+    # above, because nox offers no working way to accept a single finding
+    # here. Its baseline is keyed by a fingerprint that the taint plugin
+    # derives partly from the scan directory:
+    #
+    #   local checkout  f2fc80a3...   git worktree  6a6e14b1...
+    #   CI runner       2ec40d1d...   (same commit, same content)
+    #
+    # so a baselined taint finding is only valid on the machine that made it.
+    # A `suppressions:` block and a `// nox:ignore` comment are both accepted
+    # silently and do nothing. The file is 36 lines and does one thing, so the
+    # blast radius of excluding it is small — but revisit this once the plugin
+    # emits stable fingerprints.
+    # Classification: False Positive (reviewed). Last reviewed: 2026-08-03
+    - internal/infrastructure/cli/stderr.go
