@@ -84,6 +84,17 @@ var specValidateCmd = &cobra.Command{
 		}
 
 		fmt.Println("Spec is valid and correctly formatted.")
+
+		// Shape is not agreement. The lock is the drift baseline, so a spec
+		// that validates while the lock describes a different project is a
+		// false green at the moment it matters most — the first real drift
+		// check would compare against a spec this project never had.
+		status, sErr := application.NewSpecService(repo).LockStatus()
+		if sErr == nil {
+			for _, p := range status.Problems() {
+				fmt.Fprintf(os.Stderr, "warning: %s\n", p)
+			}
+		}
 		return nil
 	},
 }
@@ -170,7 +181,47 @@ var specReviewCmd = &cobra.Command{
 	},
 }
 
+var specLockCmd = &cobra.Command{
+	Use:   "lock",
+	Short: "Re-capture the drift baseline from the current spec",
+	Long: `Re-capture spec.lock.json from spec.yaml, and reconcile state.json's
+project id with it.
+
+The lock is what every drift check compares against. ` + "`roady init`" + ` writes it
+alongside the spec, so they agree — but the ordinary way to adopt Roady in an
+existing project is to replace the generated spec, and nothing re-derived the
+lock from it. Until now the only way to fix that was to hand-write the JSON,
+which works until it silently does not.
+
+Re-running is a no-op when everything already agrees.`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cwd, err := getProjectRoot()
+		if err != nil {
+			return fmt.Errorf("resolve project path: %w", err)
+		}
+		repo := wiring.NewWorkspace(cwd).Repo
+
+		result, err := application.NewSpecService(repo).WriteLock()
+		if err != nil {
+			return MapError(err)
+		}
+
+		if !result.Changed() {
+			fmt.Printf("Already in sync with spec %q; nothing to do.\n", result.SpecID)
+			return nil
+		}
+		if result.LockUpdated {
+			fmt.Printf("Re-captured spec.lock.json for %q.\n", result.SpecID)
+		}
+		if result.StateUpdated {
+			fmt.Printf("Reconciled state.json project_id to %q.\n", result.SpecID)
+		}
+		return nil
+	},
+}
+
 func init() {
+	specCmd.AddCommand(specLockCmd)
 	specCmd.AddCommand(specAddCmd)
 	specAnalyzeCmd.Flags().BoolVar(&reconcileSpec, "reconcile", false, "Removed: Roady no longer runs inference. Use 'roady spec explain' and write the result back with 'roady spec add'")
 	specCmd.AddCommand(specImportCmd)

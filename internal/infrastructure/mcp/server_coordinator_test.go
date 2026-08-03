@@ -547,3 +547,35 @@ func TestTimeline_ReadsTheSameSourceAsTheCLI(t *testing.T) {
 		t.Errorf("MCP reports %d events, the CLI's source has %d", got, len(want))
 	}
 }
+
+// spec.lock.json is the drift baseline. `roady init` writes it with the spec,
+// but adopting Roady in an existing project means replacing that spec — and
+// nothing re-derived the lock, so drift was measured against a spec the
+// project never had. See issue #77.
+func TestHandleSpecLock_ReportsWhatItReconciled(t *testing.T) {
+	server := setupCoordinatorTestServer(t)
+	ctx := context.Background()
+
+	res, err := server.handleSpecLock(ctx, PlanMutateArgs{})
+	if err != nil {
+		t.Fatalf("handleSpecLock: %v", err)
+	}
+	out, ok := res.(map[string]any)
+	if !ok {
+		t.Fatalf("got %T, want a map", res)
+	}
+	for _, key := range []string{"spec_id", "lock_updated", "state_updated", "changed"} {
+		if _, has := out[key]; !has {
+			t.Errorf("result does not report %q", key)
+		}
+	}
+
+	// Re-running must be a no-op, so the tool is safe in an agent loop.
+	again, err := server.handleSpecLock(ctx, PlanMutateArgs{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if again.(map[string]any)["changed"].(bool) {
+		t.Error("a second call reported changes; it should be idempotent")
+	}
+}

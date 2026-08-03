@@ -529,6 +529,11 @@ func (s *Server) registerTools() {
 		UIResource("ui://roady/drift").
 		Handler(s.handleRecordSemanticDrift)
 
+	s.tool("roady_spec_lock").
+		Description("Re-capture spec.lock.json (the drift baseline) from the current spec, and reconcile state.json's project id. A no-op when they already agree.").
+		UIResource("ui://roady/spec").
+		Handler(s.handleSpecLock)
+
 	// Parity tools: these operations existed only on the CLI, so an agent could
 	// read a project but not maintain one — prune a stale plan, reject a bad
 	// one, verify the audit chain, or rebuild state after a loss.
@@ -1275,6 +1280,23 @@ func (s *Server) handleRecordSemanticDrift(ctx context.Context, args RecordSeman
 		"divergent": len(report.Issues),
 		"issues":    report.Issues,
 		"judged":    len(args.Judgements),
+	}, nil
+}
+
+func (s *Server) handleSpecLock(ctx context.Context, args PlanMutateArgs) (any, error) {
+	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
+	if err != nil {
+		return mcpErr("Failed to load project at the given path."), nil
+	}
+	result, err := svc.Spec.WriteLock()
+	if err != nil {
+		return mcpErr(err.Error()), nil
+	}
+	return map[string]any{
+		"spec_id":       result.SpecID,
+		"lock_updated":  result.LockUpdated,
+		"state_updated": result.StateUpdated,
+		"changed":       result.Changed(),
 	}, nil
 }
 

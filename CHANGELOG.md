@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — derived state was never reconciled when the spec was replaced (#77)
+
+`roady init` writes `spec.yaml`, `spec.lock.json` and `state.json` together, so
+they agree by construction. The ordinary way to adopt Roady in an existing
+project is then to replace the generated spec — and nothing re-derived the
+other two. The lock kept the template's identity while being the baseline every
+drift check compares against, so drift was measured against a spec the project
+never had, and `spec validate` answered "Spec is valid and correctly formatted."
+
+- **New: `roady spec lock`** and `roady_spec_lock`. Re-captures the baseline
+  from the current spec and reconciles `state.json`'s `project_id`. A no-op
+  when they already agree, so it is safe in a script or an agent loop. There
+  was previously no supported way to do either — the reporter regenerated the
+  lock by hand with a Python one-liner.
+- **`spec validate` now says what it did not check.** It validates shape, which
+  is a defensible split, but a bare success read as "everything here is fine".
+  It now warns when the lock or the execution state disagrees with the spec,
+  and names the remedy. The command still succeeds: disagreement is drift's
+  verdict to render, and `roady drift detect` reports it as `spec/MISMATCH`.
+
+MCP schema 3.5.0.
+
 ## [0.20.0] - 2026-08-03
 
 One audit-chain verifier instead of two that disagreed, and the surfaces
