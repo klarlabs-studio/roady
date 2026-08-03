@@ -521710,6 +521710,685 @@
       "file_path": ".nox/baseline.json",
       "severity": "high",
       "created_at": "2026-03-20T21:15:41.023675Z"
+    },
+    {
+      "fingerprint": "087ac3db4bf907d0cccffcb552a4ac95150df0fe985bb525922ef2d173e8c4c0",
+      "rule_id": "AI-006",
+      "file_path": "cmd/roady-plugin-mock/main.go",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "952d1bb0923f61eee75841158d557804aa84ee470021ce2b40d74a8e8ad03093",
+      "rule_id": "AI-006",
+      "file_path": "internal/infrastructure/cli/dispatch.go",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "ada9c852f4bd3fcfd26b550dcad2c64eeab850974c22fc169ac94634d36198f3",
+      "rule_id": "AI-006",
+      "file_path": "internal/infrastructure/cli/dispatch.go",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "ff8ed4cbc93547aacdbb80a17ba21108c45bec7eb9b424b9186b8ddea45adb1c",
+      "rule_id": "AI-006",
+      "file_path": "internal/infrastructure/cli/dispatch.go",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "08e4626f9fe7bf1273524984d7ddc0c3d1cbfc0a567b565ddf975ddd0107889a",
+      "rule_id": "AI-006",
+      "file_path": "internal/infrastructure/cli/dispatch.go",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "7c846242d8d0a155681674fc7f4943a7e0d87b56b0c0614b541ca95559f33c47",
+      "rule_id": "AI-006",
+      "file_path": "internal/infrastructure/cli/drift.go",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "b9c17275a92acae1c3c832d6ba68d34756ef045bd4f9be1ddf744fc3c6ab0610",
+      "rule_id": "AI-006",
+      "file_path": "internal/infrastructure/cli/drift_semantic.go",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "762ad020b1639b082a516cfef3022ef4eb7004fe976f3c098f24c5af36b09124",
+      "rule_id": "AI-006",
+      "file_path": "internal/infrastructure/cli/forecast.go",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "ffd0af1199e447c6ebba792493bd30c55155eb3628886b0bc505444ffa3f1cd4",
+      "rule_id": "AI-006",
+      "file_path": "internal/infrastructure/cli/forecast.go",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "e9571df932adc38f8dec8047bd2659b9b194c96c820f0cd12dbed0cb054f32a1",
+      "rule_id": "AI-006",
+      "file_path": "internal/infrastructure/cli/forecast.go",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "5db8823387892d0e3cda1efd1590715c4366524fdf3dbc2ad523b2ec1003b6a4",
+      "rule_id": "AI-006",
+      "file_path": "internal/infrastructure/cli/init.go",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "cdd0911727d1f037d8614648d52ba35b74cd902777c3c8a0eeb313ae1bd5b02c",
+      "rule_id": "AI-006",
+      "file_path": "internal/infrastructure/cli/plan.go",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "f99a1b9594f94bc3f2c1784665e91bcdf8619b272db3908121750dadb61388e5",
+      "rule_id": "AI-006",
+      "file_path": "internal/infrastructure/cli/prompt_output.go",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "a53c879bdb551882aae5834e8f6546437553a988ec95b34238fa5f12f856ac43",
+      "rule_id": "AI-006",
+      "file_path": "internal/infrastructure/cli/prompt_output.go",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "d54c89eb4cbd2bedc37b243d2438fa8b4d0e87d698c1afa23327bca383f4f31f",
+      "rule_id": "AI-006",
+      "file_path": "internal/infrastructure/cli/query.go",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "a7f9dfe95dceffc8ff533f7ae1d7bf97c85536ecfaf07741587c63e50196c01c",
+      "rule_id": "AI-006",
+      "file_path": "internal/infrastructure/cli/spec.go",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "b8f97123a91c986b9ba3cc68668779443abf60c9d9177936a57c8d4814d88d1e",
+      "rule_id": "AI-006",
+      "file_path": "pkg/domain/events/handlers.go",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "04c8721142d62b3b0e0882b3b8a6b1fcd50d3cb619e55656de89a3a103b4d8b7",
+      "rule_id": "AI-006",
+      "file_path": "pkg/infrastructure/report/markdown.go",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "e63a5a16b7fb97ae0d6284db45c6262967d48bc02b1072b1d25265601b2f8763",
+      "rule_id": "AI-021",
+      "file_path": "pkg/plugin/loader_test.go",
+      "severity": "low",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "dba6cc0a3d228a2c980481a839906b718e021722507c1872d0372c6069096b7d",
+      "rule_id": "DATA-001",
+      "file_path": ".github/roady-sync.example.yml",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "b0caabbc42eb9dcc2dd90d3f2df040505deb0cde9bc47a9df5aef86070955c46",
+      "rule_id": "DATA-001",
+      "file_path": "docs/docs/index.html",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "231c027b9b10394dba749c9b50549cd7779fd8573a1afd5fb3b9070e6cc5e61c",
+      "rule_id": "DATA-001",
+      "file_path": "docs/docs/index.html",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "3e2974292f627a372a28297bbe36a398abff2957a7065b2bc01a9dd635f4e457",
+      "rule_id": "DATA-001",
+      "file_path": "internal/infrastructure/cli/coverage_cli_test.go",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "1df9cf2348c405746dd52b5f50f800cd2388eb60d10b431cc8a59f7dc507784e",
+      "rule_id": "DATA-001",
+      "file_path": "internal/infrastructure/cli/coverage_cli_test.go",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "54d871c693b84fc4ec382ed60717edeff2fbfbb9c0899c1b702e835cf41eaf6d",
+      "rule_id": "DATA-001",
+      "file_path": "pkg/application/coverage_boost_test.go",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "7bd3000f117da0ec77b8628d1cd99d0c341428ceed5173f37684d80c7b982894",
+      "rule_id": "DATA-001",
+      "file_path": "website/src/components/HeroSection.vue",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "704ee9937934272c99aa904f65dbd9413f62a662035954b80dfda71a7b102b7b",
+      "rule_id": "DATA-001",
+      "file_path": "website/src/components/HeroSection.vue",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "940fc7296aba6cfdf17e795add8cc9f27eb587836ad10564e6ab360c41fcc38e",
+      "rule_id": "DATA-001",
+      "file_path": "website/src/pages/docs.astro",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "fc1b6c19caf26388bfcf09d42c99a642821bec865f8ecbe8131b8719ace44910",
+      "rule_id": "DATA-001",
+      "file_path": "website/src/pages/docs.astro",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "6af577d33d72dfa77c0cdd6c9e3f71b213c2805f61dd9dfa518d74bf4c1a7c9f",
+      "rule_id": "IAC-018",
+      "file_path": ".github/workflows/security.yml",
+      "severity": "low",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "df5b5f3034c7cbc4e84ede14ce5ac9008f6a8f561582bf1070506ced3428f70a",
+      "rule_id": "IAC-153",
+      "file_path": ".github/workflows/security.yml",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "8624f10be61c33adc6a031f01cb26d9eea6e2dd57b4aeb63a122c5e4ba4c7894",
+      "rule_id": "IAC-306",
+      "file_path": ".github/workflows/website.yml",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "3d2a583c3995bb81ceb8492b179296839356276f8a98a87dc5373907f900d085",
+      "rule_id": "IAC-308",
+      "file_path": ".github/roady-sync.example.yml",
+      "severity": "low",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "52922952e40b8c5ebd4fef0969dd782d57266e9ecccc4e9bddc9be74f0f6daa2",
+      "rule_id": "IAC-308",
+      "file_path": ".github/workflows/nox-remediate.yml",
+      "severity": "low",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "cc3fd855f1a5badf59b08227135b4d796c3509913767ccdb34f1d3cebf0c8984",
+      "rule_id": "IAC-308",
+      "file_path": ".github/workflows/release.yml",
+      "severity": "low",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "c81d4d5052256dd77d99adf2ec8bd3e3316e9d173749d599dbee66ae8dd79ff2",
+      "rule_id": "IAC-308",
+      "file_path": ".github/workflows/website.yml",
+      "severity": "low",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "8c9a05e7d0c8a05b61d4c18aefce8e2dc91a85c3456246a1c92bea30dbb416d8",
+      "rule_id": "IAC-309",
+      "file_path": ".github/workflows/ci.yml",
+      "severity": "low",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "162a095592cae53b8ee25cadb877e2dd26172f5682b66569c434a5afe19aed4b",
+      "rule_id": "IAC-309",
+      "file_path": ".github/workflows/security.yml",
+      "severity": "low",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "b151a980b19139d56a645cd5b6f7fe9cd326917b431c76ba3987d4f73e6fb9f8",
+      "rule_id": "IAC-309",
+      "file_path": ".github/workflows/website.yml",
+      "severity": "low",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "8378df7a1d4adb5806616a668bc89e456b48fe9b7212ca5799b5b8eddbe0ae9c",
+      "rule_id": "IAC-314",
+      "file_path": ".github/workflows/nox-remediate.yml",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "e37e2faa5f7d812400d1323a31d22e93b710b881ea06f3b656d724454d47a8f4",
+      "rule_id": "IAC-314",
+      "file_path": ".github/workflows/release.yml",
+      "severity": "low",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "79f78ea978d0146f22890e9e1f3ff1f515e6e3218335ad105832e2817dbb1429",
+      "rule_id": "MCP-020",
+      "file_path": "pkg/domain/provenance/provenance_test.go",
+      "severity": "low",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "c354ff660019778942ff1d7a65958b3b46875c214a66d09a66ddb57df1d1d60f",
+      "rule_id": "MCP-020",
+      "file_path": "pkg/infrastructure/report/trail_test.go",
+      "severity": "low",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "4e2bca264378a33304d96841c5fd3286deda34f4a0875e809011f142e65d9eb4",
+      "rule_id": "SEC-163",
+      "file_path": "docs/_astro/runtime-core.esm-bundler.DL4Ei0hv.js",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "134bb2a5c3bc0bfc83b21750b34d09273d3c6809e3a298d0433a2ef8e3a49d88",
+      "rule_id": "SEC-163",
+      "file_path": "docs/_astro/runtime-core.esm-bundler.DL4Ei0hv.js",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "593fb1bf2bc1700cc2444ee98d33e7520e49a8f576716f6d1a8dd4f6ce0f0ac8",
+      "rule_id": "SEC-163",
+      "file_path": "internal/infrastructure/cli/sync_configure.go",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "4a1a3e29ddebcc36e8f966cb4ef2ae9a89869edd4772e037a2237c0e01cc75e6",
+      "rule_id": "SEC-163",
+      "file_path": "pkg/application/org_service.go",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "63f2fb8492f4750b1b1c9561d464909779fea621d9d74c5032b77bc1f1d7870a",
+      "rule_id": "SEC-163",
+      "file_path": "pkg/infrastructure/webhook/server_test.go",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "6e645c5ac06b21a16b6ade6d2a8a1f0f35061fb1ce9f134cffdd93f04719361e",
+      "rule_id": "SEC-163",
+      "file_path": "pkg/infrastructure/webhook/webhook_extended_test.go",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "0bef005dcb74c42bf05e872890d5c511b68c661b7eeb83674df01d7636f48d9d",
+      "rule_id": "SLOP-001",
+      "file_path": "app/src/apps/billing.ts",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "5651eac01398a469771f91dcef972f9705919c4cab29a84353f241bf08b4b1c4",
+      "rule_id": "SLOP-001",
+      "file_path": "app/src/apps/billing.ts",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "6d6ab78483c8371f236feed1856509f7b7ac556396e7075a76359c229b27713e",
+      "rule_id": "SLOP-001",
+      "file_path": "app/src/apps/debt.ts",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "6007662edfef586f5faf4cff37bf83e88a15641e5aec6a7c801fe0ccde06b174",
+      "rule_id": "SLOP-001",
+      "file_path": "app/src/apps/debt.ts",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "f9e01f69b5cccbe905421dd6f3660d1881afd4a759aa84d40853e509f6d7956e",
+      "rule_id": "SLOP-001",
+      "file_path": "app/src/apps/debt.ts",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "03b094490b453df8ed3fc0aaa034aef2a41b6d3b5249e200f8512cc9fda06f15",
+      "rule_id": "SLOP-001",
+      "file_path": "app/src/apps/deps.ts",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "129c3c54d984df1b19921b411fbf6cb7b1b8e4a87a7ee645c90fe1f7b6d24653",
+      "rule_id": "SLOP-001",
+      "file_path": "app/src/apps/deps.ts",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "626bcc44b8ccfd79f254d9758ae78d308a28e3b6c7b033277ed563681ed167b1",
+      "rule_id": "SLOP-001",
+      "file_path": "app/src/apps/deps.ts",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "23bc80838931e6af6f14efb7ac8eb40822a6cd9b54b1bb64b047d519f47e5089",
+      "rule_id": "SLOP-001",
+      "file_path": "app/src/apps/drift.ts",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "2eb1272b1eef6491ab8fb256114a891ca99f798111f8f322721778903eaf5737",
+      "rule_id": "SLOP-001",
+      "file_path": "app/src/apps/drift.ts",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "bd480f586b71921ab35d93e9bc49b204ce248bb16b62343203800391b6ba3033",
+      "rule_id": "SLOP-001",
+      "file_path": "app/src/apps/drift.ts",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "98d4d0cba5accba4b29cb5cf77ab90989da564596c156fd7e335b1c9946bfbab",
+      "rule_id": "SLOP-001",
+      "file_path": "app/src/apps/forecast.ts",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "725d548c92ea41e30c5c0f24cb2503733c4fa9d6ca36100a288d735ff3216ca6",
+      "rule_id": "SLOP-001",
+      "file_path": "app/src/apps/forecast.ts",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "2ade0f79b54884ef7e6cfaa587111862169c8b65ead21679131c9765d8c5e1b9",
+      "rule_id": "SLOP-001",
+      "file_path": "app/src/apps/forecast.ts",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "a626e36de91486be52d2dea2af5e63357411c244c3ae9658118bb43a7085a70f",
+      "rule_id": "SLOP-001",
+      "file_path": "app/src/apps/git-sync.ts",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "999e7b8a405123f2077c5c1924557eadd76fd74a33cd240c3a3738885a3c4a6c",
+      "rule_id": "SLOP-001",
+      "file_path": "app/src/apps/git-sync.ts",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "3370ae781046edbaa0e4ab24eb62dabfcaedbf64efb82cdc38378edc403aecc7",
+      "rule_id": "SLOP-001",
+      "file_path": "app/src/apps/git-sync.ts",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "87f63ab5a6eb58e3257c6e073c837a622c16297dfd4907bc0e863404a29d0646",
+      "rule_id": "SLOP-001",
+      "file_path": "app/src/apps/init.ts",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "2f1924a5a2f540d97228212ca91e99a2847308291339a5b7732d40b77c2285d4",
+      "rule_id": "SLOP-001",
+      "file_path": "app/src/apps/init.ts",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "4dc6c9b37e6f4b5360581f021bebe5b0bd0013a051272bd56ba9f51835e5e997",
+      "rule_id": "SLOP-001",
+      "file_path": "app/src/apps/init.ts",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "bc1ca45b2c65820570967519b2faa1eff9a01194b24b25db6ede9e576a00bdc8",
+      "rule_id": "SLOP-001",
+      "file_path": "app/src/apps/org.ts",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "4720976f56287c408bc0a49982acbcb6f722837dbd1b890020763e2b8dc9fca1",
+      "rule_id": "SLOP-001",
+      "file_path": "app/src/apps/org.ts",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "bf2121fe494107a3f7fbfece8ab737b2736c3143745459b0dab71cc84e3492d8",
+      "rule_id": "SLOP-001",
+      "file_path": "app/src/apps/org.ts",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "1d3b19adb0adbec77be7c7707552b17e8ee32fe32fcb49ee0766ee1aa0857f17",
+      "rule_id": "SLOP-001",
+      "file_path": "app/src/apps/plan.ts",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "678cb8ea597f5c2966965206a0fe4c81b4021832dc6521315c1fb7c2f4e04142",
+      "rule_id": "SLOP-001",
+      "file_path": "app/src/apps/plan.ts",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "09afce9570c34babb24c57f6b6b04a90c875694b75edd8932811052d51ab0401",
+      "rule_id": "SLOP-001",
+      "file_path": "app/src/apps/plan.ts",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "73aa75be4af82ede7a5aa945f43c46ac9e6b9a853667fa832c0ee5c4d9cd94f8",
+      "rule_id": "SLOP-001",
+      "file_path": "app/src/apps/policy.ts",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "832aeb6aaabc651130898b5408d6d8ac23ab68613ae2fef9ce1dbf4c11513103",
+      "rule_id": "SLOP-001",
+      "file_path": "app/src/apps/policy.ts",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "b6e3748ea2c09091d27581d8db9e3215f04edcaa0a6686d1ab8d4e9425c28993",
+      "rule_id": "SLOP-001",
+      "file_path": "app/src/apps/policy.ts",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "c51c2419a83531d518316b324c4636cb1a7303a03f6a34c391d3ab6ef56afc31",
+      "rule_id": "SLOP-001",
+      "file_path": "app/src/apps/spec.ts",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "83ecdd972a4799c9140cef648122a8d257453752ac4b77129d2ac083da83400c",
+      "rule_id": "SLOP-001",
+      "file_path": "app/src/apps/spec.ts",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "154f10dc6892efa5a34a808a1dcb78a198f8d075d235d6c6abb9b788a8db6f92",
+      "rule_id": "SLOP-001",
+      "file_path": "app/src/apps/state.ts",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "90e38206b8e30b4045786fb9adc3149eb6cc0ec118bcfb1e57240186cfd8fd41",
+      "rule_id": "SLOP-001",
+      "file_path": "app/src/apps/state.ts",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "de6c1fb4e57fc6ccfbfc554081bc937375f44311eedc9753b2713cddbb6c8c7b",
+      "rule_id": "SLOP-001",
+      "file_path": "app/src/apps/state.ts",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "093a6e4515e8637f94f7c21af228bdc672df4c6e640bad9631a46ac8a5d51d99",
+      "rule_id": "SLOP-001",
+      "file_path": "app/src/apps/status.ts",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "e7efbbfe60094a167b2d571b4469be606a347358ffe4860b540e3f7d553683b8",
+      "rule_id": "SLOP-001",
+      "file_path": "app/src/apps/status.ts",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "06bd7e276a386df692dd1da439b95afad1053f5a1b13fe1f9d7b4a6a08d0607a",
+      "rule_id": "SLOP-001",
+      "file_path": "app/src/apps/status.ts",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "db0f88bee9d8aadb4fa8dd044836150571bd4f3890f2b6cc584eae46d50a3fc9",
+      "rule_id": "SLOP-001",
+      "file_path": "app/src/apps/sync.ts",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "45a4a87d107a158429024a901410800b4d27b5238fa0b3bec77c2e41e5395390",
+      "rule_id": "SLOP-001",
+      "file_path": "app/src/apps/sync.ts",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "c0d8da4cadf80e477f763d8871c2c188b48b77d8e1b9ef91ff8fadedd27e21a9",
+      "rule_id": "SLOP-001",
+      "file_path": "app/src/apps/sync.ts",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "f221e2f564dfe30c9cffb04828302404afa78e09b604bca47f90a8feff87787c",
+      "rule_id": "SLOP-001",
+      "file_path": "app/src/apps/usage.ts",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "339efea7eb6a6d5acae806953e90bc8346d47cdb6acc8acb483b9c05a758bf49",
+      "rule_id": "SLOP-001",
+      "file_path": "app/src/apps/usage.ts",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "f2fc80a35d13a37d1c6f5c837056514b1129793ee8a272b82b7463eb4f2a5d99",
+      "rule_id": "TAINT-004",
+      "file_path": "internal/infrastructure/cli/stderr.go",
+      "severity": "high",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "aa5881cfa978d0f626b13648079feac6871b4894262a127b4ca49495c4805758",
+      "rule_id": "VULN-001",
+      "file_path": "app/package-lock.json",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "526b46168c587f8aab18d2c4e87e8ab55cbf67d4ac14e9cabdbb52721d34810e",
+      "rule_id": "VULN-001",
+      "file_path": "go.mod",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "933badccf663b058744d585551c408e90582bede41f88cd3c7f6c8195d6b12ee",
+      "rule_id": "VULN-002",
+      "file_path": "app/package-lock.json",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "afb7223be89ca407c769f3c063ca13f2654ac3625aeae43e02854b965d16405f",
+      "rule_id": "VULN-002",
+      "file_path": "app/package-lock.json",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "2a10f4feed700a3835d745b32d182ee529c1bfd5dc4313a7d01f5f041cb918ab",
+      "rule_id": "VULN-002",
+      "file_path": "website/package-lock.json",
+      "severity": "medium",
+      "created_at": "2026-08-03T20:42:54.204723Z"
     }
   ]
 }
