@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.0] - 2026-08-03
+
+One audit-chain verifier instead of two that disagreed, and the surfaces
+telling the truth about what Roady does.
+
+Nothing here is a new capability. It is the set of places where Roady said one
+thing and did another: two verifiers giving opposite verdicts on the same log,
+a tool reading a different source than the command it mirrors, a metric that
+could not distinguish "none" from "not measured", and help text describing a
+model integration removed two releases ago.
+
+### Fixed — the CLI and docs advertised a model integration that was removed
+
+Roady stopped calling language models in v0.15.0 and lost its web dashboard in
+v0.14.0. The code changed; the things that tell people what Roady does did not.
+
+In the binary:
+
+- `--ai` read "Use AI to decompose the spec into tasks". It prints a prompt for
+  you to run. `plan prioritize`, `plan smart-decompose` and `spec review` all
+  claimed to be "AI-powered", as did three MCP tool descriptions — so agents
+  were told the same thing.
+- `--reconcile` advertised "Use AI to semanticly deduplicate and reconcile the
+  spec". That flag now only returns an error explaining it was removed, so its
+  help described a capability that cannot run.
+
+In the docs:
+
+- `installation.md` documented `ROADY_AI_PROVIDER`, `OPENAI_API_KEY`,
+  `ANTHROPIC_API_KEY` and an Ollama setup. Following it configured nothing —
+  none of those variables has a reader.
+- `mcp-guide.md` told MCP users to export provider settings and pointed at
+  `docs/ai-configuration.md`, which does not exist. It now lists the variables
+  that are actually read, each checked against the source.
+- `advanced.md` and `governance-checklist.md` described provider overrides and
+  a `roady ai configure` command that never existed.
+- `ddd-insights.md` and `ddd-refactor-phase4.md` propose that removed design at
+  length; marked historical rather than rewritten, since they are records of a
+  decision and their structural observations still hold.
+
 ### Fixed — roady_timeline read a different source than the CLI
 
 `roady status timeline` reads the raw event log; `roady_timeline` read the

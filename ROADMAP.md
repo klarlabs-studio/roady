@@ -9,7 +9,14 @@ intended **open-core boundary** for a future hosted product.
 
 ---
 
-## Now (v0.19.0 — shipped)
+## Now (v0.20.0 — shipped)
+
+- **Correctness sweep** — one audit-chain verifier instead of two that
+  disagreed on the same log; `roady_timeline` reading the same source as the
+  CLI; dead AI telemetry removed; and the CLI help and docs corrected to
+  describe a Roady that calls no model.
+
+## Earlier (v0.19.0 — shipped)
 
 - **Semantic drift** — `roady drift semantic` frames the question of whether
   an implementation still means what its requirement says; the caller's model
