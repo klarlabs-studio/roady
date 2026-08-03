@@ -77,11 +77,15 @@ jobs:
         # Release binaries exit non-zero on any unsuppressed finding; the
         # gate step below decides what is actually fatal (net-new crit/high).
         run: nox scan . -format json,sarif -output nox-results || true
+      # nox writes results.sarif, not findings.sarif. This step guarded on the
+      # wrong name, so hashFiles never matched and no findings have ever
+      # reached code scanning — a skipped step reads exactly like "nothing to
+      # upload".
       - name: Upload SARIF to code scanning
-        if: always() && hashFiles('nox-results/findings.sarif') != ''
+        if: always() && hashFiles('nox-results/results.sarif') != ''
         uses: github/codeql-action/upload-sarif@f205ea1c3313d32999d8d6a48b4f6530d4437b38 # v4.37.4
         with:
-          sarif_file: nox-results/findings.sarif
+          sarif_file: nox-results/results.sarif
       - name: Annotate PR
         if: github.event_name == 'pull_request' && hashFiles('nox-results/findings.json') != ''
         env:
