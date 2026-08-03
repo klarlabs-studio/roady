@@ -1,5 +1,15 @@
 # Nox configuration for roady
 
+plugins:
+  # Installing a plugin does NOT make it run. nox executes only the plugins
+  # listed here; anything installed but unlisted is reported as [degraded] and
+  # its findings are simply absent. CI installed nox/taint-analysis without
+  # this list, so every scan ran with no SAST coverage and reported the same
+  # green as a clean one.
+  required:
+    # Source-to-sink taint analysis: SSRF, injection, path traversal.
+    - nox/taint-analysis
+
 # Exclude the .nox directory from scanning to avoid:
 # 1. False positives from baseline.json fingerprints matching secret patterns
 # 2. Scanning generated/derivative files
