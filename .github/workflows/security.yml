@@ -53,10 +53,14 @@ jobs:
         # it, signed plugins can't be promoted past "unverified" and install
         # is blocked under the default community-trust policy.
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
-      - name: Install taint-analysis plugin
-        # nox owns code-level SAST: source-to-sink taint (SSRF, injection,
-        # path traversal). The plugin is cosign-signed; with cosign present
-        # nox promotes it to community trust and installs it (no bypass).
+      - name: Install required plugins
+        # nox runs only the plugins listed under plugins.required in .nox.yaml,
+        # so this installs exactly that list rather than a hardcoded copy of it
+        # that can drift. The plugins are cosign-signed; with cosign present nox
+        # promotes them to community trust and installs them (no bypass).
+        #
+        #   taint-analysis  code-level SAST: source-to-sink taint
+        #   reachability    marks dependency findings reachable / unreachable
         #
         # The install is asserted rather than best-effort. This step used to
         # carry `continue-on-error: true` on the reasoning that a registry 404
@@ -64,19 +68,36 @@ jobs:
         # no SAST coverage, reported identically to a clean one. Absence of
         # coverage is not absence of findings. Re-run the job if the registry
         # is briefly unavailable.
-        #
-        # Installing is also not enough on its own: nox runs only the plugins
-        # listed under plugins.required in .nox.yaml.
         run: |
-          nox plugin install nox/taint-analysis
-          nox plugin list | grep -q '^nox/taint-analysis' || {
-            echo "::error::taint-analysis plugin is not installed; this scan would have no SAST coverage."
+          required=$(sed -n '/^plugins:/,/^[^ ]/p' .nox.yaml | sed -n 's/^ *- *\(nox\/[a-z0-9-]*\).*/\1/p')
+          if [ -z "$required" ]; then
+            echo "::error::no plugins.required found in .nox.yaml; nox would run with no plugins at all."
             exit 1
-          }
+          fi
+          echo "required: $required"
+          for p in $required; do
+            nox plugin install "$p"
+            nox plugin list | grep -q "^${p} " || {
+              echo "::error::${p} is required by .nox.yaml but is not installed; this scan would silently omit its findings."
+              exit 1
+            }
+          done
       - name: Scan
-        # Release binaries exit non-zero on any unsuppressed finding; the
-        # gate step below decides what is actually fatal (net-new crit/high).
-        run: nox scan . -format json,sarif -output nox-results || true
+        # Release binaries exit non-zero on any unsuppressed finding; the gate
+        # step below decides what is actually fatal (net-new crit/high).
+        #
+        # A required plugin that is missing is reported by nox as [degraded]
+        # and still exits 0, so the scan output has to be inspected: a scan
+        # that omitted a whole analysis must not be read as one that found
+        # nothing.
+        run: |
+          set -o pipefail
+          nox scan . -format json,sarif -output nox-results 2>&1 | tee nox-scan.log || true
+          if grep -q 'required plugin .* is not installed' nox-scan.log; then
+            echo "::error::nox ran degraded — a required plugin did not run and its findings are absent."
+            grep 'required plugin' nox-scan.log
+            exit 1
+          fi
       # nox writes results.sarif, not findings.sarif. This step guarded on the
       # wrong name, so hashFiles never matched and no findings have ever
       # reached code scanning — a skipped step reads exactly like "nothing to

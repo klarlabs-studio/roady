@@ -9,6 +9,11 @@ plugins:
   required:
     # Source-to-sink taint analysis: SSRF, injection, path traversal.
     - nox/taint-analysis
+    # Annotates dependency findings as reachable / unreachable / undetermined.
+    # For Go this is worth more than any advisory feed: it turns a list of
+    # dependency CVEs into a priority order by saying which are on a live code
+    # path at all.
+    - nox/reachability
 
 # Only SCANNER-STATE, VENDORED, GENERATED or PROSE artifacts are excluded.
 # First-party Go source — including *_test.go — is scanned in full; findings
