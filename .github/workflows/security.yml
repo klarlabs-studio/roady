@@ -41,8 +41,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install nox (pinned + sha256-verified binary)
         env:
-          NOX_VERSION: "1.7.1"
-          NOX_SHA256: "3106ab3ce7197f43a45fc1128ea27112686421e8ec3eac9be356d4ca42ab4c89"
+          NOX_VERSION: "1.26.0"
+          NOX_SHA256: "6879f8c7b523ebab9920d40919917b422bb952f9252fbadde9061cb37827793c"
         run: |
           curl -sL -o nox.tar.gz \
             "https://github.com/nox-hq/nox/releases/download/v${NOX_VERSION}/nox_${NOX_VERSION}_linux_amd64.tar.gz"
@@ -54,20 +54,38 @@ jobs:
         # is blocked under the default community-trust policy.
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
       - name: Install taint-analysis plugin
-        continue-on-error: true  # plugin registry 404s are not a security failure
         # nox owns code-level SAST: source-to-sink taint (SSRF, injection,
         # path traversal). The plugin is cosign-signed; with cosign present
         # nox promotes it to community trust and installs it (no bypass).
-        run: nox plugin install nox/taint-analysis@0.7.0
+        #
+        # The install is asserted rather than best-effort. This step used to
+        # carry `continue-on-error: true` on the reasoning that a registry 404
+        # is not a security failure — but the consequence was a green scan with
+        # no SAST coverage, reported identically to a clean one. Absence of
+        # coverage is not absence of findings. Re-run the job if the registry
+        # is briefly unavailable.
+        #
+        # Installing is also not enough on its own: nox runs only the plugins
+        # listed under plugins.required in .nox.yaml.
+        run: |
+          nox plugin install nox/taint-analysis
+          nox plugin list | grep -q '^nox/taint-analysis' || {
+            echo "::error::taint-analysis plugin is not installed; this scan would have no SAST coverage."
+            exit 1
+          }
       - name: Scan
         # Release binaries exit non-zero on any unsuppressed finding; the
         # gate step below decides what is actually fatal (net-new crit/high).
         run: nox scan . -format json,sarif -output nox-results || true
+      # nox writes results.sarif, not findings.sarif. This step guarded on the
+      # wrong name, so hashFiles never matched and no findings have ever
+      # reached code scanning — a skipped step reads exactly like "nothing to
+      # upload".
       - name: Upload SARIF to code scanning
-        if: always() && hashFiles('nox-results/findings.sarif') != ''
+        if: always() && hashFiles('nox-results/results.sarif') != ''
         uses: github/codeql-action/upload-sarif@f205ea1c3313d32999d8d6a48b4f6530d4437b38 # v4.37.4
         with:
-          sarif_file: nox-results/findings.sarif
+          sarif_file: nox-results/results.sarif
       - name: Annotate PR
         if: github.event_name == 'pull_request' && hashFiles('nox-results/findings.json') != ''
         env:

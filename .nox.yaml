@@ -1,9 +1,63 @@
 # Nox configuration for roady
 
-# Exclude the .nox directory from scanning to avoid:
-# 1. False positives from baseline.json fingerprints matching secret patterns
-# 2. Scanning generated/derivative files
-exclude_paths:
-  - .nox/
-  - node_modules/
-  - vendor/
+plugins:
+  # Installing a plugin does NOT make it run. nox executes only the plugins
+  # listed here; anything installed but unlisted is reported as [degraded] and
+  # its findings are simply absent. CI installed nox/taint-analysis without
+  # this list, so every scan ran with no SAST coverage and reported the same
+  # green as a clean one.
+  required:
+    # Source-to-sink taint analysis: SSRF, injection, path traversal.
+    - nox/taint-analysis
+
+# Only SCANNER-STATE, VENDORED, GENERATED or PROSE artifacts are excluded.
+# First-party Go source — including *_test.go — is scanned in full; findings
+# there go through .nox/baseline.json with a reason, never by blinding a
+# source directory.
+#
+# NOTE — a bare top-level filename is not matched by "*.md": CHANGELOG.md
+# stayed in the results until it was listed by name. Check that an exclusion
+# actually removes what you expect rather than assuming the glob applied.
+scan:
+  exclude:
+    # Scanner state. Baseline fingerprints are SHA-256 hex that re-trips the
+    # secret detector. Never scan the scanner.
+    - .nox/
+    # Third-party trees, not first-party source.
+    - node_modules/
+    - vendor/
+    # Markdown is prose — README, CHANGELOG, docs/. The secret and PII entropy
+    # rules fire on ordinary documentation: CHANGELOG.md:808 is a release note
+    # about storage constructors that reads as a Cloudflare API token. Real
+    # secret patterns are still caught in code, which is where a leak lives.
+    # Classification: False Positive (prose). Last reviewed: 2026-08-03
+    - "*.md"
+    - "**/*.md"
+    - README.md
+    - CHANGELOG.md
+    # Bundled MCP app UIs — minified JS embedded in HTML, emitted by the app
+    # build and committed so go:embed can pick them up (see the negation in
+    # .gitignore). Minified identifiers trip the entropy detector; every hit
+    # here was a token pattern matched inside compressed JS. The sources these
+    # are built from are scanned normally.
+    # Classification: Acceptable Pattern (generated). Last reviewed: 2026-08-03
+    - internal/infrastructure/mcp/dist/
+    # TAINT-004: ROADY_MCP_LOG flows to os.OpenFile. Reviewed and accepted —
+    # the variable names the log file for a process the operator is already
+    # running, so it crosses no privilege boundary.
+    #
+    # This is a whole-file exclusion, which is otherwise against the rule
+    # above, because nox offers no working way to accept a single finding
+    # here. Its baseline is keyed by a fingerprint that the taint plugin
+    # derives partly from the scan directory:
+    #
+    #   local checkout  f2fc80a3...   git worktree  6a6e14b1...
+    #   CI runner       2ec40d1d...   (same commit, same content)
+    #
+    # so a baselined taint finding is only valid on the machine that made it.
+    # A `suppressions:` block and a `// nox:ignore` comment are both accepted
+    # silently and do nothing. The file is 36 lines and does one thing, so the
+    # blast radius of excluding it is small — but revisit this once the plugin
+    # emits stable fingerprints.
+    # Classification: False Positive (reviewed). Last reviewed: 2026-08-03
+    - internal/infrastructure/cli/stderr.go
