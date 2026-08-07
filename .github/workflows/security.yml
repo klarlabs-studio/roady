@@ -39,6 +39,10 @@ jobs:
       pull-requests: write   # nox annotate
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Full history: the changed-files gate below diffs against
+          # origin/<base_ref>, which a depth-1 clone does not contain.
+          fetch-depth: 0
       - name: Install nox (pinned + sha256-verified binary)
         env:
           NOX_VERSION: "1.26.0"
@@ -139,6 +143,29 @@ jobs:
             jq '.findings[] | select((.Severity=="critical" or .Severity=="high") and ((.Status // "") == "")) | {severity:.Severity, rule:.RuleID, file:.Location.FilePath, line:.Location.StartLine}' "$f"
             exit 1
           fi
+      - name: Gate on changed files (pull requests)
+        # Asks the question the baseline gate above is a proxy for: does this
+        # change introduce a high or critical finding? Scoped to files the PR
+        # touches, so a pre-existing finding elsewhere neither blocks the PR
+        # nor needs a baseline entry to stay quiet.
+        #
+        # This matters here specifically. Accepting a single reviewed finding
+        # via the baseline does not work for plugin rules: nox/taint-analysis
+        # derives its fingerprint partly from the scan directory, so an entry
+        # generated anywhere but this runner does not match
+        # (nox-hq/nox-plugin-taint-analysis#37). A changed-files gate never
+        # needs the fingerprint to be stable, because it never has to
+        # recognise the same finding across two runs.
+        #
+        # -fail-on-degraded is set: a check that could not complete is not a
+        # clean result, and this is the gate that blocks.
+        if: github.event_name == 'pull_request'
+        run: |
+          nox scan . \
+            -changed-since "origin/${{ github.base_ref }}" \
+            -severity-threshold high \
+            -fail-on-degraded \
+            -format json -output nox-pr
       - name: Upload nox artifacts
         if: always() && hashFiles('nox-results/**') != ''
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
