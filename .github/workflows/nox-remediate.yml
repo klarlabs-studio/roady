@@ -15,4 +15,17 @@ permissions:
 jobs:
   remediate:
     uses: felixgeelhaar/.github/.github/workflows/nox-remediate.yml@main
-    secrets: inherit # passes NOX_TOKEN through when defined (needed to bump action pins)
+    # NOT `secrets: inherit`. That only passes secrets to reusable workflows in
+    # the same organisation or enterprise, and this one lives under the
+    # felixgeelhaar user account while this repo is in klarlabs-studio. Across
+    # that boundary inherit silently passes nothing, so the called workflow saw
+    # an empty NOX_TOKEN, fell back to GITHUB_TOKEN, and every remediation from
+    # 2026-07-27 onward died on "GitHub Actions is not permitted to create or
+    # approve pull requests".
+    #
+    # Naming the secret explicitly works because the expression is evaluated in
+    # this repo's context, where the klarlabs-studio organisation secret (ALL
+    # visibility) is available — the same way release.yml already consumes
+    # HOMEBREW_TAP_TOKEN directly.
+    secrets:
+      NOX_TOKEN: ${{ secrets.NOX_TOKEN }}
