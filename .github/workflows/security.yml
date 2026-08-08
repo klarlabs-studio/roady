@@ -43,79 +43,37 @@ jobs:
           # Full history: the changed-files gate below diffs against
           # origin/<base_ref>, which a depth-1 clone does not contain.
           fetch-depth: 0
-      - name: Install nox (pinned + sha256-verified binary)
-        env:
-          NOX_VERSION: "1.26.0"
-          NOX_SHA256: "6879f8c7b523ebab9920d40919917b422bb952f9252fbadde9061cb37827793c"
-        run: |
-          curl -sL -o nox.tar.gz \
-            "https://github.com/nox-hq/nox/releases/download/v${NOX_VERSION}/nox_${NOX_VERSION}_linux_amd64.tar.gz"
-          echo "${NOX_SHA256}  nox.tar.gz" | sha256sum -c -
-          tar xzf nox.tar.gz && sudo mv nox /usr/local/bin/ && nox version
-      - name: Install cosign
-        # nox verifies plugin signatures by shelling out to cosign. Without
-        # it, signed plugins can't be promoted past "unverified" and install
-        # is blocked under the default community-trust policy.
-        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
-      - name: Install required plugins
-        # nox runs only the plugins listed under plugins.required in .nox.yaml,
-        # so this installs exactly that list rather than a hardcoded copy of it
-        # that can drift. The plugins are cosign-signed; with cosign present nox
-        # promotes them to community trust and installs them (no bypass).
-        #
-        #   taint-analysis  code-level SAST: source-to-sink taint
-        #   reachability    marks dependency findings reachable / unreachable
-        #
-        # The install is asserted rather than best-effort. This step used to
-        # carry `continue-on-error: true` on the reasoning that a registry 404
-        # is not a security failure — but the consequence was a green scan with
-        # no SAST coverage, reported identically to a clean one. Absence of
-        # coverage is not absence of findings. Re-run the job if the registry
-        # is briefly unavailable.
-        run: |
-          required=$(sed -n '/^plugins:/,/^[^ ]/p' .nox.yaml | sed -n 's/^ *- *\(nox\/[a-z0-9-]*\).*/\1/p')
-          if [ -z "$required" ]; then
-            echo "::error::no plugins.required found in .nox.yaml; nox would run with no plugins at all."
-            exit 1
-          fi
-          echo "required: $required"
-          for p in $required; do
-            nox plugin install "$p"
-            nox plugin list | grep -q "^${p} " || {
-              echo "::error::${p} is required by .nox.yaml but is not installed; this scan would silently omit its findings."
-              exit 1
-            }
-          done
+      # Scanning is delegated to the SHA-pinned nox-hq/nox action, which is
+      # what every plugin repository in the fleet already uses. It replaces six
+      # hand-rolled steps here — tarball download, sha256 verification, cosign
+      # install, plugins.required parsing, the scan itself and the SARIF upload
+      # — each of which was a local reimplementation of something the action
+      # does, and two of which were wrong at some point: the SARIF upload
+      # guarded on a filename nox never writes, and the plugin list was parsed
+      # out of .nox.yaml with sed.
+      #
+      # `nox install` inside the action reads plugins.required, so taint-analysis
+      # and reachability still run — that capability landed in nox 1.27.0
+      # (nox-hq/nox#447) and is why this adoption was not possible before.
+      #
+      # fail-on-degraded replaces grepping the scan log for "[degraded]": it is
+      # the tool's own signal, and it covers OSV lookups and lockfile parses,
+      # not just plugins.
       - name: Scan
-        # Release binaries exit non-zero on any unsuppressed finding; the gate
-        # step below decides what is actually fatal (net-new crit/high).
-        #
-        # A required plugin that is missing is reported by nox as [degraded]
-        # and still exits 0, so the scan output has to be inspected: a scan
-        # that omitted a whole analysis must not be read as one that found
-        # nothing.
-        run: |
-          set -o pipefail
-          nox scan . -format json,sarif -output nox-results 2>&1 | tee nox-scan.log || true
-          if grep -q 'required plugin .* is not installed' nox-scan.log; then
-            echo "::error::nox ran degraded — a required plugin did not run and its findings are absent."
-            grep 'required plugin' nox-scan.log
-            exit 1
-          fi
-      # nox writes results.sarif, not findings.sarif. This step guarded on the
-      # wrong name, so hashFiles never matched and no findings have ever
-      # reached code scanning — a skipped step reads exactly like "nothing to
-      # upload".
+        uses: nox-hq/nox@6aba53ab68346f12e980a1ba5ebf69a21ba7a0c0 # v1.27.0
+        with:
+          path: .
+          format: json,sarif
+          output: nox-results
+          fail-on-findings: 'false'
+          fail-on-degraded: 'true'
+          annotate: ${{ github.event_name == 'pull_request' }}
+
       - name: Upload SARIF to code scanning
         if: always() && hashFiles('nox-results/results.sarif') != ''
         uses: github/codeql-action/upload-sarif@f205ea1c3313d32999d8d6a48b4f6530d4437b38 # v4.37.4
         with:
           sarif_file: nox-results/results.sarif
-      - name: Annotate PR
-        if: github.event_name == 'pull_request' && hashFiles('nox-results/findings.json') != ''
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: nox annotate -input nox-results/findings.json || true
       - name: Gate on net-new critical/high findings
         # Enforces unconditionally.
         #
