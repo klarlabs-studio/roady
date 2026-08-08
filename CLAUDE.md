@@ -12,11 +12,9 @@ Roady is a planning-first system of record for software work. It acts as a durab
 # Build main binary
 go build -o roady ./cmd/roady
 
-# Build plugin binaries
-go build -o roady-plugin-mock ./cmd/roady-plugin-mock
-go build -o roady-plugin-github ./cmd/roady-plugin-github
-go build -o roady-plugin-jira ./cmd/roady-plugin-jira
-go build -o roady-plugin-linear ./cmd/roady-plugin-linear
+# Build every plugin binary (asana, github, jira, linear, mock, notion, trello).
+# Enumerated rather than listed, so this does not go stale as plugins are added.
+for p in cmd/roady-plugin-*; do go build -o "$(basename "$p")" "./$p"; done
 
 # Run all tests
 go test ./...
@@ -74,10 +72,13 @@ pkg/plugin/          # HashiCorp go-plugin loader for external syncers
 
 - **cobra**: CLI framework
 - **bubbletea/lipgloss**: TUI dashboard
-- **mcp-go**: MCP server protocol
+- **go.klarlabs.de/mcp**: MCP server protocol
 - **statekit**: FSM for task state transitions
 - **fortify**: Resilience (retry, timeout) for AI calls
 - **go-plugin**: HashiCorp plugin system for external syncers
+
+`go.mod` is authoritative; this list names what each is for, not what version
+is pinned.
 
 ### Data Storage (.roady/)
 
@@ -120,12 +121,25 @@ Guards enforce:
 
 ### MCP Tools
 
-The MCP server (`internal/infrastructure/mcp/server.go`) exposes these tools:
-- `roady_init`, `roady_get_spec`, `roady_get_plan`, `roady_get_state`
-- `roady_generate_plan`, `roady_update_plan`, `roady_approve_plan`
-- `roady_detect_drift`, `roady_accept_drift`, `roady_explain_drift`
-- `roady_transition_task`, `roady_check_policy`, `roady_status`
-- `roady_forecast`, `roady_git_sync`, `roady_sync`
+The MCP server lives in `internal/infrastructure/mcp/`. It currently exposes
+about seventy tools, grouped roughly as:
+
+- **spec / plan / state** — `roady_get_spec`, `roady_get_plan`, `roady_get_state`,
+  `roady_generate_plan`, `roady_approve_plan`, `roady_add_feature`
+- **drift** — `roady_detect_drift`, `roady_accept_drift`, `roady_explain_drift`
+- **tasks** — `roady_transition_task`, `roady_tasks`, `roady_assign_task`
+- **governance & audit** — `roady_check_policy`, `roady_audit_trail`, `roady_audit_verify`
+- **cost, debt, deps, org, team, rates** — families prefixed `roady_cost_`,
+  `roady_debt_`, `roady_deps_`, `roady_org_`, `roady_team_`, `roady_rate_`
+
+This deliberately does not enumerate them. An earlier version listed sixteen
+by name; the server had grown to seventy and every one of the sixteen was still
+correct, so the list was not wrong — just quietly four-fifths incomplete, which
+reads the same as complete. For the current set, ask the code:
+
+```bash
+grep -rhoE '"roady_[a-z_]+"' internal/infrastructure/mcp/*.go | tr -d '"' | sort -u
+```
 
 Run MCP server:
 ```bash
@@ -139,7 +153,8 @@ roady mcp --transport ws --addr :8080
 Plugins use HashiCorp go-plugin over RPC:
 - Interface: `pkg/domain/plugin/Syncer`
 - Loader: `pkg/plugin/loader.go`
-- Examples: `cmd/roady-plugin-github`, `cmd/roady-plugin-jira`, `cmd/roady-plugin-linear`
+- Implementations: `cmd/roady-plugin-*` — asana, github, jira, linear, mock,
+  notion, trello
 
 ## Common Workflows
 
@@ -149,6 +164,13 @@ roady init my-project
 
 # Analyze docs and generate spec
 roady spec analyze docs/
+
+# Re-capture the drift baseline after replacing the generated spec.
+# `roady init` writes spec.yaml, spec.lock.json and state.json together, so
+# they agree. Adopting roady in an existing project means replacing spec.yaml —
+# and nothing re-derives the other two, so drift is then measured against a
+# spec the project never had while `spec validate` still answers "valid".
+roady spec lock
 
 # Generate plan (heuristic or AI)
 roady plan generate
