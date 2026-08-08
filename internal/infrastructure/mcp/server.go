@@ -98,6 +98,40 @@ func mcpErr(friendly string) *mcpserver.StructuredResult {
 	}
 }
 
+// specHealth reports whether the project's spec currently parses.
+//
+// It exists because tools disagreed about whether a project was broken.
+// roady_status reads plan.json and state.json and never unmarshals the spec,
+// so it answered normally while spec.yaml held merge-conflict markers — the
+// server looked healthy and exactly one tool looked flaky. A caller reasonably
+// concluded roady was broken and stopped using it (#87).
+//
+// Returning the parse error rather than a boolean keeps the remedy in the same
+// place as the symptom: the message names the file, line and reason, the same
+// way the CLI does.
+func specHealth(svc *wiring.AppServices) error {
+	if svc == nil || svc.Spec == nil {
+		return nil // nothing loaded; not this function's failure to report
+	}
+	_, err := svc.Spec.LockStatus()
+	return err
+}
+
+// withSpecWarning prefixes a tool's answer with a spec-is-unparseable notice.
+//
+// The answer itself is still returned: status computed from plan.json is
+// genuinely useful even when the spec is broken, and withholding it would
+// trade one confusing outcome for another. What must not happen is returning
+// it as though nothing were wrong.
+func withSpecWarning(answer string, err error) string {
+	if err == nil {
+		return answer
+	}
+	return "WARNING: this project's spec.yaml does not currently parse, so any " +
+		"tool that reads it will fail until it is repaired. Run roady_spec_validate " +
+		"for the details.\nCause: " + err.Error() + "\n\n" + answer
+}
+
 // mcpErrCause is mcpErr with the diagnosis attached.
 //
 // The friendly sentence tells a caller what failed; the wrapped error tells
@@ -1718,7 +1752,9 @@ func (s *Server) handleStatus(ctx context.Context, args StatusArgs) (any, error)
 		return mcpErrCause("Failed to load plan. Generate a plan first with 'roady plan generate'.", err), nil
 	}
 	if plan == nil {
-		return "No plan found. Run roady_generate_plan first.", nil
+		// Also warned here: "generate a plan" is bad advice when the spec is
+		// unparseable, because generating one reads it and will fail too.
+		return withSpecWarning("No plan found. Run roady_generate_plan first.", specHealth(svc)), nil
 	}
 
 	state, err := svc.Plan.GetState()
@@ -1726,7 +1762,7 @@ func (s *Server) handleStatus(ctx context.Context, args StatusArgs) (any, error)
 		return mcpErrCause("Failed to load execution state. Ensure a plan has been generated.", err), nil
 	}
 	if state == nil {
-		return "No execution state found.", nil
+		return withSpecWarning("No execution state found.", specHealth(svc)), nil
 	}
 
 	// Parse filters
@@ -1836,6 +1872,14 @@ func (s *Server) handleStatus(ctx context.Context, args StatusArgs) (any, error)
 			"counts":         counts,
 			"tasks":          tasks,
 		}
+		// A machine reader gets the same signal the text path prints, rather
+		// than a clean object that implies a healthy project.
+		if err := specHealth(svc); err != nil {
+			output["spec_valid"] = false
+			output["spec_error"] = err.Error()
+		} else {
+			output["spec_valid"] = true
+		}
 
 		jsonBytes, err := json.Marshal(output)
 		if err != nil {
@@ -1859,7 +1903,7 @@ func (s *Server) handleStatus(ctx context.Context, args StatusArgs) (any, error)
 		}
 	}
 
-	return statusStr, nil
+	return withSpecWarning(statusStr, specHealth(svc)), nil
 }
 
 // isTaskUnlockedByDeps checks if all dependencies are complete
