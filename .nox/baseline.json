@@ -522389,6 +522389,41 @@
       "file_path": "website/package-lock.json",
       "severity": "medium",
       "created_at": "2026-08-03T20:42:54.204723Z"
+    },
+    {
+      "fingerprint": "1875f85ab88dce73e33217188234cfb7948cd56acd0afa9f1a869bbcc4620df6",
+      "rule_id": "REACH-001",
+      "file_path": "app/package-lock.json",
+      "severity": "info",
+      "created_at": "2026-08-08T06:46:09.951241Z"
+    },
+    {
+      "fingerprint": "45813227235fd4a5f5b4e3088ec2030c8889f5a4c5182faaabd5c014fe391ad3",
+      "rule_id": "REACH-001",
+      "file_path": "app/package-lock.json",
+      "severity": "info",
+      "created_at": "2026-08-08T06:46:09.951241Z"
+    },
+    {
+      "fingerprint": "d27ce8fe3b62f34724765c12b54104f112b8bc20cb7128d42cb68be78c15a958",
+      "rule_id": "REACH-001",
+      "file_path": "go.mod",
+      "severity": "info",
+      "created_at": "2026-08-08T06:46:09.951241Z"
+    },
+    {
+      "fingerprint": "40f2ba0c69e45ab7eef05fd2a8cfe1f50418b018205f61c601d887fa40281a82",
+      "rule_id": "REACH-001",
+      "file_path": "website/package-lock.json",
+      "severity": "info",
+      "created_at": "2026-08-08T06:46:09.951241Z"
+    },
+    {
+      "fingerprint": "77b4549bca061ead7a1c13cbe03c81efb5d6b5b412b968bd619fd02684c2f66a",
+      "rule_id": "TAINT-004",
+      "file_path": "internal/infrastructure/cli/stderr.go",
+      "severity": "high",
+      "created_at": "2026-08-08T06:46:09.951241Z"
     }
   ]
 }
