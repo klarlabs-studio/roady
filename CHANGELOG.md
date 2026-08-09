@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.22.0] - 2026-08-09
+
+Closes #87 in full: the MCP surface is now groupable, named after the CLI, and
+honest about the project's health.
+
+Breaking on the 0.x line, so this is a minor bump — twenty MCP tools are
+renamed and no aliases are kept. See the table below before upgrading a client
+with hardcoded tool names.
+
 ### ⚠ Breaking — MCP tool names now mirror the CLI
 
 The CLI is organised by noun (`roady spec add`, `roady drift detect`,
@@ -58,6 +67,48 @@ Every new name matches an existing CLI verb where one exists —
   `analytics`, `audit`. Unset (or `all`) registers everything, so trimming is
   opt-in and no existing client loses a tool it already calls. An unknown
   group name fails startup rather than quietly starting a smaller server.
+
+### Fixed
+
+- **An MCP handler's diagnosis reached the client as a bare `-32603 internal
+  error`.** The cause was computed and then discarded, so a caller was told
+  something failed but never what — which is how an invalid `spec.yaml`
+  presented as a broken server (#84, #86).
+- **`roady_status` answered normally while `spec.yaml` was unparseable.** It
+  reads `plan.json` and `state.json` and never unmarshals the spec, so the
+  server looked healthy while exactly one tool looked flaky, and the reporter
+  concluded roady was broken rather than their file. Status now carries the
+  spec's health and names `roady_spec_validate` as the remedy (#87 item 5,
+  #89).
+
+### Security / CI
+
+- **The nox scanner was running degraded and reporting success.** nox runs
+  only the plugins named in `plugins.required`; the list was absent, so the
+  taint-analysis and reachability plugins never ran and their findings were
+  absent rather than clean. Required plugins are now declared, a missing one
+  fails the run, and the findings the working scanner surfaced are cleared
+  (#78, #79).
+- **The security gate disarmed itself.** A repository that waived every
+  finding cleanly ended up with nothing to compare against, so the gate
+  stopped firing at exactly the point it was meant to start protecting (#81).
+- **`secrets: inherit` passed nothing across the owner boundary**, so the
+  remediation workflow ran without `NOX_TOKEN` and could not push. Passed
+  explicitly (#80).
+- Added a changed-files gate on pull requests (#82); restored scanning of
+  `stderr.go`, excluded only because taint fingerprints were unstable before
+  nox 0.7.3 (#83); pinned the scanner to a SHA-pinned action release (#88).
+
+### Changed
+
+- `go.klarlabs.de/statekit` v1.8.0 → v1.13.2 (#90).
+
+### Documentation
+
+- CLAUDE.md corrected where it had drifted from the code: the MCP tool list
+  named sixteen tools when the server had grown to seventy — every one of the
+  sixteen still correct, and the list four-fifths incomplete, which reads the
+  same as complete. Replaced with the command that asks the code (#85).
 
 ## [0.21.0] - 2026-08-03
 
