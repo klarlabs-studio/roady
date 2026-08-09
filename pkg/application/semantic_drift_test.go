@@ -73,7 +73,7 @@ func TestSemanticDriftFramesTheQuestion(t *testing.T) {
 			t.Errorf("prompt is missing %q:\n%s", want, req.Prompt)
 		}
 	}
-	if req.WriteBack != "roady_record_semantic_drift" {
+	if req.WriteBack != "roady_drift_record_semantic" {
 		t.Errorf("WriteBack = %q; the answer would have nowhere to go", req.WriteBack)
 	}
 	if req.ExpectedFormat == "" {

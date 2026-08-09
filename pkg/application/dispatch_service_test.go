@@ -81,7 +81,7 @@ func TestDispatchCompletionContractAttributesTheSubagent(t *testing.T) {
 	}
 
 	c := brief.Completion
-	if c.Tool != "roady_transition_task" {
+	if c.Tool != "roady_task_transition" {
 		t.Errorf("tool = %q", c.Tool)
 	}
 	if c.Arguments["agent"] != "codex" || c.Arguments["session_id"] != "run-9" {

@@ -7,6 +7,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### ⚠ Breaking — MCP tool names now mirror the CLI
+
+The CLI is organised by noun (`roady spec add`, `roady drift detect`,
+`roady task assign`); the MCP surface was a flat verb-first list
+(`roady_add_feature`, `roady_detect_drift`, `roady_assign_task`). Knowledge of
+one did not transfer to the other, and an agent that knew the CLI could not
+guess the tool name — or tell whether it existed at all (#87, item 4).
+
+Twenty tools are renamed to `roady_<noun>_<verb>`. **No aliases are kept**:
+this repo's own history shows why (`1a9894a` had to drop a previous set of
+deprecated aliases, and #87 item 3 was filed because a superseded tool was
+still advertised). A deprecation that is documented but still registered is
+the thing being fixed, so shipping one here would be self-defeating.
+
+| before | after |
+| --- | --- |
+| `roady_add_feature` | `roady_spec_add` |
+| `roady_explain_spec` | `roady_spec_explain` |
+| `roady_review_spec` | `roady_spec_review` |
+| `roady_get_spec` | `roady_spec_get` |
+| `roady_generate_plan` | `roady_plan_generate` |
+| `roady_approve_plan` | `roady_plan_approve` |
+| `roady_update_plan` | `roady_plan_update` |
+| `roady_get_plan` | `roady_plan_get` |
+| `roady_suggest_priorities` | `roady_plan_prioritize` |
+| `roady_detect_drift` | `roady_drift_detect` |
+| `roady_accept_drift` | `roady_drift_accept` |
+| `roady_explain_drift` | `roady_drift_explain` |
+| `roady_record_semantic_drift` | `roady_drift_record_semantic` |
+| `roady_transition_task` | `roady_task_transition` |
+| `roady_assign_task` | `roady_task_assign` |
+| `roady_dispatch_task` | `roady_task_dispatch` |
+| `roady_get_state` | `roady_state_get` |
+| `roady_get_snapshot` | `roady_snapshot_get` |
+| `roady_get_usage` | `roady_usage_get` |
+| `roady_check_policy` | `roady_policy_check` |
+
+Every new name matches an existing CLI verb where one exists —
+`roady_plan_prioritize` from `roady plan prioritize`, not the more literal
+`roady_priorities_suggest`.
+
+### Added
+
+- **`ROADY_MCP_TOOLS` selects which tool groups the MCP server advertises.**
+  All seventy tools were registered on every session, and a client pays for
+  each one in its prompt whether or not the project has a rate card or a debt
+  ledger (#87, item 2). `ROADY_MCP_TOOLS=core` advertises 30 instead of 70;
+  groups are `core`, `cost`, `team`, `org`, `debt`, `deps`, `plugin`, `sync`,
+  `analytics`, `audit`. Unset (or `all`) registers everything, so trimming is
+  opt-in and no existing client loses a tool it already calls. An unknown
+  group name fails startup rather than quietly starting a smaller server.
+
 ## [0.21.0] - 2026-08-03
 
 Adopting Roady in an existing project left its derived state describing the

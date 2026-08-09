@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -63,6 +64,10 @@ type Server struct {
 	svcCache   sync.Map // map[string]*wiring.AppServices
 	svcCacheMu sync.Mutex
 	svcKeys    []string // insertion-order keys for LRU eviction
+
+	// groups is the set of tool groups this server advertises. Populated
+	// from ROADY_MCP_TOOLS; every group when unset. See profiles.go.
+	groups map[toolGroup]bool
 }
 
 var (
@@ -280,6 +285,15 @@ func NewServer(root string) (*Server, error) {
 		root:        root,
 	}
 
+	// Resolve the advertised tool surface before registering anything: a bad
+	// ROADY_MCP_TOOLS should fail the server at startup with a message naming
+	// the valid groups, not start a server that quietly lacks tools.
+	groups, err := enabledGroups(os.Getenv("ROADY_MCP_TOOLS"))
+	if err != nil {
+		return nil, fmt.Errorf("ROADY_MCP_TOOLS: %w", err)
+	}
+	s.groups = groups
+
 	s.registerTools()
 	s.registerApps()
 	s.registerSchemaResource()
@@ -468,48 +482,48 @@ func (s *Server) registerTools() {
 		UIResource("ui://roady/init").
 		Handler(s.handleInit)
 
-	// Tool: roady_get_spec
-	s.tool("roady_get_spec").
+	// Tool: roady_spec_get
+	s.tool("roady_spec_get").
 		Description("Retrieve the current product specification").
 		UIResource("ui://roady/spec").
 		OutputSchema(spec.ProductSpec{}).
 		Handler(s.handleGetSpec)
 
-	// Tool: roady_get_plan
-	s.tool("roady_get_plan").
+	// Tool: roady_plan_get
+	s.tool("roady_plan_get").
 		Description("Retrieve the current execution plan").
 		UIResource("ui://roady/plan").
 		OutputSchema(planning.Plan{}).
 		Handler(s.handleGetPlan)
 
-	// Tool: roady_get_state
-	s.tool("roady_get_state").
+	// Tool: roady_state_get
+	s.tool("roady_state_get").
 		Description("Retrieve the current execution state (task statuses)").
 		UIResource("ui://roady/state").
 		OutputSchema(planning.ExecutionState{}).
 		Handler(s.handleGetState)
 
-	// Tool: roady_generate_plan (Heuristic)
-	s.tool("roady_generate_plan").
+	// Tool: roady_plan_generate (Heuristic)
+	s.tool("roady_plan_generate").
 		Description("Generate a basic plan from the spec using 1:1 heuristic (resets custom tasks unless they match features)").
 		UIResource("ui://roady/plan").
 		Handler(s.handleGeneratePlan)
 
-	// Tool: roady_update_plan (Smart Injection)
-	s.tool("roady_update_plan").
+	// Tool: roady_plan_update (Smart Injection)
+	s.tool("roady_plan_update").
 		Description("Update the plan with a specific list of tasks (Smart Injection). Use this to propose complex architectures.").
 		UIResource("ui://roady/plan").
 		Handler(s.handleUpdatePlan)
 
-	// Tool: roady_detect_drift
-	s.tool("roady_detect_drift").
+	// Tool: roady_drift_detect
+	s.tool("roady_drift_detect").
 		Description("Detect discrepancies between the current Spec and Plan").
 		UIResource("ui://roady/drift").
 		OutputSchema(drift.Report{}).
 		Handler(s.handleDetectDrift)
 
-	// Tool: roady_accept_drift
-	s.tool("roady_accept_drift").
+	// Tool: roady_drift_accept
+	s.tool("roady_drift_accept").
 		Description("Accept the current drift by locking the spec snapshot").
 		UIResource("ui://roady/drift").
 		Handler(s.handleAcceptDrift)
@@ -520,45 +534,45 @@ func (s *Server) registerTools() {
 		UIResource("ui://roady/status").
 		Handler(s.handleStatus)
 
-	// Tool: roady_check_policy
-	s.tool("roady_check_policy").
+	// Tool: roady_policy_check
+	s.tool("roady_policy_check").
 		Description("Check if the current plan complies with execution policies (e.g., WIP limits)").
 		UIResource("ui://roady/policy").
 		Handler(s.handleCheckPolicy)
 
-	// Tool: roady_transition_task
-	s.tool("roady_transition_task").
+	// Tool: roady_task_transition
+	s.tool("roady_task_transition").
 		Description("Transition a task to a new state (e.g., start, complete, block, stop)").
 		UIResource("ui://roady/state").
 		Handler(s.handleTransitionTask)
 
-	// Tool: roady_explain_spec
-	s.tool("roady_explain_spec").
+	// Tool: roady_spec_explain
+	s.tool("roady_spec_explain").
 		Description("Provide an AI-generated architectural walkthrough of the current specification").
 		UIResource("ui://roady/spec").
 		Handler(s.handleExplainSpec)
 
-	// Tool: roady_approve_plan
-	s.tool("roady_approve_plan").
+	// Tool: roady_plan_approve
+	s.tool("roady_plan_approve").
 		Description("Approve the current plan for execution").
 		UIResource("ui://roady/plan").
 		Handler(s.handleApprovePlan)
 
-	// Tool: roady_get_usage
-	s.tool("roady_get_usage").
+	// Tool: roady_usage_get
+	s.tool("roady_usage_get").
 		Description("Retrieve project usage and telemetry statistics").
 		UIResource("ui://roady/usage").
 		OutputSchema(domain.UsageStats{}).
 		Handler(s.handleGetUsage)
 
-	// Tool: roady_explain_drift
-	s.tool("roady_explain_drift").
+	// Tool: roady_drift_explain
+	s.tool("roady_drift_explain").
 		Description("Provide an AI-generated explanation and resolution steps for current project drift").
 		UIResource("ui://roady/drift").
 		Handler(s.handleExplainDrift)
 
-	// Tool: roady_add_feature
-	s.tool("roady_add_feature").
+	// Tool: roady_spec_add
+	s.tool("roady_spec_add").
 		Description("Add a new feature to the product specification and sync to docs/backlog.md").
 		UIResource("ui://roady/spec").
 		Handler(s.handleAddFeature)
@@ -573,11 +587,11 @@ func (s *Server) registerTools() {
 	// Tool: roady_semantic_drift — the question the structural detectors
 	// cannot ask. Roady frames it; the caller's model answers it.
 	s.tool("roady_semantic_drift").
-		Description("Build the prompt for judging whether implementations still mean what their requirements say. Returns the framed question and the requirements it covers; send the judgements back with roady_record_semantic_drift.").
+		Description("Build the prompt for judging whether implementations still mean what their requirements say. Returns the framed question and the requirements it covers; send the judgements back with roady_drift_record_semantic.").
 		UIResource("ui://roady/drift").
 		Handler(s.handleSemanticDrift)
 
-	s.tool("roady_record_semantic_drift").
+	s.tool("roady_drift_record_semantic").
 		Description("Record semantic-drift judgements. Divergences become drift issues; agreement records nothing.").
 		UIResource("ui://roady/drift").
 		Handler(s.handleRecordSemanticDrift)
@@ -716,8 +730,8 @@ func (s *Server) registerTools() {
 		UIResource("ui://roady/debt").
 		Handler(s.handleStickyDrift)
 
-	// Tool: roady_dispatch_task
-	s.tool("roady_dispatch_task").
+	// Tool: roady_task_dispatch
+	s.tool("roady_task_dispatch").
 		Description("Hand a ready task to a subagent. Returns the originating feature and requirement, the doc:line citation that motivated the task, what counts as done, and the exact call that records completion against that agent. Claims the task unless dry_run. Only ready tasks can be dispatched.").
 		UIResource("ui://roady/plan").
 		Handler(s.handleDispatchTask)
@@ -777,28 +791,28 @@ func (s *Server) registerTools() {
 		UIResource("ui://roady/status").
 		Handler(s.handleQuery)
 
-	// Tool: roady_suggest_priorities (v0.8.0)
-	s.tool("roady_suggest_priorities").
+	// Tool: roady_plan_prioritize (v0.8.0)
+	s.tool("roady_plan_prioritize").
 		Description("Build a prompt asking your model to suggest task priorities. Returns the request; Roady runs no inference.").
 		UIResource("ui://roady/plan").
 		OutputSchema(planning.PrioritySuggestions{}).
 		Handler(s.handleSuggestPriorities)
 
-	// Tool: roady_review_spec (v0.8.0)
-	s.tool("roady_review_spec").
+	// Tool: roady_spec_review (v0.8.0)
+	s.tool("roady_spec_review").
 		Description("Build a prompt asking your model to review the spec. Returns the request; Roady runs no inference.").
 		UIResource("ui://roady/spec").
 		OutputSchema(spec.SpecReview{}).
 		Handler(s.handleReviewSpec)
 
-	// Tool: roady_assign_task (v0.8.0)
-	s.tool("roady_assign_task").
+	// Tool: roady_task_assign (v0.8.0)
+	s.tool("roady_task_assign").
 		Description("Assign a task to a person or agent without changing its status").
 		UIResource("ui://roady/state").
 		Handler(s.handleAssignTask)
 
-	// Tool: roady_get_snapshot (v0.6.0 - Coordinator)
-	s.tool("roady_get_snapshot").
+	// Tool: roady_snapshot_get (v0.6.0 - Coordinator)
+	s.tool("roady_snapshot_get").
 		Description("Get a consistent project snapshot with progress, categorized task counts, and task lists").
 		UIResource("ui://roady/status").
 		OutputSchema(snapshotResp{}).
@@ -829,7 +843,7 @@ func (s *Server) registerTools() {
 
 	// Tool: roady_plan_decompose (v0.10.0 - canonical name)
 	s.tool("roady_plan_decompose").
-		Description("Build a codebase-aware decomposition prompt for your model. Returns the request; write the result back with roady_update_plan. Canonical name; supersedes roady_smart_decompose.").
+		Description("Build a codebase-aware decomposition prompt for your model. Returns the request; write the result back with roady_plan_update. Canonical name; supersedes roady_smart_decompose.").
 		UIResource("ui://roady/plan").
 		Handler(s.handleSmartDecompose)
 
@@ -1093,7 +1107,7 @@ func (s *Server) handleSpecAnalyze(ctx context.Context, args SpecAnalyzeArgs) (a
 		"title":    productSpec.Title,
 		"features": features,
 		"count":    len(productSpec.Features),
-		"hint":     "The spec is written to .roady/spec.yaml. Run roady_generate_plan to turn it into tasks.",
+		"hint":     "The spec is written to .roady/spec.yaml. Run roady_plan_generate to turn it into tasks.",
 	}, nil
 }
 
@@ -1724,8 +1738,8 @@ func (s *Server) handleUpdatePlan(ctx context.Context, args UpdatePlanArgs) (any
 	if len(warnings) > 0 {
 		result["warnings"] = warnings
 		result["hint"] = "Each warning names a task whose feature_id does not match any feature in the spec. " +
-			"Drift will report these as orphans. Use the feature's id (not its title) from roady_get_spec, " +
-			"or add the missing feature with roady_add_feature."
+			"Drift will report these as orphans. Use the feature's id (not its title) from roady_spec_get, " +
+			"or add the missing feature with roady_spec_add."
 	}
 	return result, nil
 }
@@ -1754,7 +1768,7 @@ func (s *Server) handleStatus(ctx context.Context, args StatusArgs) (any, error)
 	if plan == nil {
 		// Also warned here: "generate a plan" is bad advice when the spec is
 		// unparseable, because generating one reads it and will fail too.
-		return withSpecWarning("No plan found. Run roady_generate_plan first.", specHealth(svc)), nil
+		return withSpecWarning("No plan found. Run roady_plan_generate first.", specHealth(svc)), nil
 	}
 
 	state, err := svc.Plan.GetState()

@@ -94,11 +94,11 @@ func TestReadOnlyToolsAreNotDestructive(t *testing.T) {
 // a read which also logs is not read-only.
 func TestAIToolsAreNotReadOnly(t *testing.T) {
 	aiTools := []string{
-		"roady_explain_spec",
-		"roady_review_spec",
-		"roady_explain_drift",
+		"roady_spec_explain",
+		"roady_spec_review",
+		"roady_drift_explain",
 		"roady_query",
-		"roady_suggest_priorities",
+		"roady_plan_prioritize",
 		"roady_plan_decompose",
 	}
 
@@ -122,10 +122,10 @@ func TestAIToolsAreNotReadOnly(t *testing.T) {
 // the drift baseline must be marked destructive so clients prompt first.
 func TestStateChangingToolsAreClassified(t *testing.T) {
 	mustBeDestructive := []string{
-		"roady_generate_plan",
-		"roady_update_plan",
+		"roady_plan_generate",
+		"roady_plan_update",
 		"roady_plan_decompose",
-		"roady_accept_drift",
+		"roady_drift_accept",
 		"roady_rate_remove",
 		"roady_team_remove",
 		"roady_workspace_pull",

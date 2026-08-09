@@ -57,7 +57,7 @@ func (c *Client) TransitionTaskTyped(ctx context.Context, req TransitionRequest)
 	if req.Actor != "" {
 		args["actor"] = req.Actor
 	}
-	res, err := c.call(ctx, "roady_transition_task", args)
+	res, err := c.call(ctx, "roady_task_transition", args)
 	if err != nil {
 		return "", err
 	}
@@ -128,7 +128,7 @@ func (c *Client) OrgPolicyTyped(ctx context.Context) (*OrgPolicy, error) {
 
 // CheckPolicyTyped returns typed policy violations.
 func (c *Client) CheckPolicyTyped(ctx context.Context) ([]PolicyViolation, error) {
-	res, err := c.call(ctx, "roady_check_policy", nil)
+	res, err := c.call(ctx, "roady_policy_check", nil)
 	if err != nil {
 		return nil, err
 	}

@@ -124,11 +124,11 @@ Guards enforce:
 The MCP server lives in `internal/infrastructure/mcp/`. It currently exposes
 about seventy tools, grouped roughly as:
 
-- **spec / plan / state** — `roady_get_spec`, `roady_get_plan`, `roady_get_state`,
-  `roady_generate_plan`, `roady_approve_plan`, `roady_add_feature`
-- **drift** — `roady_detect_drift`, `roady_accept_drift`, `roady_explain_drift`
-- **tasks** — `roady_transition_task`, `roady_tasks`, `roady_assign_task`
-- **governance & audit** — `roady_check_policy`, `roady_audit_trail`, `roady_audit_verify`
+- **spec / plan / state** — `roady_spec_get`, `roady_plan_get`, `roady_state_get`,
+  `roady_plan_generate`, `roady_plan_approve`, `roady_spec_add`
+- **drift** — `roady_drift_detect`, `roady_drift_accept`, `roady_drift_explain`
+- **tasks** — `roady_task_transition`, `roady_tasks`, `roady_task_assign`
+- **governance & audit** — `roady_policy_check`, `roady_audit_trail`, `roady_audit_verify`
 - **cost, debt, deps, org, team, rates** — families prefixed `roady_cost_`,
   `roady_debt_`, `roady_deps_`, `roady_org_`, `roady_team_`, `roady_rate_`
 
@@ -147,6 +147,29 @@ roady mcp                          # stdio (default)
 roady mcp --transport http --addr :8080
 roady mcp --transport ws --addr :8080
 ```
+
+#### Trimming the advertised surface
+
+All seventy tools are advertised on every session, and a client pays for each
+one in its prompt whether or not the project has a rate card or a debt ledger.
+`ROADY_MCP_TOOLS` selects which groups are registered:
+
+```bash
+ROADY_MCP_TOOLS=core roady mcp        # 30 tools instead of 70
+ROADY_MCP_TOOLS=core,debt roady mcp   # plus the debt ledger
+```
+
+Groups: `core`, `cost`, `team`, `org`, `debt`, `deps`, `plugin`, `sync`,
+`analytics`, `audit`. `core` is always included — a server without the
+spec/plan/execute loop cannot do the thing roady is for. Unset (or `all`)
+registers everything, so this is opt-in: an existing client keeps the surface
+it already calls. An unknown group name fails startup rather than quietly
+starting a smaller server.
+
+The grouping lives in `internal/infrastructure/mcp/profiles.go`, and a tool
+missing from it fails the build — the same guarantee the behaviour
+annotations have. Otherwise an unclassified tool would silently disappear
+from every profile, which looks exactly like a tool that does not exist.
 
 ### Plugin System
 
@@ -237,10 +260,10 @@ See `.claude/commands/` for pre-configured Claude Code commands:
 ### MCP Server
 
 For projects with Roady MCP configured, these tools are available:
-- `roady_get_plan` - Fetch current plan with ready tasks
-- `roady_transition_task` - Start/complete tasks
-- `roady_detect_drift` - Check implementation vs plan
-- `roady_get_snapshot` - Get full project state
+- `roady_plan_get` - Fetch current plan with ready tasks
+- `roady_task_transition` - Start/complete tasks
+- `roady_drift_detect` - Check implementation vs plan
+- `roady_snapshot_get` - Get full project state
 
 Roady's MCP server works with Claude Code, OpenCode, Claude Desktop, OpenAI Codex, and Google Gemini. Use `roady setup <platform>` to configure.
 

@@ -474,7 +474,7 @@ func TestServer_SemanticDriftToolsAreRegistered(t *testing.T) {
 	for _, tool := range server.mcpServer.Tools() {
 		registered[tool.Name] = true
 	}
-	for _, name := range []string{"roady_semantic_drift", "roady_record_semantic_drift"} {
+	for _, name := range []string{"roady_semantic_drift", "roady_drift_record_semantic"} {
 		if !registered[name] {
 			t.Errorf("%s is not registered", name)
 		}

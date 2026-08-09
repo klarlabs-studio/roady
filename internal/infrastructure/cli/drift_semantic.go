@@ -29,7 +29,7 @@ working tree in view.
 Only requirements something claims to implement are included. A requirement
 with no task is structural drift the other checks already report.
 
-Run the prompt yourself, then send the judgements to roady_record_semantic_drift.
+Run the prompt yourself, then send the judgements to roady_drift_record_semantic.
 
 Examples:
   roady drift semantic

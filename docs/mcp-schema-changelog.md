@@ -12,7 +12,7 @@
 
 ### Added
 
-- `roady_dispatch_task` — hands a ready task to a subagent with the context it
+- `roady_task_dispatch` — hands a ready task to a subagent with the context it
   would otherwise have to reconstruct: the originating feature and
   requirement, the `doc:line` citation that motivated the task, what counts as
   done, and the exact call that records completion **against that agent**.
@@ -61,8 +61,8 @@ response shape.
 Six tools returned model output. Roady no longer runs inference — the caller
 already has a model — so they now return the assembled request instead:
 
-`roady_plan_decompose`, `roady_explain_spec`, `roady_review_spec`,
-`roady_query`, `roady_suggest_priorities`, `roady_explain_drift`
+`roady_plan_decompose`, `roady_spec_explain`, `roady_spec_review`,
+`roady_query`, `roady_plan_prioritize`, `roady_drift_explain`
 
 ```json
 {
@@ -70,8 +70,8 @@ already has a model — so they now return the assembled request instead:
   "system": "...",
   "prompt": "...",
   "expected_format": "{\"tasks\": [...]}",
-  "write_back": "roady_update_plan",
-  "guidance": "Produce the tasks yourself, then call roady_update_plan."
+  "write_back": "roady_plan_update",
+  "guidance": "Produce the tasks yourself, then call roady_plan_update."
 }
 ```
 
@@ -117,7 +117,7 @@ these were ~900 — and duplicate tools degrade tool-selection accuracy.
   as potentially destructive.
 - `roady_tasks` gains an optional `assignee` filter and an `unassigned`
   status value.
-- `roady_transition_task` gains optional `session_id` and `agent`, recorded
+- `roady_task_transition` gains optional `session_id` and `agent`, recorded
   in the audit trail so work can be traced to a specific agent run.
 
 54 tools in this version.
@@ -126,17 +126,17 @@ these were ~900 — and duplicate tools degrade tool-selection accuracy.
 
 Initial schema version. All 37 existing MCP tools and their argument structs are frozen as the v1 contract:
 
-`roady_init`, `roady_get_spec`, `roady_get_plan`, `roady_get_state`,
-`roady_generate_plan`, `roady_update_plan`, `roady_detect_drift`,
-`roady_accept_drift`, `roady_status`, `roady_check_policy`,
-`roady_transition_task`, `roady_explain_spec`, `roady_approve_plan`,
-`roady_get_usage`, `roady_explain_drift`, `roady_add_feature`,
+`roady_init`, `roady_spec_get`, `roady_plan_get`, `roady_state_get`,
+`roady_plan_generate`, `roady_plan_update`, `roady_drift_detect`,
+`roady_drift_accept`, `roady_status`, `roady_policy_check`,
+`roady_task_transition`, `roady_spec_explain`, `roady_plan_approve`,
+`roady_usage_get`, `roady_drift_explain`, `roady_spec_add`,
 `roady_forecast`, `roady_org_status`, `roady_git_sync`, `roady_sync`,
 `roady_deps_list`, `roady_deps_scan`, `roady_deps_graph`,
 `roady_debt_report`, `roady_debt_summary`, `roady_sticky_drift`,
 `roady_debt_trend`, `roady_org_policy`, `roady_org_detect_drift`,
 `roady_plugin_list`, `roady_plugin_validate`, `roady_plugin_status`,
-`roady_messaging_list`, `roady_get_snapshot`, `roady_get_ready_tasks`,
+`roady_messaging_list`, `roady_snapshot_get`, `roady_get_ready_tasks`,
 `roady_get_blocked_tasks`, `roady_get_in_progress_tasks`
 
 No deprecated fields.

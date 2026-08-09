@@ -25,8 +25,8 @@ roady plan generate --ai --json   # the whole request as JSON
   "system": "You are a senior engineer breaking a specification into an executable plan.",
   "prompt": "Decompose this specification into concrete, implementable tasks...",
   "expected_format": "{\"tasks\": [{\"id\": \"task-...\", ...}]}",
-  "write_back": "roady_update_plan",
-  "guidance": "Produce the tasks yourself, then call roady_update_plan with them."
+  "write_back": "roady_plan_update",
+  "guidance": "Produce the tasks yourself, then call roady_plan_update with them."
 }
 ```
 
@@ -43,13 +43,13 @@ Requests that produce data Roady stores name the tool that accepts it:
 
 | Operation | Write back with |
 | --- | --- |
-| `decompose_spec` | `roady_update_plan` |
+| `decompose_spec` | `roady_plan_update` |
 | `explain_spec`, `review_spec`, `query_project`, `explain_drift` | nothing — for the reader |
 | `suggest_priorities` | nothing — applying them is a plan edit |
 
 Over MCP the same requests come back from `roady_plan_decompose`,
-`roady_explain_spec`, `roady_review_spec`, `roady_query`,
-`roady_suggest_priorities`, and `roady_explain_drift`. An agent runs the
+`roady_spec_explain`, `roady_spec_review`, `roady_query`,
+`roady_plan_prioritize`, and `roady_drift_explain`. An agent runs the
 prompt on its own model and calls the named tool with the result.
 
 ## Policy still applies

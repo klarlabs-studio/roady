@@ -15,7 +15,7 @@ import (
 // Drift matches tasks to features by id, so a task whose feature_id holds
 // anything else is reported as an orphan the moment it is written — the plan
 // is born drifted, and nothing said so at the time. Agents writing plans back
-// through roady_update_plan reached for the human-readable title, which is
+// through roady_plan_update reached for the human-readable title, which is
 // the obvious thing to reach for and which Roady is perfectly able to
 // translate.
 //
