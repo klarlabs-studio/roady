@@ -148,6 +148,29 @@ roady mcp --transport http --addr :8080
 roady mcp --transport ws --addr :8080
 ```
 
+#### Trimming the advertised surface
+
+All seventy tools are advertised on every session, and a client pays for each
+one in its prompt whether or not the project has a rate card or a debt ledger.
+`ROADY_MCP_TOOLS` selects which groups are registered:
+
+```bash
+ROADY_MCP_TOOLS=core roady mcp        # 30 tools instead of 70
+ROADY_MCP_TOOLS=core,debt roady mcp   # plus the debt ledger
+```
+
+Groups: `core`, `cost`, `team`, `org`, `debt`, `deps`, `plugin`, `sync`,
+`analytics`, `audit`. `core` is always included — a server without the
+spec/plan/execute loop cannot do the thing roady is for. Unset (or `all`)
+registers everything, so this is opt-in: an existing client keeps the surface
+it already calls. An unknown group name fails startup rather than quietly
+starting a smaller server.
+
+The grouping lives in `internal/infrastructure/mcp/profiles.go`, and a tool
+missing from it fails the build — the same guarantee the behaviour
+annotations have. Otherwise an unclassified tool would silently disappear
+from every profile, which looks exactly like a tool that does not exist.
+
 ### Plugin System
 
 Plugins use HashiCorp go-plugin over RPC:

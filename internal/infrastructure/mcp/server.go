@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -63,6 +64,10 @@ type Server struct {
 	svcCache   sync.Map // map[string]*wiring.AppServices
 	svcCacheMu sync.Mutex
 	svcKeys    []string // insertion-order keys for LRU eviction
+
+	// groups is the set of tool groups this server advertises. Populated
+	// from ROADY_MCP_TOOLS; every group when unset. See profiles.go.
+	groups map[toolGroup]bool
 }
 
 var (
@@ -279,6 +284,15 @@ func NewServer(root string) (*Server, error) {
 		teamSvc:     services.Team,
 		root:        root,
 	}
+
+	// Resolve the advertised tool surface before registering anything: a bad
+	// ROADY_MCP_TOOLS should fail the server at startup with a message naming
+	// the valid groups, not start a server that quietly lacks tools.
+	groups, err := enabledGroups(os.Getenv("ROADY_MCP_TOOLS"))
+	if err != nil {
+		return nil, fmt.Errorf("ROADY_MCP_TOOLS: %w", err)
+	}
+	s.groups = groups
 
 	s.registerTools()
 	s.registerApps()

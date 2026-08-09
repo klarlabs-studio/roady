@@ -1,6 +1,9 @@
 package mcp
 
 import (
+	"sync"
+
+	"go.klarlabs.de/mcp"
 	mcpserver "go.klarlabs.de/mcp/server"
 )
 
@@ -128,6 +131,16 @@ var toolBehaviours = map[string]toolBehaviour{
 // tool starts a tool registration with its behaviour hints already applied,
 // so no call site can register a tool without them.
 func (s *Server) tool(name string) *mcpserver.ToolBuilder {
+	// A tool whose group is switched off is never registered, so it costs a
+	// client nothing in its prompt. s.groups is nil in tests that construct a
+	// Server directly; treat that as "everything", so no existing test has to
+	// know about profiles to keep passing.
+	if s.groups != nil {
+		if g, ok := toolGroups[name]; ok && !s.groups[g] {
+			return discardedTool()
+		}
+	}
+
 	b := s.mcpServer.Tool(name)
 
 	behaviour, ok := toolBehaviours[name]
@@ -155,3 +168,24 @@ func (s *Server) tool(name string) *mcpserver.ToolBuilder {
 
 	return b
 }
+
+// discardedTool returns a builder whose registration goes nowhere, so a
+// disabled tool's `s.tool(...).Description(...).Handler(...)` chain in
+// registerTools stays valid without every call site growing a conditional.
+//
+// The alternative — an `if enabled { ... }` around each of seventy
+// registrations — is the kind of thing that gets forgotten on tool
+// seventy-one, and a forgotten check here means a tool that ignores the
+// profile. Keeping the gate at the single chokepoint is why
+// TestEveryToolHasAGroup can guarantee anything.
+func discardedTool() *mcpserver.ToolBuilder {
+	discardOnce.Do(func() {
+		discardServer = mcp.NewServer(mcp.ServerInfo{Name: "discard", Version: "0"})
+	})
+	return discardServer.Tool("discarded")
+}
+
+var (
+	discardOnce   sync.Once
+	discardServer *mcp.Server
+)
