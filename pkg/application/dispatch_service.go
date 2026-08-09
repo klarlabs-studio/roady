@@ -199,11 +199,11 @@ func (s *DispatchService) buildBrief(task *planning.Task, opts DispatchOptions) 
 	}
 
 	brief.Completion = dispatch.CompletionContract{
-		Tool:             "roady_transition_task",
+		Tool:             "roady_task_transition",
 		CLI:              cli,
 		Arguments:        args,
 		EvidenceRequired: true,
-		Instructions: "When the work is done, call roady_transition_task with these arguments and an evidence value " +
+		Instructions: "When the work is done, call roady_task_transition with these arguments and an evidence value " +
 			"(a commit hash or link). The transition is what records the work against you in the audit trail — " +
 			"without it the task stays in progress and nothing attributes it.",
 	}

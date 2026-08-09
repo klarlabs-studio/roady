@@ -147,10 +147,10 @@ agent = Agent(
 )
 
 # Now the agent can use:
-# - roady_get_plan
+# - roady_plan_get
 # - roady_get_ready_tasks
-# - roady_transition_task
-# - roady_detect_drift
+# - roady_task_transition
+# - roady_drift_detect
 ```
 
 ## Google Gemini
@@ -183,25 +183,25 @@ All platforms have access to 40+ MCP tools:
 ### Planning
 | Tool | Description |
 |------|-------------|
-| `roady_get_spec` | Get current specification |
-| `roady_get_plan` | Get task list with dependencies |
-| `roady_generate_plan` | Generate plan from spec |
-| `roady_approve_plan` | Approve plan for execution |
-| `roady_update_plan` | Smart injection of tasks |
+| `roady_spec_get` | Get current specification |
+| `roady_plan_get` | Get task list with dependencies |
+| `roady_plan_generate` | Generate plan from spec |
+| `roady_plan_approve` | Approve plan for execution |
+| `roady_plan_update` | Smart injection of tasks |
 
 ### Execution
 | Tool | Description |
 |------|-------------|
 | `roady_get_ready_tasks` | Tasks ready to start |
-| `roady_transition_task` | Start/complete/block tasks |
-| `roady_assign_task` | Assign tasks |
+| `roady_task_transition` | Start/complete/block tasks |
+| `roady_task_assign` | Assign tasks |
 
 ### Verification
 | Tool | Description |
 |------|-------------|
-| `roady_detect_drift` | Check implementation vs plan |
-| `roady_explain_drift` | AI explanation of drift |
-| `roady_accept_drift` | Lock spec snapshot |
+| `roady_drift_detect` | Check implementation vs plan |
+| `roady_drift_explain` | AI explanation of drift |
+| `roady_drift_accept` | Lock spec snapshot |
 
 ### Analysis
 | Tool | Description |
@@ -209,7 +209,7 @@ All platforms have access to 40+ MCP tools:
 | `roady_status` | Project status overview |
 | `roady_forecast` | Completion predictions |
 | `roady_debt_report` | Planning debt analysis |
-| `roady_explain_spec` | AI architectural overview |
+| `roady_spec_explain` | AI architectural overview |
 
 ## Workflow Example
 

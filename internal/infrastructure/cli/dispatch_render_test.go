@@ -25,10 +25,10 @@ func TestPrintBriefRendersTheCompletionContract(t *testing.T) {
 		Estimate:    "1d",
 		DependsOn:   []string{"task-41"},
 		Completion: dispatch.CompletionContract{
-			Tool:             "roady_transition_task",
+			Tool:             "roady_task_transition",
 			CLI:              "ROADY_AGENT=claude-code roady task complete task-42 --evidence <commit>",
 			EvidenceRequired: true,
-			Instructions:     "Call roady_transition_task when done.",
+			Instructions:     "Call roady_task_transition when done.",
 		},
 	}
 
@@ -40,7 +40,7 @@ func TestPrintBriefRendersTheCompletionContract(t *testing.T) {
 		"docs/security.md:31",         // how to check the work
 		"Done when:",                  // acceptance
 		"task-41",                     // satisfied dependency
-		"roady_transition_task",       // the MCP call
+		"roady_task_transition",       // the MCP call
 		"roady task complete task-42", // the CLI equivalent
 	} {
 		if !strings.Contains(out, want) {
@@ -56,7 +56,7 @@ func TestPrintBriefWarnsAboutGaps(t *testing.T) {
 		TaskID: "task-7",
 		Title:  "Do the thing",
 		Completion: dispatch.CompletionContract{
-			Tool: "roady_transition_task",
+			Tool: "roady_task_transition",
 			CLI:  "roady task complete task-7",
 		},
 	}

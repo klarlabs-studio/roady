@@ -150,8 +150,8 @@ func (s *PromptService) DecomposeSpec(_ context.Context) (*prompt.Request, error
 		ExpectedFormat: `{"tasks": [{"id": "task-...", "title": "...", "description": "...", ` +
 			`"priority": "low|medium|high", "estimate": "4h", "feature_id": "...", ` +
 			`"depends_on": ["task-..."]}]}`,
-		WriteBack: "roady_update_plan",
-		Guidance:  "Produce the tasks yourself, then call roady_update_plan with them to store the plan.",
+		WriteBack: "roady_plan_update",
+		Guidance:  "Produce the tasks yourself, then call roady_plan_update with them to store the plan.",
 	}, nil
 }
 
@@ -264,7 +264,7 @@ func (s *PromptService) ExplainDrift(_ context.Context, report *drift.Report) (*
 		Operation: prompt.OpExplainDrift,
 		System:    "You explain divergence between a plan and reality to the engineer who has to fix it.",
 		Prompt:    b.String(),
-		Guidance:  "Answer this yourself. To record that the drift is intentional, use roady_accept_drift.",
+		Guidance:  "Answer this yourself. To record that the drift is intentional, use roady_drift_accept.",
 	}, nil
 }
 
@@ -421,8 +421,8 @@ func (s *PromptService) SemanticDrift(_ context.Context) (*prompt.Request, []dri
 		Prompt: b.String(),
 		ExpectedFormat: `A JSON array of judgements: ` +
 			`[{"requirement_id": "...", "agrees": true|false, "explanation": "required when agrees is false"}]`,
-		WriteBack: "roady_record_semantic_drift",
-		Guidance: "Run this yourself against the working tree, then send the judgements to roady_record_semantic_drift. " +
+		WriteBack: "roady_drift_record_semantic",
+		Guidance: "Run this yourself against the working tree, then send the judgements to roady_drift_record_semantic. " +
 			"Divergences become drift issues; agreement records nothing.",
 	}, questions, nil
 }

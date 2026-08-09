@@ -4,7 +4,7 @@ package mcp
 // outputSchema. Declaring them at package scope lets a tool registration pass a
 // zero value to OutputSchema(...); the handler returns the same type and mcp-go
 // emits it as structuredContent, so MCP clients get typed, validated data
-// instead of parsing the JSON text. The core read tools (roady_get_plan/state/
+// instead of parsing the JSON text. The core read tools (roady_plan_get/state/
 // spec) advertise their domain types directly; this file only needs to host the
 // types that were previously declared inside a handler.
 
@@ -47,7 +47,7 @@ type forecastResp struct {
 	DataPoints     int          `json:"data_points"`
 }
 
-// snapshotResp is the structured result of roady_get_snapshot: a consistent
+// snapshotResp is the structured result of roady_snapshot_get: a consistent
 // project overview — overall progress plus the task ids in each lifecycle
 // bucket. Previously a handler-local type; hoisted here so it can be advertised
 // as the tool's outputSchema.

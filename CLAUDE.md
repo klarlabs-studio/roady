@@ -124,11 +124,11 @@ Guards enforce:
 The MCP server lives in `internal/infrastructure/mcp/`. It currently exposes
 about seventy tools, grouped roughly as:
 
-- **spec / plan / state** — `roady_get_spec`, `roady_get_plan`, `roady_get_state`,
-  `roady_generate_plan`, `roady_approve_plan`, `roady_add_feature`
-- **drift** — `roady_detect_drift`, `roady_accept_drift`, `roady_explain_drift`
-- **tasks** — `roady_transition_task`, `roady_tasks`, `roady_assign_task`
-- **governance & audit** — `roady_check_policy`, `roady_audit_trail`, `roady_audit_verify`
+- **spec / plan / state** — `roady_spec_get`, `roady_plan_get`, `roady_state_get`,
+  `roady_plan_generate`, `roady_plan_approve`, `roady_spec_add`
+- **drift** — `roady_drift_detect`, `roady_drift_accept`, `roady_drift_explain`
+- **tasks** — `roady_task_transition`, `roady_tasks`, `roady_task_assign`
+- **governance & audit** — `roady_policy_check`, `roady_audit_trail`, `roady_audit_verify`
 - **cost, debt, deps, org, team, rates** — families prefixed `roady_cost_`,
   `roady_debt_`, `roady_deps_`, `roady_org_`, `roady_team_`, `roady_rate_`
 
@@ -260,10 +260,10 @@ See `.claude/commands/` for pre-configured Claude Code commands:
 ### MCP Server
 
 For projects with Roady MCP configured, these tools are available:
-- `roady_get_plan` - Fetch current plan with ready tasks
-- `roady_transition_task` - Start/complete tasks
-- `roady_detect_drift` - Check implementation vs plan
-- `roady_get_snapshot` - Get full project state
+- `roady_plan_get` - Fetch current plan with ready tasks
+- `roady_task_transition` - Start/complete tasks
+- `roady_drift_detect` - Check implementation vs plan
+- `roady_snapshot_get` - Get full project state
 
 Roady's MCP server works with Claude Code, OpenCode, Claude Desktop, OpenAI Codex, and Google Gemini. Use `roady setup <platform>` to configure.
 

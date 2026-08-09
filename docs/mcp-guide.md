@@ -72,41 +72,41 @@ roady mcp --transport ws --addr :8080
 | Tool | Description | Returns |
 |------|-------------|---------|
 | `roady_init` | Initialize a new roady project | Confirmation message |
-| `roady_get_spec` | Retrieve the current product specification | JSON ProductSpec |
-| `roady_get_plan` | Retrieve the current execution plan | JSON Plan with tasks |
-| `roady_get_state` | Retrieve task execution states | JSON ExecutionState |
+| `roady_spec_get` | Retrieve the current product specification | JSON ProductSpec |
+| `roady_plan_get` | Retrieve the current execution plan | JSON Plan with tasks |
+| `roady_state_get` | Retrieve task execution states | JSON ExecutionState |
 | `roady_status` | Get a high-level project summary | Status summary text |
 
 ### Planning Tools
 
 | Tool | Description | Parameters |
 |------|-------------|------------|
-| `roady_generate_plan` | Generate plan using 1:1 heuristic | None |
-| `roady_update_plan` | Update with specific task list | `tasks[]` - Task definitions |
-| `roady_approve_plan` | Approve plan for execution | None |
-| `roady_explain_spec` | AI architectural walkthrough | None |
+| `roady_plan_generate` | Generate plan using 1:1 heuristic | None |
+| `roady_plan_update` | Update with specific task list | `tasks[]` - Task definitions |
+| `roady_plan_approve` | Approve plan for execution | None |
+| `roady_spec_explain` | AI architectural walkthrough | None |
 
 ### Drift Detection Tools
 
 | Tool | Description | Returns |
 |------|-------------|---------|
-| `roady_detect_drift` | Detect spec/plan discrepancies | DriftReport JSON |
-| `roady_accept_drift` | Accept drift, lock spec snapshot | Confirmation |
-| `roady_explain_drift` | AI explanation of drift causes | Analysis text |
+| `roady_drift_detect` | Detect spec/plan discrepancies | DriftReport JSON |
+| `roady_drift_accept` | Accept drift, lock spec snapshot | Confirmation |
+| `roady_drift_explain` | AI explanation of drift causes | Analysis text |
 
 ### Task Lifecycle Tools
 
 | Tool | Description | Parameters |
 |------|-------------|------------|
-| `roady_transition_task` | Transition task state | `task_id`, `event` (start/complete/block/stop), optional `evidence` |
-| `roady_check_policy` | Validate against WIP limits | None |
+| `roady_task_transition` | Transition task state | `task_id`, `event` (start/complete/block/stop), optional `evidence` |
+| `roady_policy_check` | Validate against WIP limits | None |
 
 ### Forecasting & Analytics Tools
 
 | Tool | Description | Returns |
 |------|-------------|---------|
 | `roady_forecast` | Predict completion based on velocity | Velocity, remaining tasks, estimated days |
-| `roady_get_usage` | Get AI token consumption stats | UsageStats JSON |
+| `roady_usage_get` | Get AI token consumption stats | UsageStats JSON |
 
 ### Dependency Management Tools (Horizon 5)
 
@@ -129,7 +129,7 @@ roady mcp --transport ws --addr :8080
 
 | Tool | Description | Parameters |
 |------|-------------|------------|
-| `roady_add_feature` | Add feature to spec | `title`, `description` |
+| `roady_spec_add` | Add feature to spec | `title`, `description` |
 | `roady_git_sync` | Sync via commit markers | None |
 | `roady_sync` | External plugin sync | `plugin_path` |
 | `roady_org_status` | Multi-project overview | None |
@@ -145,7 +145,7 @@ roady mcp --transport ws --addr :8080
 }
 ```
 
-### roady_update_plan
+### roady_plan_update
 ```json
 {
   "tasks": [
@@ -162,7 +162,7 @@ roady mcp --transport ws --addr :8080
 }
 ```
 
-### roady_transition_task
+### roady_task_transition
 ```json
 {
   "task_id": "task-auth",
@@ -171,7 +171,7 @@ roady mcp --transport ws --addr :8080
 }
 ```
 
-### roady_add_feature
+### roady_spec_add
 ```json
 {
   "title": "User Dashboard",
@@ -190,22 +190,22 @@ roady mcp --transport ws --addr :8080
 await mcp.call("roady_init", {"name": "my-app"})
 
 # 2. Generate initial plan from existing spec
-await mcp.call("roady_generate_plan")
+await mcp.call("roady_plan_generate")
 
 # 3. Review and approve
-plan = await mcp.call("roady_get_plan")
+plan = await mcp.call("roady_plan_get")
 # ... agent reviews plan ...
-await mcp.call("roady_approve_plan")
+await mcp.call("roady_plan_approve")
 ```
 
 ### 2. Task Execution Loop
 
 ```python
 # Check policy before starting
-policy_ok = await mcp.call("roady_check_policy")
+policy_ok = await mcp.call("roady_policy_check")
 
 # Start task
-await mcp.call("roady_transition_task", {
+await mcp.call("roady_task_transition", {
     "task_id": "task-api",
     "event": "start"
 })
@@ -213,7 +213,7 @@ await mcp.call("roady_transition_task", {
 # ... agent implements feature ...
 
 # Complete with evidence
-await mcp.call("roady_transition_task", {
+await mcp.call("roady_task_transition", {
     "task_id": "task-api",
     "event": "complete",
     "evidence": "PR #123"
@@ -224,14 +224,14 @@ await mcp.call("roady_transition_task", {
 
 ```python
 # Detect drift
-drift = await mcp.call("roady_detect_drift")
+drift = await mcp.call("roady_drift_detect")
 
 if drift["has_issues"]:
     # Get AI explanation
-    explanation = await mcp.call("roady_explain_drift")
+    explanation = await mcp.call("roady_drift_explain")
 
     # If drift is intentional, accept it
-    await mcp.call("roady_accept_drift")
+    await mcp.call("roady_drift_accept")
 ```
 
 ### 4. Progress Monitoring

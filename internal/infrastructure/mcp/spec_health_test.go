@@ -43,7 +43,7 @@ func TestWithSpecWarning(t *testing.T) {
 		},
 		{
 			name:   "the remedy is named, not just the symptom",
-			answer: "No plan found. Run roady_generate_plan first.",
+			answer: "No plan found. Run roady_plan_generate first.",
 			err:    errors.New("load spec: bad yaml"),
 			// "generate a plan" is bad advice when the spec cannot be read,
 			// because generating one reads it and fails too.

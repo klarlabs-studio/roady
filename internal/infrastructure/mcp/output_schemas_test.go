@@ -25,20 +25,20 @@ func TestOutputSchemasGenerate(t *testing.T) {
 		name string
 		v    any
 	}{
-		{"roady_get_plan", planning.Plan{}},
-		{"roady_get_state", planning.ExecutionState{}},
-		{"roady_get_spec", spec.ProductSpec{}},
-		{"roady_get_snapshot", snapshotResp{}},
+		{"roady_plan_get", planning.Plan{}},
+		{"roady_state_get", planning.ExecutionState{}},
+		{"roady_spec_get", spec.ProductSpec{}},
+		{"roady_snapshot_get", snapshotResp{}},
 		{"roady_forecast", forecastResp{}},
-		{"roady_get_usage", domain.UsageStats{}},
-		{"roady_detect_drift", drift.Report{}},
+		{"roady_usage_get", domain.UsageStats{}},
+		{"roady_drift_detect", drift.Report{}},
 		{"roady_org_status", org.OrgMetrics{}},
 		{"roady_deps_scan", application.ScanResult{}},
 		{"roady_debt_report", debt.DebtReport{}},
 		{"roady_debt_summary", application.DebtSummary{}},
 		{"roady_debt_trend", events.DriftTrend{}},
-		{"roady_suggest_priorities", planning.PrioritySuggestions{}},
-		{"roady_review_spec", spec.SpecReview{}},
+		{"roady_plan_prioritize", planning.PrioritySuggestions{}},
+		{"roady_spec_review", spec.SpecReview{}},
 		{"roady_cost_report", billing.CostReport{}},
 		{"roady_cost_budget", billing.BudgetStatus{}},
 	}

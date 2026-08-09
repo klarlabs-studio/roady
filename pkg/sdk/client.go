@@ -137,7 +137,7 @@ func (c *Client) Init(ctx context.Context, name string) (string, error) {
 
 // GetSpec retrieves the current product specification.
 func (c *Client) GetSpec(ctx context.Context) (*Spec, error) {
-	res, err := c.call(ctx, "roady_get_spec", nil)
+	res, err := c.call(ctx, "roady_spec_get", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +146,7 @@ func (c *Client) GetSpec(ctx context.Context) (*Spec, error) {
 
 // GetPlan retrieves the current execution plan.
 func (c *Client) GetPlan(ctx context.Context) (*Plan, error) {
-	res, err := c.call(ctx, "roady_get_plan", nil)
+	res, err := c.call(ctx, "roady_plan_get", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -155,7 +155,7 @@ func (c *Client) GetPlan(ctx context.Context) (*Plan, error) {
 
 // GetState retrieves the current execution state.
 func (c *Client) GetState(ctx context.Context) (*ExecutionState, error) {
-	res, err := c.call(ctx, "roady_get_state", nil)
+	res, err := c.call(ctx, "roady_state_get", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +166,7 @@ func (c *Client) GetState(ctx context.Context) (*ExecutionState, error) {
 
 // GeneratePlan generates a plan from the spec using 1:1 heuristic.
 func (c *Client) GeneratePlan(ctx context.Context) (string, error) {
-	res, err := c.call(ctx, "roady_generate_plan", nil)
+	res, err := c.call(ctx, "roady_plan_generate", nil)
 	if err != nil {
 		return "", err
 	}
@@ -175,7 +175,7 @@ func (c *Client) GeneratePlan(ctx context.Context) (string, error) {
 
 // UpdatePlan updates the plan with the given tasks.
 func (c *Client) UpdatePlan(ctx context.Context, tasks []Task) (string, error) {
-	res, err := c.call(ctx, "roady_update_plan", map[string]any{"tasks": tasks})
+	res, err := c.call(ctx, "roady_plan_update", map[string]any{"tasks": tasks})
 	if err != nil {
 		return "", err
 	}
@@ -184,7 +184,7 @@ func (c *Client) UpdatePlan(ctx context.Context, tasks []Task) (string, error) {
 
 // ApprovePlan approves the current plan for execution.
 func (c *Client) ApprovePlan(ctx context.Context) (string, error) {
-	res, err := c.call(ctx, "roady_approve_plan", nil)
+	res, err := c.call(ctx, "roady_plan_approve", nil)
 	if err != nil {
 		return "", err
 	}
@@ -195,7 +195,7 @@ func (c *Client) ApprovePlan(ctx context.Context) (string, error) {
 
 // DetectDrift detects discrepancies between spec and plan.
 func (c *Client) DetectDrift(ctx context.Context) (*DriftReport, error) {
-	res, err := c.call(ctx, "roady_detect_drift", nil)
+	res, err := c.call(ctx, "roady_drift_detect", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -204,7 +204,7 @@ func (c *Client) DetectDrift(ctx context.Context) (*DriftReport, error) {
 
 // AcceptDrift accepts drift and locks the spec snapshot.
 func (c *Client) AcceptDrift(ctx context.Context) (string, error) {
-	res, err := c.call(ctx, "roady_accept_drift", nil)
+	res, err := c.call(ctx, "roady_drift_accept", nil)
 	if err != nil {
 		return "", err
 	}
@@ -213,7 +213,7 @@ func (c *Client) AcceptDrift(ctx context.Context) (string, error) {
 
 // ExplainDrift provides an AI-generated explanation of current drift.
 func (c *Client) ExplainDrift(ctx context.Context) (string, error) {
-	res, err := c.call(ctx, "roady_explain_drift", nil)
+	res, err := c.call(ctx, "roady_drift_explain", nil)
 	if err != nil {
 		return "", err
 	}
@@ -228,7 +228,7 @@ func (c *Client) TransitionTask(ctx context.Context, taskID, event, evidence str
 	if evidence != "" {
 		args["evidence"] = evidence
 	}
-	res, err := c.call(ctx, "roady_transition_task", args)
+	res, err := c.call(ctx, "roady_task_transition", args)
 	if err != nil {
 		return "", err
 	}
@@ -237,7 +237,7 @@ func (c *Client) TransitionTask(ctx context.Context, taskID, event, evidence str
 
 // AssignTask assigns a task to a person or agent without changing its status.
 func (c *Client) AssignTask(ctx context.Context, taskID, assignee string) (string, error) {
-	res, err := c.call(ctx, "roady_assign_task", map[string]any{"task_id": taskID, "assignee": assignee})
+	res, err := c.call(ctx, "roady_task_assign", map[string]any{"task_id": taskID, "assignee": assignee})
 	if err != nil {
 		return "", err
 	}
@@ -255,7 +255,7 @@ func (c *Client) Status(ctx context.Context, args map[string]any) (string, error
 
 // CheckPolicy checks plan compliance with execution policies.
 func (c *Client) CheckPolicy(ctx context.Context) (string, error) {
-	res, err := c.call(ctx, "roady_check_policy", nil)
+	res, err := c.call(ctx, "roady_policy_check", nil)
 	if err != nil {
 		return "", err
 	}
@@ -266,7 +266,7 @@ func (c *Client) CheckPolicy(ctx context.Context) (string, error) {
 
 // AddFeature adds a new feature to the product specification.
 func (c *Client) AddFeature(ctx context.Context, title, description string) (string, error) {
-	res, err := c.call(ctx, "roady_add_feature", map[string]any{"title": title, "description": description})
+	res, err := c.call(ctx, "roady_spec_add", map[string]any{"title": title, "description": description})
 	if err != nil {
 		return "", err
 	}
@@ -284,7 +284,7 @@ func (c *Client) QueryProject(ctx context.Context, question string) (string, err
 
 // SuggestPriorities returns AI-powered priority suggestions for plan tasks.
 func (c *Client) SuggestPriorities(ctx context.Context) (*PrioritySuggestions, error) {
-	res, err := c.call(ctx, "roady_suggest_priorities", nil)
+	res, err := c.call(ctx, "roady_plan_prioritize", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -293,7 +293,7 @@ func (c *Client) SuggestPriorities(ctx context.Context) (*PrioritySuggestions, e
 
 // ReviewSpec performs an AI-powered quality review of the specification.
 func (c *Client) ReviewSpec(ctx context.Context) (*SpecReview, error) {
-	res, err := c.call(ctx, "roady_review_spec", nil)
+	res, err := c.call(ctx, "roady_spec_review", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -302,7 +302,7 @@ func (c *Client) ReviewSpec(ctx context.Context) (*SpecReview, error) {
 
 // ExplainSpec provides an AI-generated walkthrough of the specification.
 func (c *Client) ExplainSpec(ctx context.Context) (string, error) {
-	res, err := c.call(ctx, "roady_explain_spec", nil)
+	res, err := c.call(ctx, "roady_spec_explain", nil)
 	if err != nil {
 		return "", err
 	}
@@ -311,7 +311,7 @@ func (c *Client) ExplainSpec(ctx context.Context) (string, error) {
 
 // GetUsage retrieves project usage and telemetry statistics.
 func (c *Client) GetUsage(ctx context.Context) (string, error) {
-	res, err := c.call(ctx, "roady_get_usage", nil)
+	res, err := c.call(ctx, "roady_usage_get", nil)
 	if err != nil {
 		return "", err
 	}
@@ -322,7 +322,7 @@ func (c *Client) GetUsage(ctx context.Context) (string, error) {
 
 // GetSnapshot returns a consistent project snapshot.
 func (c *Client) GetSnapshot(ctx context.Context) (*Snapshot, error) {
-	res, err := c.call(ctx, "roady_get_snapshot", nil)
+	res, err := c.call(ctx, "roady_snapshot_get", nil)
 	if err != nil {
 		return nil, err
 	}

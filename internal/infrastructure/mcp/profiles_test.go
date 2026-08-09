@@ -152,8 +152,8 @@ func TestCoreProfileIsASubstantialReduction(t *testing.T) {
 	// The loop roady exists for must survive the trim. These are the tools
 	// the report in #87 named as the ones actually reached for.
 	essential := []string{
-		"roady_status", "roady_tasks", "roady_get_spec",
-		"roady_add_feature", "roady_spec_validate", "roady_transition_task",
+		"roady_status", "roady_tasks", "roady_spec_get",
+		"roady_spec_add", "roady_spec_validate", "roady_task_transition",
 	}
 	for _, name := range essential {
 		if toolGroups[name] != groupCore {

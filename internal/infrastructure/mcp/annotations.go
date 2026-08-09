@@ -38,18 +38,18 @@ type toolBehaviour struct {
 // pessimistic defaults.
 var toolBehaviours = map[string]toolBehaviour{
 	// --- Pure local reads -------------------------------------------------
-	"roady_get_spec":              {readOnly: true, idempotent: true},
-	"roady_get_plan":              {readOnly: true, idempotent: true},
-	"roady_get_state":             {readOnly: true, idempotent: true},
-	"roady_get_snapshot":          {readOnly: true, idempotent: true},
-	"roady_get_usage":             {readOnly: true, idempotent: true},
+	"roady_spec_get":              {readOnly: true, idempotent: true},
+	"roady_plan_get":              {readOnly: true, idempotent: true},
+	"roady_state_get":             {readOnly: true, idempotent: true},
+	"roady_snapshot_get":          {readOnly: true, idempotent: true},
+	"roady_usage_get":             {readOnly: true, idempotent: true},
 	"roady_status":                {readOnly: true, idempotent: true},
 	"roady_tasks":                 {readOnly: true, idempotent: true},
 	"roady_org_members":           {readOnly: true, idempotent: true},
 	"roady_report":                {readOnly: true, idempotent: true},
 	"roady_spec_analyze":          {},
 	"roady_semantic_drift":        {readOnly: true, idempotent: true},
-	"roady_record_semantic_drift": {},
+	"roady_drift_record_semantic": {},
 	"roady_plan_prune":            {destructive: true},
 	"roady_plan_reject":           {idempotent: true},
 	"roady_audit_verify":          {readOnly: true, idempotent: true},
@@ -60,8 +60,8 @@ var toolBehaviours = map[string]toolBehaviour{
 	"roady_timeline":              {readOnly: true, idempotent: true},
 	"roady_debt_history":          {readOnly: true, idempotent: true},
 	"roady_debt_score":            {readOnly: true, idempotent: true},
-	"roady_check_policy":          {readOnly: true, idempotent: true},
-	"roady_detect_drift":          {readOnly: true, idempotent: true},
+	"roady_policy_check":          {readOnly: true, idempotent: true},
+	"roady_drift_detect":          {readOnly: true, idempotent: true},
 	"roady_debt_report":           {readOnly: true, idempotent: true},
 	"roady_debt_summary":          {readOnly: true, idempotent: true},
 	"roady_debt_trend":            {readOnly: true, idempotent: true},
@@ -87,16 +87,16 @@ var toolBehaviours = map[string]toolBehaviour{
 	// --- AI: look like reads, but record token usage to the audit log -----
 	// Marking these read-only would be the exact mistake the spec warns
 	// about, and would also hide their cost from clients that surface it.
-	"roady_explain_spec":       {openWorld: true},
-	"roady_review_spec":        {openWorld: true},
-	"roady_explain_drift":      {openWorld: true},
-	"roady_query":              {openWorld: true},
-	"roady_suggest_priorities": {openWorld: true},
+	"roady_spec_explain":    {openWorld: true},
+	"roady_spec_review":     {openWorld: true},
+	"roady_drift_explain":   {openWorld: true},
+	"roady_query":           {openWorld: true},
+	"roady_plan_prioritize": {openWorld: true},
 
 	// --- Additive writes: create or record, nothing lost ------------------
 	"roady_init":             {idempotent: true},
-	"roady_add_feature":      {},
-	"roady_assign_task":      {idempotent: true},
+	"roady_spec_add":         {},
+	"roady_task_assign":      {idempotent: true},
 	"roady_task_log_time":    {},
 	"roady_rate_add":         {idempotent: true},
 	"roady_team_add":         {idempotent: true},
@@ -105,19 +105,19 @@ var toolBehaviours = map[string]toolBehaviour{
 	"roady_deps_scan":        {idempotent: true},
 
 	// State moves that are reversible through the FSM.
-	"roady_transition_task": {},
+	"roady_task_transition": {},
 	// Claims the task by default, so not read-only; reversible via stop.
-	"roady_dispatch_task": {},
-	"roady_approve_plan":  {idempotent: true},
+	"roady_task_dispatch": {},
+	"roady_plan_approve":  {idempotent: true},
 
 	// --- Destructive: overwrite or delete ---------------------------------
 	// Plan generation replaces the existing task DAG, so unapproved local
 	// edits are lost; drift acceptance replaces the intent baseline that
 	// made the drift visible in the first place.
-	"roady_generate_plan":  {destructive: true},
-	"roady_update_plan":    {destructive: true},
+	"roady_plan_generate":  {destructive: true},
+	"roady_plan_update":    {destructive: true},
 	"roady_plan_decompose": {destructive: true, openWorld: true},
-	"roady_accept_drift":   {destructive: true, idempotent: true},
+	"roady_drift_accept":   {destructive: true, idempotent: true},
 	"roady_rate_remove":    {destructive: true, idempotent: true},
 	"roady_team_remove":    {destructive: true, idempotent: true},
 

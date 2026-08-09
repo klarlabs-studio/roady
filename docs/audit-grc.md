@@ -56,7 +56,7 @@ A session ID is minted **once per process**. One CLI invocation is one session;
 one long-lived `roady mcp` server is one session spanning the agent's whole
 conversation — which is the granularity a reviewer asks about.
 
-Over MCP, `roady_transition_task` accepts `session_id` and `agent` per call.
+Over MCP, `roady_task_transition` accepts `session_id` and `agent` per call.
 A caller-supplied value always wins over the ambient process identity, because
 an agent forwarding the run that spawned it knows more than the server does.
 

@@ -26,7 +26,7 @@ to get a prompt, reconcile with your own model, and write the result back with
 
 - `roady plan generate --ai` — prints a decomposition prompt for your own
   model instead of running the heuristic planner. Roady calls no provider;
-  write the answer back with `roady_update_plan`. Tasks that arrive that way
+  write the answer back with `roady_plan_update`. Tasks that arrive that way
   are tagged `Origin=ai` and surface as `[AI]` in `roady status` so reviewers
   can scrutinise them.
 - `roady plan smart-decompose` — the same, grounded in a file-tree analysis of
