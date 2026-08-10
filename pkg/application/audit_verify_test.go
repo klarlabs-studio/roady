@@ -29,6 +29,11 @@ func linked(actor string, n int, parent string) []domain.Event {
 			Action:    "task.transition",
 			Actor:     actor,
 			PrevHash:  prev,
+			// Both real writers stamp this on every event they append. Leaving
+			// it off made these fixtures exercise the pre-hash_algo path, where
+			// a hash that does not reproduce cannot be attributed to tampering
+			// — so the tampering test was passing for the wrong reason.
+			HashAlgo: domain.HashAlgoCurrent,
 		}
 		e.Hash = e.CalculateHash()
 		out = append(out, e)

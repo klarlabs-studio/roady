@@ -62,14 +62,21 @@ an agent forwarding the run that spawned it knows more than the server does.
 
 ## When verification reports a problem
 
-`roady audit verify` distinguishes three things that all used to read as
+`roady audit verify` distinguishes four things that all used to read as
 "possible tampering":
 
 | Finding | Means |
 | --- | --- |
-| `content hash does not reproduce` | The entry was altered — **or** it predates a change to the hash algorithm. See below. |
+| `content hash does not reproduce under <algo>` | The entry names an algorithm this build knows, and its hash still does not reproduce. **This one means the entry was altered.** |
+| `predates the hash_algo field` | The entry names no algorithm, so the function that wrote its hash is unknown. It can be neither confirmed nor convicted. See below. |
 | `outside the chain` | The entry has no hash at all, so it was never chained. Something appended to `events.jsonl` directly instead of going through Roady. |
 | `cannot verify` | The entry was written by a Roady version using a hash algorithm this build does not know. Not an attack. |
+
+The command closes with a breakdown by cause, and — when no entry failed
+under a known algorithm — says so explicitly. That line is the one to read
+first: it is the difference between a log full of unverifiable history and a
+log somebody edited. Every finding is still listed and the command still
+exits non-zero either way, so nothing is suppressed by the distinction.
 
 ### Historical entries may be unverifiable
 

@@ -66,6 +66,25 @@ type rawEventLoader interface {
 }
 
 func (s *AuditService) VerifyIntegrity() ([]string, error) {
+	violations, err := s.VerifyIntegrityDetailed()
+	if err != nil {
+		return nil, err
+	}
+	if len(violations) == 0 {
+		return nil, nil
+	}
+	out := make([]string, 0, len(violations))
+	for i := range violations {
+		out = append(out, violations[i].Message)
+	}
+	return out, nil
+}
+
+// VerifyIntegrityDetailed is VerifyIntegrity with the reason for each finding
+// kept alongside it, so a caller can report how many entries failed under an
+// algorithm this build knows — the only count that can mean tampering —
+// separately from history it merely cannot check.
+func (s *AuditService) VerifyIntegrityDetailed() ([]domain.ChainViolation, error) {
 	// Verify against the raw log: LoadEvents deduplicates so projections
 	// stay correct, but a reviewer should still be told the log contains
 	// the same event twice.
@@ -92,7 +111,7 @@ func (s *AuditService) VerifyIntegrity() ([]string, error) {
 		})
 	}
 
-	return domain.VerifyChain(entries), nil
+	return domain.VerifyChainDetailed(entries), nil
 }
 
 // GetVelocity returns the average verified tasks per day over the last 7 days.
