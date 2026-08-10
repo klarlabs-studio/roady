@@ -9,7 +9,27 @@ intended **open-core boundary** for a future hosted product.
 
 ---
 
-## Now (v0.21.0 — shipped)
+## Now (v0.22.x — shipped)
+
+- **The MCP surface mirrors the CLI.** Twenty tools were renamed from
+  verb-first (`roady_add_feature`) to noun-first (`roady_spec_add`), so
+  knowledge of one surface transfers to the other. Breaking, with no aliases
+  kept — see the table in CHANGELOG.md before upgrading a client with
+  hardcoded names (#87).
+- **`ROADY_MCP_TOOLS` trims what is advertised.** All ~70 tools were
+  registered on every session and a client paid for each one in its prompt
+  whether or not the project had a rate card or a debt ledger.
+  `ROADY_MCP_TOOLS=core` registers 30 instead. A tool missing from the
+  grouping fails the build, so an unclassified tool cannot silently vanish
+  from every profile.
+- **Error results survive strict schema validation.** Every error encoded
+  `"structuredContent": null`, which matches no object schema, so a strict
+  client rejected the whole result including the text explaining what went
+  wrong. Fixed upstream in `go.klarlabs.de/mcp` v1.24.1; roady now asserts
+  the wire format itself so a future dependency change cannot reintroduce it
+  invisibly (#92).
+
+## Earlier (v0.21.0 — shipped)
 
 - **Derived-state reconciliation** — `roady spec lock` re-captures the drift
   baseline from the current spec and reconciles execution state with it, and
@@ -121,10 +141,6 @@ running Roady on a real 118-feature project for a day.
 
 - **Plugin marketplace** for syncers and notifiers, opinionated quality
   bar (signed binaries, contract tests must pass).
-- **Semantic drift prompts** — a `drift.semantic` prompt request that
-  hands the caller the implemented behaviour alongside the spec's
-  natural-language requirement, so their model can judge whether the two
-  still agree. Roady frames the question; it does not answer it.
 
 ---
 
