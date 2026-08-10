@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Tool results with no structured payload no longer fail strict client
+  schema validation.** Every error result encoded
+  `"structuredContent": null`, which matches no object schema, so a strict
+  client rejected the whole result — including the text content explaining
+  what happened. A caller could not distinguish "the operation failed" from
+  "the response could not be encoded", and for a mutating tool that is the
+  difference between knowing a write applied and guessing (#92).
+
+  The defect was in `go.klarlabs.de/mcp`, whose `StructuredResult` encoded a
+  nil payload as `null` rather than omitting the field; fixed upstream in
+  v1.24.1 and picked up here. roady needed no code change, but it now asserts
+  the wire format itself — roady is what emits these results, and a future
+  dependency change reintroducing the null would otherwise stay invisible
+  until a client rejected it.
+
+  Worth noting for anyone who hit this: the two tools named in the report were
+  not at fault. One call passed `status: "pending"`, which is not a valid
+  value, and the handler's "Invalid status" message was correct — the encoding
+  discarded it.
+
 ## [0.22.0] - 2026-08-09
 
 Closes #87 in full: the MCP surface is now groupable, named after the CLI, and
