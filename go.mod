@@ -15,7 +15,7 @@ require (
 	github.com/mattn/go-isatty v0.0.22
 	github.com/spf13/cobra v1.10.2
 	go.klarlabs.de/fortify v1.8.1
-	go.klarlabs.de/mcp v1.22.0
+	go.klarlabs.de/mcp v1.24.1
 	go.klarlabs.de/statekit v1.13.2
 	golang.org/x/oauth2 v0.36.0
 	google.golang.org/grpc v1.83.0
@@ -60,6 +60,6 @@ require (
 	go.opentelemetry.io/otel/trace v1.44.0 // indirect
 	golang.org/x/net v0.56.0 // indirect
 	golang.org/x/sys v0.46.0 // indirect
-	golang.org/x/text v0.39.0 // indirect
+	golang.org/x/text v0.40.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260630182238-925bb5da69e7 // indirect
 )
