@@ -64,7 +64,11 @@ func TestVerifyChainDistinguishesItsFindings(t *testing.T) {
 	}{
 		{"no hash is not tampering", ChainEntry{ID: "x", Verifiable: true}, "outside the chain"},
 		{"unknown algorithm is not tampering", ChainEntry{ID: "x", Hash: "h", HashAlgo: "sha512-v9"}, "cannot verify"},
-		{"content that does not reproduce", ChainEntry{ID: "x", Hash: "h", Verifiable: true}, "does not reproduce"},
+		// A hash that does not reproduce means two different things depending on
+		// whether the entry says what wrote it. Only the first can be called
+		// tampering; the second is history nobody can check.
+		{"mismatch under a named algorithm is tampering", ChainEntry{ID: "x", Hash: "h", HashAlgo: "sha256-canonical-v1", Verifiable: true}, "does not reproduce"},
+		{"mismatch with no named algorithm is unverifiable, not tampering", ChainEntry{ID: "x", Hash: "h", Verifiable: true}, "predates the hash_algo field"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **`roady audit verify` separates history it cannot check from evidence of
+  alteration.** Every finding was reported as one undifferentiated
+  "integrity violation", and running it on Roady's own trail printed
+  `Found 86 integrity violations` — a number that reads as a compromised log
+  and, read twice, teaches you to stop reading it.
+
+  None of the 86 were evidence of anything. Thirteen were appended to
+  events.jsonl by something other than Roady and carry no hash at all;
+  seventy-three predate the `hash_algo` field added in v0.16.0, so the
+  function that wrote their hash is no longer known and they can be neither
+  confirmed nor convicted. Zero failed under an algorithm this build can
+  verify.
+
+  Findings now carry a reason alongside the prose, and the command prints a
+  breakdown plus, when it applies, the line that was missing: *no entry
+  failed under an algorithm this build can verify — nothing here is evidence
+  of alteration.* An entry that names a known algorithm and still does not
+  reproduce is now reported as altered rather than as one more line of old
+  history, so a single tampered event sorts to the top of the summary instead
+  of hiding among eighty-six that merely got old.
+
+  Nothing is suppressed: every violation is still listed and the command
+  still exits 1. This is the same defect v0.16.0 set out to fix — three
+  distinct causes reported as one — finished on the reporting side.
+
+  Found by running `roady audit verify` on Roady while checking something
+  else.
+
+### Fixed
+
+- **The tampering test was passing for the wrong reason.** Its fixtures built
+  events without `hash_algo`, which both real writers stamp on everything
+  they append, so the test exercised the unverifiable-legacy path rather than
+  the tamper-detection path it named. Verified against the real behaviour
+  afterwards: altering an event that carries `hash_algo` is reported as
+  altered, and the summary's reassurance disappears.
+
 ## [0.22.1] - 2026-08-10
 
 ### Fixed
