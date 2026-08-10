@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.22.1] - 2026-08-10
+
 ### Fixed
 
 - **Tool results with no structured payload no longer fail strict client
