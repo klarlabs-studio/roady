@@ -166,9 +166,42 @@
       "feature_id": "field-reliability",
       "origin": "heuristic",
       "source": {}
+    },
+    {
+      "id": "task-mcp-names-mirror-cli",
+      "title": "Tool names mirror the CLI (MCP surface is learnable, trimmable and honest)",
+      "description": "MCP tools are named noun-first to match the CLI verbs (roady_spec_add, not roady_add_feature), so knowledge of one surface transfers to the other. Breaking on the 0.x line with no aliases kept. (#87)",
+      "priority": "high",
+      "estimate": "1d",
+      "depends_on": [],
+      "feature_id": "mcp-surface",
+      "origin": "heuristic",
+      "source": {}
+    },
+    {
+      "id": "task-mcp-tool-profiles",
+      "title": "The advertised surface can be trimmed (MCP surface is learnable, trimmable and honest)",
+      "description": "ROADY_MCP_TOOLS selects which tool groups are registered, so a client does not pay prompt cost for a rate card or debt ledger the project does not have. A tool missing from the grouping must fail the build rather than silently vanish from every profile. (#87)",
+      "priority": "high",
+      "estimate": "1d",
+      "depends_on": [],
+      "feature_id": "mcp-surface",
+      "origin": "heuristic",
+      "source": {}
+    },
+    {
+      "id": "task-mcp-error-encoding",
+      "title": "Error results survive strict schema validation (MCP surface is learnable, trimmable and honest)",
+      "description": "A result with no structured payload must omit structuredContent rather than encode null, which matches no object schema and caused strict clients to reject the whole result including the text explaining the failure. roady asserts the wire format itself so a dependency change cannot reintroduce it invisibly. (#92)",
+      "priority": "high",
+      "estimate": "0.5d",
+      "depends_on": [],
+      "feature_id": "mcp-surface",
+      "origin": "heuristic",
+      "source": {}
     }
   ],
   "approval_status": "approved",
   "created_at": "2026-01-31T18:00:00+01:00",
-  "updated_at": "2026-08-02T13:44:39.23137+02:00"
+  "updated_at": "2026-08-10T16:36:53.590771+02:00"
 }

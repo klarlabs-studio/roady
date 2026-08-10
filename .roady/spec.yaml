@@ -143,6 +143,38 @@ features:
       internal error. (#72)
     priority: high
     estimate: 0.5d
+- id: mcp-surface
+  title: MCP surface is learnable, trimmable and honest
+  description: 'The MCP server had grown to ~70 tools named on a different scheme
+    from the CLI, all advertised on every session, and encoding error results in a
+    shape a strict client rejected. Shipped in v0.22.0 and v0.22.1; recorded here
+    because the work landed after the plan was written and no task covered it, which
+    is the condition roady''s own staleness drift exists to report. (#87, #92)'
+  requirements:
+  - id: mcp-names-mirror-cli
+    title: Tool names mirror the CLI
+    description: MCP tools are named noun-first to match the CLI verbs (roady_spec_add,
+      not roady_add_feature), so knowledge of one surface transfers to the other.
+      Breaking on the 0.x line with no aliases kept. (#87)
+    priority: high
+    estimate: 1d
+  - id: mcp-tool-profiles
+    title: The advertised surface can be trimmed
+    description: ROADY_MCP_TOOLS selects which tool groups are registered, so a client
+      does not pay prompt cost for a rate card or debt ledger the project does not
+      have. A tool missing from the grouping must fail the build rather than silently
+      vanish from every profile. (#87)
+    priority: high
+    estimate: 1d
+  - id: mcp-error-encoding
+    title: Error results survive strict schema validation
+    description: A result with no structured payload must omit structuredContent rather
+      than encode null, which matches no object schema and caused strict clients to
+      reject the whole result including the text explaining the failure. roady asserts
+      the wire format itself so a dependency change cannot reintroduce it invisibly.
+      (#92)
+    priority: high
+    estimate: 0.5d
 constraints:
 - id: backward-compat
   description: Maintain backward compatibility with existing spec.yaml and plan.json formats

@@ -1,6 +1,6 @@
 {
-  "project_id": "test-refactor",
-  "version": 163,
+  "project_id": "agent-handoff",
+  "version": 174,
   "task_states": {
     "task-backlog-writes-to-project": {
       "status": "verified",
@@ -35,6 +35,17 @@
       "completed_at": "2026-08-02T12:43:23.037746+02:00",
       "elapsed_minutes": 0
     },
+    "task-mcp-error-encoding": {
+      "status": "verified",
+      "path": "",
+      "owner": "Felix Geelhaar",
+      "evidence": [
+        "08a5815"
+      ],
+      "started_at": "2026-08-10T16:37:14.631142+02:00",
+      "completed_at": "2026-08-10T16:37:14.724461+02:00",
+      "elapsed_minutes": 0
+    },
     "task-mcp-errors-reach-agent": {
       "status": "verified",
       "path": "",
@@ -44,6 +55,28 @@
       ],
       "started_at": "2026-08-02T13:44:55.368557+02:00",
       "completed_at": "2026-08-02T13:44:55.425796+02:00",
+      "elapsed_minutes": 0
+    },
+    "task-mcp-names-mirror-cli": {
+      "status": "verified",
+      "path": "",
+      "owner": "Felix Geelhaar",
+      "evidence": [
+        "0f10c10"
+      ],
+      "started_at": "2026-08-10T16:37:14.00357+02:00",
+      "completed_at": "2026-08-10T16:37:14.146302+02:00",
+      "elapsed_minutes": 0
+    },
+    "task-mcp-tool-profiles": {
+      "status": "verified",
+      "path": "",
+      "owner": "Felix Geelhaar",
+      "evidence": [
+        "0f10c10"
+      ],
+      "started_at": "2026-08-10T16:37:14.282885+02:00",
+      "completed_at": "2026-08-10T16:37:14.382325+02:00",
       "elapsed_minutes": 0
     },
     "task-paged-task-listings": {
@@ -168,5 +201,5 @@
       "elapsed_minutes": 4
     }
   },
-  "updated_at": "2026-08-02T13:44:55.499058+02:00"
+  "updated_at": "2026-08-10T16:37:14.806652+02:00"
 }
