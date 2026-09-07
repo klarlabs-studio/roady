@@ -60,7 +60,7 @@ jobs:
       # the tool's own signal, and it covers OSV lookups and lockfile parses,
       # not just plugins.
       - name: Scan
-        uses: nox-hq/nox@0873336f10bf972c1f798390b262124bb80eb9e0 # v1.32.0
+        uses: nox-hq/nox@1adec27767672d9ad58bca56871522a74469bb04 # v1.34.0
         with:
           path: .
           format: json,sarif
