@@ -13,7 +13,14 @@
   },
   "dependencies": {
     "@astrojs/vue": "^7.0.1",
-    "astro": "^7.1.6",
+    "astro": "^7.2.8",
+    "baseline-browser-mapping": "^2.11.0",
+    "browserslist": "^4.28.7",
+    "devalue": "^5.9.2",
+    "js-yaml": "^4.3.2",
+    "nanoid": "^3.3.18",
+    "sharp": "^0.35.4",
+    "svgo": "^4.1.0",
     "vue": "^3.5.0"
   },
   "devDependencies": {
