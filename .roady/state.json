@@ -1,6 +1,6 @@
 {
   "project_id": "agent-handoff",
-  "version": 252,
+  "version": 255,
   "task_states": {
     "task-acceptance-checks": {
       "status": "verified",
@@ -640,9 +640,28 @@
       "elapsed_minutes": 0
     },
     "task-single-task-cli": {
-      "status": "pending",
+      "status": "done",
       "path": "",
-      "elapsed_minutes": 0
+      "owner": "Claude",
+      "evidence": [
+        "Commit: e17bf02d8c6a147cc2d683afc3c8b34e8b0eb423"
+      ],
+      "started_at": "2026-09-26T22:09:29.859705928+02:00",
+      "completed_at": "2026-09-26T22:09:30.002424984+02:00",
+      "elapsed_minutes": 0,
+      "checks": [
+        {
+          "kind": "run",
+          "command": "go test ./pkg/application/ -run 'TaskDoc' -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "e17bf02d8c6a147cc2d683afc3c8b34e8b0eb423",
+          "by": "Claude",
+          "at": "2026-09-26T22:09:30.059997075+02:00",
+          "duration": "713ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.009s\n"
+        }
+      ]
     },
     "task-slim-mcp": {
       "status": "pending",
@@ -739,5 +758,5 @@
       "elapsed_minutes": 4
     }
   },
-  "updated_at": "2026-09-26T22:06:06.65245417+02:00"
+  "updated_at": "2026-09-26T22:09:30.002428472+02:00"
 }
