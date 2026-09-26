@@ -1,6 +1,6 @@
 {
   "project_id": "agent-handoff",
-  "version": 237,
+  "version": 240,
   "task_states": {
     "task-acceptance-checks": {
       "status": "verified",
@@ -164,9 +164,28 @@
       ]
     },
     "task-claude-code-hooks": {
-      "status": "pending",
+      "status": "done",
       "path": "",
-      "elapsed_minutes": 0
+      "owner": "Claude",
+      "evidence": [
+        "Commit: 5afac2f2b3da1ba2a3b902e4fc8079c2dab91bb3"
+      ],
+      "started_at": "2026-09-26T21:51:43.925744381+02:00",
+      "completed_at": "2026-09-26T21:57:39.322512845+02:00",
+      "elapsed_minutes": 5,
+      "checks": [
+        {
+          "kind": "run",
+          "command": "go test ./internal/infrastructure/cli/ -run 'IsPlanFile|ApprovedPlanText|RegisterClaudeCodeHooks|ClaudeCodeHooksEndToEnd' -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "5afac2f2b3da1ba2a3b902e4fc8079c2dab91bb3",
+          "by": "Claude",
+          "at": "2026-09-26T21:57:39.361497893+02:00",
+          "duration": "923ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/internal/infrastructure/cli\t0.029s\n"
+        }
+      ]
     },
     "task-decisions": {
       "status": "pending",
@@ -651,5 +670,5 @@
       "elapsed_minutes": 4
     }
   },
-  "updated_at": "2026-09-26T21:51:25.582148911+02:00"
+  "updated_at": "2026-09-26T21:57:39.322513821+02:00"
 }
