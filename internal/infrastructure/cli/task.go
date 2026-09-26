@@ -270,7 +270,7 @@ func init() {
 	taskCmd.AddCommand(createTaskCommand("complete", "Complete a task", "complete"))
 	taskCmd.AddCommand(createTaskCommand("stop", "Stop working on a task", "stop"))
 	taskCmd.AddCommand(createTaskCommand("reopen", "Reopen a completed task", "reopen"))
-	taskCmd.AddCommand(createTaskCommand("verify", "Mark a task as verified with evidence", "verify"))
+	taskCmd.AddCommand(createTaskCommand("verify", "Mark a completed task as verified; runs its acceptance check first and refuses if it fails", "verify"))
 
 	taskLogCmd.Flags().StringVar(&taskStartRate, "rate", "", "Rate ID to use for billing")
 

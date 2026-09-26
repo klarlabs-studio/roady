@@ -115,6 +115,22 @@ roady notify digest --since 7d              # send
 One chat-sized summary instead of a message per task transition. Run it from
 cron or CI.
 
+**Prove "done" instead of claiming it:**
+
+```yaml
+# .roady/spec.yaml — on a requirement
+check:
+  run: go test ./internal/invoice -run TestNumberingIsGapFree
+```
+
+```bash
+roady task check task-seq-numbers    # run it, record pass/fail as evidence
+roady task verify task-seq-numbers   # re-runs the check; refuses if it fails
+```
+
+A check can also be `manual:` — then only a person's `--confirm` satisfies it.
+See [`docs/acceptance-checks.md`](docs/acceptance-checks.md).
+
 **Gate CI on drift:**
 
 ```bash

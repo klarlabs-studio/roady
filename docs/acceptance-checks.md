@@ -1,0 +1,65 @@
+# Acceptance checks
+
+A task is done when something other than the claim says so. A **check** on a
+requirement states how that is shown; roady runs it, records the result as
+evidence, and refuses to verify a task whose check does not pass.
+
+This exists because "done" used to be whatever the caller reported. Agents
+report work as finished when it is not — premature completion is the failure
+long-running agent harnesses are built around — and roady stored the claim as
+fact.
+
+## Defining a check
+
+Add `check` to a requirement in `.roady/spec.yaml`. It is one of:
+
+```yaml
+requirements:
+  - id: seq-numbers
+    title: Sequential gap-free invoice numbers per year
+    check:
+      run: go test ./internal/invoice -run TestNumberingIsGapFree
+  - id: pdf-layout
+    title: Invoice PDF layout
+    check:
+      manual: Open a generated invoice and confirm the layout matches the template
+```
+
+- **`run`** — a command executed with `sh -c` in the project root. Exit status 0
+  passes. Keep it focused: the test that proves this requirement, not the whole
+  suite.
+- **`manual`** — a check a person performs. Only a person's confirmation
+  satisfies it; an agent cannot, over MCP or otherwise.
+
+`roady spec validate` rejects a check that sets both or neither. `roady plan
+generate` copies the check onto the requirement's task.
+
+A check is part of the intent, so it is part of the spec hash: changing or
+loosening one shows up as spec drift against the lock.
+
+## Running a check
+
+```bash
+roady task check task-seq-numbers            # run it and record the result
+roady task check task-pdf-layout --confirm   # confirm a manual check
+```
+
+Every run is recorded on the task in `state.json` — kind, command, pass or fail,
+exit code, the commit it ran at (and whether there were uncommitted changes
+outside `.roady/`), who ran it, and the tail of its output — and in the audit
+log as `task.check`, which `roady audit trail` shows as passed, failed, or
+confirmed. A failing check exits non-zero but is a recorded result, not an
+error.
+
+Over MCP: `roady_task_check` runs a `run` check. It cannot confirm a manual one.
+
+## Verification is gated on the check
+
+`roady task verify <id>` (and `roady_task_transition` with `event: verify`) runs
+a `run` check against the code as it is now and refuses to verify if it fails.
+It does not trust an earlier pass: verification is a claim about the current
+state. A `manual` check needs a confirmation already recorded with
+`roady task check <id> --confirm`.
+
+A task without a check verifies as before. Requiring evidence for every task is
+a separate policy (see the `evidence-gated-verify` requirement).

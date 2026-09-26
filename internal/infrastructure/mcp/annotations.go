@@ -106,6 +106,8 @@ var toolBehaviours = map[string]toolBehaviour{
 
 	// State moves that are reversible through the FSM.
 	"roady_task_transition": {},
+	// Runs a command from the project's spec and records its result.
+	"roady_task_check": {},
 	// Claims the task by default, so not read-only; reversible via stop.
 	"roady_task_dispatch": {},
 	"roady_plan_approve":  {idempotent: true},

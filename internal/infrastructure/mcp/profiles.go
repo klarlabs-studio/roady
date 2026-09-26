@@ -71,6 +71,7 @@ var toolGroups = map[string]toolGroup{
 	"roady_plan_decompose":  groupCore,
 	"roady_tasks":           groupCore,
 	"roady_task_transition": groupCore,
+	"roady_task_check":      groupCore,
 	"roady_task_dispatch":   groupCore,
 	"roady_task_log_time":   groupCore,
 	"roady_drift_detect":    groupCore,

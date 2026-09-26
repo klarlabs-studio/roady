@@ -6,11 +6,19 @@
 - **Minor** (1.x.0): New optional fields (`omitempty`), new tools, fields deprecated
 - **Major** (x.0.0): Required fields added/removed, tool signatures changed
 
-## v3.6.0 — Audit baseline
+## v3.6.0 — Audit baseline and acceptance checks
 
-**Minor**: a new optional field, no existing signature changed.
+**Minor**: new optional fields and a new tool, no existing signature changed.
 
 ### Added
+
+- `roady_task_check` — runs a task's acceptance check and returns the recorded
+  result (`kind`, `command`, `passed`, `exit_code`, `commit`, `dirty`, `by`,
+  `at`, `duration`, `output`). A failing check is a result, not an error.
+  Manual checks cannot be confirmed over MCP.
+- Tasks in `roady_plan_get` / `roady_plan_update` carry an optional `check`
+  (`run` or `manual`). `roady_task_transition` with `event: verify` re-runs a
+  task's check and returns an error result when it fails.
 
 - `roady_audit_verify` takes an optional `baseline` (a git revision, default
   `HEAD`) and additionally reports entries of the log committed at that

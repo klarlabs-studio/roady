@@ -16,6 +16,7 @@ type TaskService struct {
 	audit       domain.AuditLogger
 	policy      *PolicyService
 	coordinator *project.Coordinator
+	checkRunner CheckRunner
 }
 
 func NewTaskService(repo domain.WorkspaceRepository, audit domain.AuditLogger, policy *PolicyService) *TaskService {
@@ -88,16 +89,25 @@ func (s *TaskService) TransitionTask(taskID string, event string, actor string, 
 		})
 
 	case "verify":
-		err := s.coordinator.VerifyTask(ctx, taskID, actor)
+		check, err := s.ensureCheckPassed(ctx, taskID, actor)
 		if err != nil {
+			return err
+		}
+		if err := s.coordinator.VerifyTask(ctx, taskID, actor); err != nil {
 			return s.mapCoordinatorError(err, event)
 		}
-		return s.audit.Log("task.transition", actor, map[string]interface{}{
+		meta := map[string]interface{}{
 			"task_id":  taskID,
 			"event":    event,
 			"status":   string(planning.StatusVerified),
 			"verifier": actor,
-		})
+		}
+		if check != nil {
+			meta["check_kind"] = check.Kind
+			meta["check_commit"] = check.Commit
+			meta["check_command"] = check.Command
+		}
+		return s.audit.Log("task.transition", actor, meta)
 
 	default:
 		// Fallback to FSM for unsupported events
@@ -315,6 +325,9 @@ func (s *TaskService) ReopenTask(ctx context.Context, taskID string) error {
 func (s *TaskService) VerifyTask(ctx context.Context, taskID, verifier string) error {
 	if ctx == nil {
 		ctx = context.Background()
+	}
+	if _, err := s.ensureCheckPassed(ctx, taskID, verifier); err != nil {
+		return err
 	}
 	err := s.coordinator.VerifyTask(ctx, taskID, verifier)
 	if err != nil {

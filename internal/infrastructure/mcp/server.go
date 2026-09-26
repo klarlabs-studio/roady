@@ -547,6 +547,11 @@ func (s *Server) registerTools() {
 		UIResource("ui://roady/state").
 		Handler(s.handleTransitionTask)
 
+	s.tool("roady_task_check").
+		Description("Run a task's acceptance check (the check on its requirement in spec.yaml) and record the result as evidence. Returns passed, exit code, commit and output tail. A failing check is a result, not an error. Manual checks must be confirmed by a person via the CLI and cannot be satisfied here. roady_task_transition with event verify runs the check itself and refuses on failure.").
+		UIResource("ui://roady/state").
+		Handler(s.handleTaskCheck)
+
 	// Tool: roady_spec_explain
 	s.tool("roady_spec_explain").
 		Description("Provide an AI-generated architectural walkthrough of the current specification").
@@ -1573,7 +1578,7 @@ type QueryArgs struct {
 
 type TransitionTaskArgs struct {
 	TaskID      string `json:"task_id" jsonschema:"description=The ID of the task to transition"`
-	Event       string `json:"event" jsonschema:"description=The transition event (start, complete, block, stop, unblock, reopen)"`
+	Event       string `json:"event" jsonschema:"description=The transition event (start, complete, block, stop, unblock, reopen, verify). verify runs the task's acceptance check and is refused if it fails."`
 	Evidence    string `json:"evidence,omitempty" jsonschema:"description=Optional evidence for the transition (e.g. commit hash)"`
 	Actor       string `json:"actor,omitempty" jsonschema:"description=The actor performing the transition (defaults to ai-agent)"`
 	SessionID   string `json:"session_id,omitempty" jsonschema:"description=Identifier for the agent session performing this transition. Recorded in the audit trail so work can later be traced to a specific run."`
@@ -2618,4 +2623,30 @@ func orEmpty(s []string) []string {
 		return []string{}
 	}
 	return s
+}
+
+// TaskCheckArgs selects the task whose acceptance check to run.
+type TaskCheckArgs struct {
+	TaskID      string `json:"task_id" jsonschema:"description=The ID of the task whose check to run"`
+	Actor       string `json:"actor,omitempty" jsonschema:"description=Who is running the check (defaults to ai-agent)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+}
+
+func (s *Server) handleTaskCheck(ctx context.Context, args TaskCheckArgs) (any, error) {
+	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
+	if err != nil {
+		return mcpErrCause("Failed to load project at the given path.", err), nil
+	}
+	actor := args.Actor
+	if actor == "" {
+		actor = "ai-agent"
+	}
+	// No confirmation over MCP: a manual check is a person's judgement, and an
+	// agent confirming its own manual check would defeat it.
+	result, err := svc.Task.RunCheck(ctx, args.TaskID, actor, application.CheckOptions{})
+	if err != nil {
+		return mcpErr(fmt.Sprintf("Failed to run the check for task '%s': %v", args.TaskID, err)), nil
+	}
+	return result, nil
 }

@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"strings"
 )
 
 // ProductSpec represents the top-level specification of what is being built.
@@ -72,6 +73,17 @@ type Requirement struct {
 	Estimate    string   `json:"estimate" yaml:"estimate"`
 	DependsOn   []string `json:"depends_on" yaml:"depends_on"`
 	Source      Source   `json:"source,omitempty" yaml:"source,omitempty"`
+	// Check states how the requirement is shown to be met: a command (run)
+	// or a named manual check (manual). Copied onto the task at planning.
+	Check *Check `json:"check,omitempty" yaml:"check,omitempty"`
+}
+
+// Check is a requirement's acceptance check. It mirrors planning.Check; the
+// spec package does not depend on planning, so the plan service maps one to
+// the other.
+type Check struct {
+	Run    string `json:"run,omitempty" yaml:"run,omitempty"`
+	Manual string `json:"manual,omitempty" yaml:"manual,omitempty"`
 }
 
 // Constraint represents non-functional requirements or policies.
@@ -92,6 +104,12 @@ func (s *ProductSpec) Hash() string {
 		for _, r := range f.Requirements {
 			h.Write([]byte(r.ID))
 			h.Write([]byte(r.Description))
+			// A check is part of the intent: loosening it must show up as a
+			// spec change. Hashed only when present, so specs without checks
+			// keep the hash they already had and existing locks stay valid.
+			if r.Check != nil {
+				_, _ = fmt.Fprintf(h, "check:%s|%s", r.Check.Run, r.Check.Manual)
+			}
 		}
 	}
 	return hex.EncodeToString(h.Sum(nil))
@@ -126,6 +144,12 @@ func (s *ProductSpec) Validate() []error {
 			}
 			if r.Title == "" {
 				errs = append(errs, fmt.Errorf("feature '%s' requirement '%s' missing title", f.ID, r.ID))
+			}
+			if r.Check != nil {
+				run, manual := strings.TrimSpace(r.Check.Run) != "", strings.TrimSpace(r.Check.Manual) != ""
+				if run == manual {
+					errs = append(errs, fmt.Errorf("feature '%s' requirement '%s': check needs exactly one of run (a command) or manual (a description)", f.ID, r.ID))
+				}
 			}
 		}
 	}

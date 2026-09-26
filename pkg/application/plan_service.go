@@ -8,6 +8,7 @@ import (
 	"github.com/felixgeelhaar/roady/pkg/domain"
 	"github.com/felixgeelhaar/roady/pkg/domain/planning"
 	"github.com/felixgeelhaar/roady/pkg/domain/project"
+	specdomain "github.com/felixgeelhaar/roady/pkg/domain/spec"
 )
 
 type PlanService struct {
@@ -92,6 +93,7 @@ func (s *PlanService) GeneratePlan(ctx context.Context) (*planning.Plan, error) 
 				DependsOn:   taskDeps,
 				Origin:      planning.OriginHeuristic,
 				Source:      source,
+				Check:       taskCheck(req.Check),
 			})
 		}
 	}
@@ -340,4 +342,12 @@ func (s *PlanService) GetTasksByOwner(ctx context.Context, owner string) ([]proj
 // GetCoordinator returns the underlying project coordinator for advanced operations.
 func (s *PlanService) GetCoordinator() *project.Coordinator {
 	return s.coordinator
+}
+
+// taskCheck carries a requirement's acceptance check onto its task.
+func taskCheck(c *specdomain.Check) *planning.Check {
+	if c == nil || (c.Run == "" && c.Manual == "") {
+		return nil
+	}
+	return &planning.Check{Run: c.Run, Manual: c.Manual}
 }

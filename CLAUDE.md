@@ -239,7 +239,9 @@ When working on features:
 2. Get next task: roady task ready
 3. Start task: roady task start <task-id>
 4. Complete task: roady task complete <task-id>
-5. Check drift: roady drift detect
+5. Run its acceptance check: roady task check <task-id>
+   (verify re-runs it and refuses on failure; see docs/acceptance-checks.md)
+6. Check drift: roady drift detect
 
 When planning new work:
 1. Review spec: roady spec explain

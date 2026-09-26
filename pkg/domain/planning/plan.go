@@ -92,6 +92,9 @@ type Task struct {
 	FeatureID   string       `json:"feature_id" yaml:"feature_id"` // Link to the feature in the spec
 	Origin      TaskOrigin   `json:"origin,omitempty" yaml:"origin,omitempty"`
 	Source      TaskSource   `json:"source,omitempty" yaml:"source,omitempty"`
+	// Check is how completion is shown, copied from the requirement when the
+	// plan is generated. Nil means the task has no check yet.
+	Check *Check `json:"check,omitempty" yaml:"check,omitempty"`
 }
 
 // Hash returns a deterministic hash of the plan structure.

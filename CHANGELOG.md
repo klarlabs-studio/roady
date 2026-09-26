@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Acceptance checks: "done" can be shown, not only claimed.** A requirement
+  in spec.yaml can carry a `check` — `run:` (a command; exit 0 passes) or
+  `manual:` (a person confirms). `roady plan generate` copies it onto the task.
+  `roady task check <id>` runs it and records the result on the task and in
+  the audit log: pass or fail, exit code, commit, whether there were
+  uncommitted changes outside `.roady/`, who ran it, and the output tail.
+  `roady task verify` — and `roady_task_transition` with `verify` — re-runs a
+  run check against the current code and refuses when it fails; a manual
+  check needs a recorded `--confirm`, which is not available over MCP.
+  `roady_task_check` runs a check over MCP. A check is part of the spec hash,
+  so loosening one reads as spec drift; specs without checks keep their hash.
+  See docs/acceptance-checks.md.
+
 ### Fixed
 
 - **`roady audit verify` detects entries removed from the end of the log.**
