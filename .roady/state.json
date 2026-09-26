@@ -1,7 +1,34 @@
 {
   "project_id": "agent-handoff",
-  "version": 174,
+  "version": 176,
   "task_states": {
+    "task-acceptance-checks": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-adoption-metrics": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-append-only-edits": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-audit-deletion-is-alteration": {
+      "status": "in_progress",
+      "path": "",
+      "owner": "Claude",
+      "started_at": "2026-09-26T16:23:38.27948448+02:00",
+      "elapsed_minutes": 0
+    },
+    "task-audit-tail-anchor": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
     "task-backlog-writes-to-project": {
       "status": "verified",
       "path": "",
@@ -11,6 +38,21 @@
       ],
       "started_at": "2026-08-02T13:44:54.797911+02:00",
       "completed_at": "2026-08-02T13:44:54.849875+02:00",
+      "elapsed_minutes": 0
+    },
+    "task-capture-upsert": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-claude-code-hooks": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-decisions": {
+      "status": "pending",
+      "path": "",
       "elapsed_minutes": 0
     },
     "task-dispatch-contract": {
@@ -35,6 +77,56 @@
       "completed_at": "2026-08-02T12:43:23.037746+02:00",
       "elapsed_minutes": 0
     },
+    "task-dogfood-roadmap": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-drift-reruns-checks": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-evidence-gated-verify": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-extras-as-plugins": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-goals-horizons": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-guarded-fields": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-harness-importers": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-instructions-and-skill": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-leased-claims": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-markdown-importer": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
     "task-mcp-error-encoding": {
       "status": "verified",
       "path": "",
@@ -44,6 +136,11 @@
       ],
       "started_at": "2026-08-10T16:37:14.631142+02:00",
       "completed_at": "2026-08-10T16:37:14.724461+02:00",
+      "elapsed_minutes": 0
+    },
+    "task-mcp-error-live-path": {
+      "status": "pending",
+      "path": "",
       "elapsed_minutes": 0
     },
     "task-mcp-errors-reach-agent": {
@@ -101,6 +198,11 @@
       "completed_at": "2026-08-02T11:42:48.405061+02:00",
       "elapsed_minutes": 4
     },
+    "task-per-change-approval": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
     "task-pr-drift-gate": {
       "status": "verified",
       "path": "",
@@ -123,6 +225,11 @@
       "completed_at": "2026-08-02T11:32:49.755359+02:00",
       "elapsed_minutes": 0
     },
+    "task-render-roadmap": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
     "task-resolved-feature-links": {
       "status": "verified",
       "path": "",
@@ -143,6 +250,41 @@
       ],
       "started_at": "2026-08-02T13:44:54.608406+02:00",
       "completed_at": "2026-08-02T13:44:54.671969+02:00",
+      "elapsed_minutes": 0
+    },
+    "task-setup-registers-mcp": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-shared-execution-state": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-single-task-cli": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-slim-mcp": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-spec-conflict-exit": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-task-brief": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-unplanned-tasks": {
+      "status": "pending",
+      "path": "",
       "elapsed_minutes": 0
     },
     "task-xdep-ready": {
@@ -201,5 +343,5 @@
       "elapsed_minutes": 4
     }
   },
-  "updated_at": "2026-08-10T16:37:14.806652+02:00"
+  "updated_at": "2026-09-26T16:23:38.27948448+02:00"
 }

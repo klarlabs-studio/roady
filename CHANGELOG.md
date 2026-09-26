@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **`roady audit verify` no longer reassures over a deleted entry.** Removing
+  one event from the middle of events.jsonl was detected — as "referencing a
+  removed parent" — and then summarised with *nothing here is evidence of
+  alteration*, because the verdict only counted hash mismatches. A removed
+  entry is what the chain exists to prove did not happen. Which findings
+  evidence alteration now lives in the domain (`ViolationKind.EvidencesAlteration`),
+  a missing parent is labelled as a removal, a duplicate withholds the
+  reassurance as unexplained, and the reassurance is kept for logs whose only
+  findings are history this build cannot check.
+
 ## [0.23.0] - 2026-08-10
 
 ### Changed

@@ -59,7 +59,7 @@ var auditVerifyCmd = &cobra.Command{
 			{domain.KindHashMismatch, "altered after writing (hash does not reproduce under the algorithm named)"},
 			{domain.KindUnhashed, "appended outside roady (no hash)"},
 			{domain.KindDuplicate, "duplicated in the log"},
-			{domain.KindMissingParent, "referencing a removed parent"},
+			{domain.KindMissingParent, "removed (an entry that later entries reference is missing)"},
 			{domain.KindUnknownAlgo, "written with an algorithm this build cannot verify"},
 			{domain.KindLegacyUnverifiable, "predating hash_algo, unverifiable either way"},
 		} {
@@ -67,13 +67,37 @@ var auditVerifyCmd = &cobra.Command{
 				fmt.Printf("  %4d  %s\n", n, row.label)
 			}
 		}
-		if counts[domain.KindHashMismatch] == 0 {
-			fmt.Println("\nNo entry failed under an algorithm this build can verify:" +
-				" nothing here is evidence of alteration.")
-		}
+		fmt.Println("\n" + auditVerdict(counts))
 		os.Exit(1)
 		return nil
 	},
+}
+
+// auditVerdict is the closing line of a failed verification.
+//
+// It used to reassure whenever no hash failed to reproduce, which covered a
+// log with an entry deleted from the middle: the chain reported the removal and
+// the verdict underneath said nothing here was evidence of alteration. The
+// reassurance is now reserved for logs whose only findings are history this
+// build cannot check.
+func auditVerdict(counts map[domain.ViolationKind]int) string {
+	altered, unexplained := 0, 0
+	for kind, n := range counts {
+		switch {
+		case kind.EvidencesAlteration():
+			altered += n
+		case kind.Unexplained():
+			unexplained += n
+		}
+	}
+	switch {
+	case altered > 0:
+		return fmt.Sprintf("%d finding(s) are evidence that the log was altered or had entries removed after writing.", altered)
+	case unexplained > 0:
+		return fmt.Sprintf("No entry was shown to be altered or removed, but %d finding(s) are unexplained and should be investigated.", unexplained)
+	default:
+		return "No entry failed under an algorithm this build can verify: nothing here is evidence of alteration."
+	}
 }
 
 func init() {

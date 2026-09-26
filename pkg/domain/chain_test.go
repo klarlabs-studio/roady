@@ -106,3 +106,44 @@ func contains(h, n string) bool {
 	}
 	return false
 }
+
+// A deleted entry is an alteration. The chain detected it all along; what was
+// wrong was the classification the verdict read, which counted only hash
+// mismatches as evidence and so reassured over a removal.
+func TestRemovedEntryEvidencesAlteration(t *testing.T) {
+	log := []ChainEntry{
+		entry("a", "h1", ""),
+		// "b" (h2) was deleted; "c" still names it as its parent.
+		entry("c", "h3", "h2"),
+	}
+	violations := VerifyChainDetailed(log)
+	if len(violations) != 1 || violations[0].Kind != KindMissingParent {
+		t.Fatalf("expected one missing-parent finding, got %+v", violations)
+	}
+	if !violations[0].Kind.EvidencesAlteration() {
+		t.Fatal("a removed entry must count as evidence of alteration")
+	}
+}
+
+func TestViolationKindClassification(t *testing.T) {
+	tests := []struct {
+		kind        ViolationKind
+		altered     bool
+		unexplained bool
+	}{
+		{KindHashMismatch, true, false},
+		{KindMissingParent, true, false},
+		{KindDuplicate, false, true},
+		{KindUnhashed, false, false},
+		{KindUnknownAlgo, false, false},
+		{KindLegacyUnverifiable, false, false},
+	}
+	for _, tc := range tests {
+		if got := tc.kind.EvidencesAlteration(); got != tc.altered {
+			t.Errorf("kind %d: EvidencesAlteration = %v, want %v", tc.kind, got, tc.altered)
+		}
+		if got := tc.kind.Unexplained(); got != tc.unexplained {
+			t.Errorf("kind %d: Unexplained = %v, want %v", tc.kind, got, tc.unexplained)
+		}
+	}
+}

@@ -52,6 +52,25 @@ const (
 	KindMissingParent
 )
 
+// EvidencesAlteration reports whether a finding of this kind means the log was
+// changed after it was written, as opposed to history this build cannot check.
+//
+// A removed entry is an alteration just as much as an edited one: the chain
+// exists to prove that nothing referenced has been taken out. Reporting a
+// missing parent under a line that says "nothing here is evidence of
+// alteration" told the reader the opposite of what the chain had found.
+func (k ViolationKind) EvidencesAlteration() bool {
+	return k == KindHashMismatch || k == KindMissingParent
+}
+
+// Unexplained reports whether a finding of this kind rules out reassurance
+// without by itself proving alteration. A duplicated event is not what an
+// honest writer produces, but it can arise from a bad merge as well as from
+// tampering, so it is neither excused nor convicted.
+func (k ViolationKind) Unexplained() bool {
+	return k == KindDuplicate
+}
+
 // ChainViolation is one finding, with the reason kept separate from the prose
 // so callers do not match on message text.
 type ChainViolation struct {
