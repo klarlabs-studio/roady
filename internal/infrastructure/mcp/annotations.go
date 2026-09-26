@@ -53,6 +53,7 @@ var toolBehaviours = map[string]toolBehaviour{
 	"roady_plan_prune":            {destructive: true},
 	"roady_plan_reject":           {idempotent: true},
 	"roady_audit_verify":          {readOnly: true, idempotent: true},
+	"roady_next":                  {readOnly: true, idempotent: true},
 	"roady_spec_validate":         {readOnly: true, idempotent: true},
 	"roady_spec_import":           {destructive: true},
 	"roady_spec_lock":             {idempotent: true},

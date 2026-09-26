@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`roady next` / `roady_next`: a brief to push into the agent.** The task
+  you are on — or the highest-priority ready task when none is — with why it
+  exists (and its doc:line), what done means and the last check result, what
+  it depends on and unblocks, what comes after, and the working rules. About
+  250 tokens for a typical task and bounded however long the requirement, so
+  it can be injected at session start, after compaction, or every few steps.
+  Agents rarely ask for their plan; showing it to them is what keeps them on
+  it.
 - **`roady capture` / `roady_capture`: one write for intent of any size.**
   Features, requirements and tasks in one YAML or JSON document, from a single
   task to a whole plan, replacing the spec_add → plan_generate --ai →

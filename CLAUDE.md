@@ -235,7 +235,8 @@ When running Claude Code in this project, use Roady for all task management inst
 ## Task Management
 
 When working on features:
-1. Check current plan: roady status
+1. Check current plan: roady status — or just `roady next` for a brief of
+   the task you are on (or should start next)
 2. Get next task: roady task ready
 3. Start task: roady task start <task-id>
 4. Complete task: roady task complete <task-id>

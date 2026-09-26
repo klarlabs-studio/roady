@@ -547,6 +547,11 @@ func (s *Server) registerTools() {
 		UIResource("ui://roady/state").
 		Handler(s.handleTransitionTask)
 
+	s.tool("roady_next").
+		Description("Brief on the caller's current task, or the ready task to start next: why it exists (doc:line), what done means and the last check result, dependencies, what it unblocks, and working rules. Compact enough to read at the start of every session and after context compaction.").
+		UIResource("ui://roady/state").
+		Handler(s.handleNext)
+
 	s.tool("roady_capture").
 		Description("Record features, requirements and tasks in one call: from a single task to a whole plan. Every item is keyed by id and upserted; omitted fields keep their value, so this also edits. A requirement gets its task (task-<requirement id>) automatically. All or nothing: if any item is invalid nothing is written and each rejection is returned. Re-sending the same content changes nothing. Use dry_run to preview.").
 		UIResource("ui://roady/plan").
@@ -2689,4 +2694,27 @@ func (s *Server) handleCapture(ctx context.Context, args CaptureArgs) (any, erro
 	// A rejected capture is a result the caller must act on, not a failed
 	// call: it lists every item and why, and nothing was written.
 	return result, nil
+}
+
+// NextArgs selects whose brief to build.
+type NextArgs struct {
+	Owner       string `json:"owner,omitempty" jsonschema:"description=Whose task to brief on (defaults to ai-agent, the owner MCP transitions record)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+}
+
+func (s *Server) handleNext(ctx context.Context, args NextArgs) (any, error) {
+	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
+	if err != nil {
+		return mcpErrCause("Failed to load project at the given path.", err), nil
+	}
+	owner := args.Owner
+	if owner == "" {
+		owner = "ai-agent"
+	}
+	brief, err := svc.Task.Brief(ctx, owner)
+	if err != nil {
+		return mcpErr(fmt.Sprintf("Failed to build the brief: %v", err)), nil
+	}
+	return map[string]any{"brief": brief.Render(), "detail": brief}, nil
 }
