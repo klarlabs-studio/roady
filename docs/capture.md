@@ -58,3 +58,20 @@ roady capture --dry-run < plan.yaml
 
 The result names every item as `feature:`, `requirement:` or `task:` with what
 happened to it, and the plan's approval afterwards.
+
+## Approval: which changes need it
+
+An approved plan stays approved when only **tasks** change — adding, splitting
+or editing work within requirements that were already approved does not change
+what was agreed. A created or edited **feature or requirement**, including its
+acceptance check, changes the intent and returns the plan to pending; the
+result names the item that did it.
+
+```yaml
+# .roady/policy.yaml
+plan_approval: scope         # default
+# plan_approval: every_change  # any change needs re-approval, as before
+```
+
+`roady plan generate` and `roady_plan_update` follow the same rule: the
+approval stands when the spec still matches its lock and no task was dropped.

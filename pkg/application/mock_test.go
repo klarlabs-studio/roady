@@ -9,6 +9,7 @@ import (
 
 type MockRepo struct {
 	Spec        *spec.ProductSpec
+	SpecLock    *spec.ProductSpec // nil: the lock reads as the current spec
 	Plan        *planning.Plan
 	State       *planning.ExecutionState
 	Policy      *domain.PolicyConfig
@@ -17,12 +18,24 @@ type MockRepo struct {
 	LoadError   error
 }
 
-func (m *MockRepo) Initialize() error                            { m.Initialized = true; return nil }
-func (m *MockRepo) IsInitialized() bool                          { return m.Initialized }
-func (m *MockRepo) SaveSpec(s *spec.ProductSpec) error           { m.Spec = s; return m.SaveError }
-func (m *MockRepo) LoadSpec() (*spec.ProductSpec, error)         { return m.Spec, m.LoadError }
-func (m *MockRepo) SaveSpecLock(s *spec.ProductSpec) error       { return m.SaveError }
-func (m *MockRepo) LoadSpecLock() (*spec.ProductSpec, error)     { return m.Spec, m.LoadError }
+func (m *MockRepo) Initialize() error                    { m.Initialized = true; return nil }
+func (m *MockRepo) IsInitialized() bool                  { return m.Initialized }
+func (m *MockRepo) SaveSpec(s *spec.ProductSpec) error   { m.Spec = s; return m.SaveError }
+func (m *MockRepo) LoadSpec() (*spec.ProductSpec, error) { return m.Spec, m.LoadError }
+func (m *MockRepo) SaveSpecLock(s *spec.ProductSpec) error {
+	if m.SaveError == nil && s != nil {
+		c := *s
+		c.Features = append([]spec.Feature(nil), s.Features...)
+		m.SpecLock = &c
+	}
+	return m.SaveError
+}
+func (m *MockRepo) LoadSpecLock() (*spec.ProductSpec, error) {
+	if m.SpecLock != nil {
+		return m.SpecLock, m.LoadError
+	}
+	return m.Spec, m.LoadError
+}
 func (m *MockRepo) SavePlan(p *planning.Plan) error              { m.Plan = p; return m.SaveError }
 func (m *MockRepo) LoadPlan() (*planning.Plan, error)            { return m.Plan, m.LoadError }
 func (m *MockRepo) SaveState(s *planning.ExecutionState) error   { m.State = s; return m.SaveError }

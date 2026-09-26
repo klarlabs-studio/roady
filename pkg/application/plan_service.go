@@ -7,6 +7,7 @@ import (
 
 	"github.com/felixgeelhaar/roady/pkg/domain"
 	"github.com/felixgeelhaar/roady/pkg/domain/planning"
+	"github.com/felixgeelhaar/roady/pkg/domain/policy"
 	"github.com/felixgeelhaar/roady/pkg/domain/project"
 	specdomain "github.com/felixgeelhaar/roady/pkg/domain/spec"
 )
@@ -148,6 +149,9 @@ func (s *PlanService) ReconcilePlan(proposedTasks []planning.Task) (*planning.Pl
 	})
 	if err != nil {
 		return nil, nil, err
+	}
+	if s.approvalSurvives(existingPlan, newPlan, spec) {
+		newPlan.ApprovalStatus = planning.ApprovalApproved
 	}
 
 	if err := s.repo.SavePlan(newPlan); err != nil {
@@ -350,4 +354,36 @@ func taskCheck(c *specdomain.Check) *planning.Check {
 		return nil
 	}
 	return &planning.Check{Run: c.Run, Manual: c.Manual}
+}
+
+// approvalSurvives reports whether an approved plan stays approved through a
+// plan update or regeneration.
+//
+// The reconciler returns every rewritten plan as pending, which sent an
+// approved plan back to pending for any change at all, such as attaching a
+// check to a task. Under plan_approval "scope" (the default) the approval
+// stands when the intent did not change — the spec still matches its lock —
+// and no task was dropped. Changing the intent, or plan_approval
+// "every_change", still requires re-approval.
+func (s *PlanService) approvalSurvives(prev, next *planning.Plan, current *specdomain.ProductSpec) bool {
+	if prev == nil || prev.ApprovalStatus != planning.ApprovalApproved {
+		return false
+	}
+	if cfg, err := s.repo.LoadPolicy(); err == nil && cfg != nil && cfg.ApprovalMode() == policy.PlanApprovalEveryChange {
+		return false
+	}
+	lock, err := s.repo.LoadSpecLock()
+	if err != nil || lock == nil || lock.Hash() != current.Hash() {
+		return false
+	}
+	kept := make(map[string]bool, len(next.Tasks))
+	for _, t := range next.Tasks {
+		kept[t.ID] = true
+	}
+	for _, t := range prev.Tasks {
+		if !kept[t.ID] {
+			return false
+		}
+	}
+	return true
 }

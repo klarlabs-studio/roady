@@ -9,6 +9,7 @@ import (
 
 	"github.com/felixgeelhaar/roady/pkg/domain"
 	"github.com/felixgeelhaar/roady/pkg/domain/planning"
+	"github.com/felixgeelhaar/roady/pkg/domain/policy"
 	"github.com/felixgeelhaar/roady/pkg/domain/spec"
 )
 
@@ -144,7 +145,11 @@ func (s *CaptureService) Capture(doc CaptureDoc, opts CaptureOptions) (*CaptureR
 		return result, nil
 	}
 
-	nextPlan.ApprovalStatus, result.ApprovalReason = approvalAfterCapture(prevPlan, tracker)
+	mode := policy.PlanApprovalScope
+	if cfg, err := s.repo.LoadPolicy(); err == nil && cfg != nil {
+		mode = cfg.ApprovalMode()
+	}
+	nextPlan.ApprovalStatus, result.ApprovalReason = approvalAfterCapture(prevPlan, tracker, mode)
 	result.PlanApproval = string(nextPlan.ApprovalStatus)
 	if dryRun {
 		return result, nil
@@ -180,16 +185,27 @@ func (s *CaptureService) Capture(doc CaptureDoc, opts CaptureOptions) (*CaptureR
 }
 
 // approvalAfterCapture decides the plan's approval status after a change.
-// Any change to an approved plan returns it to pending, as regenerating a plan
-// always has.
-func approvalAfterCapture(prev *planning.Plan, _ *changeTracker) (planning.ApprovalStatus, string) {
+//
+// Under the default "scope" mode an approved plan stays approved when only
+// tasks changed: adding, splitting or editing work within requirements that
+// were already approved does not change what was agreed. A created or edited
+// feature or requirement — including its check, which is part of what "done"
+// means — changes the intent and needs re-approval. "every_change" restores
+// the old behaviour, where any change did.
+func approvalAfterCapture(prev *planning.Plan, t *changeTracker, mode string) (planning.ApprovalStatus, string) {
 	if prev == nil {
 		return planning.ApprovalPending, "new plan"
 	}
-	if prev.ApprovalStatus == planning.ApprovalApproved {
-		return planning.ApprovalPending, "the plan changed and needs re-approval"
+	if prev.ApprovalStatus != planning.ApprovalApproved {
+		return prev.ApprovalStatus, ""
 	}
-	return prev.ApprovalStatus, ""
+	if mode == policy.PlanApprovalEveryChange {
+		return planning.ApprovalPending, "the plan changed and plan_approval is every_change"
+	}
+	if scope := t.scopeChanges(); len(scope) > 0 {
+		return planning.ApprovalPending, "intent changed (" + strings.Join(scope, ", ") + ") and needs re-approval"
+	}
+	return planning.ApprovalApproved, "only tasks changed; the approval stands (plan_approval: scope)"
 }
 
 func approvalOf(p *planning.Plan) string {
@@ -457,6 +473,20 @@ func (c *changeTracker) compare(item string, before, after any) bool {
 		c.mark(item, "unchanged")
 	}
 	return changed
+}
+
+// scopeChanges lists created or updated features and requirements: the
+// changes to intent that an approval covered.
+func (c *changeTracker) scopeChanges() []string {
+	var out []string
+	for _, item := range c.order {
+		st := c.state[item]
+		if (st == "created" || st == "updated") && (strings.HasPrefix(item, "feature:") || strings.HasPrefix(item, "requirement:")) {
+			out = append(out, item)
+		}
+	}
+	sort.Strings(out)
+	return out
 }
 
 func (c *changeTracker) summary() (created, updated []string, unchanged int) {

@@ -21,6 +21,25 @@ type PolicyConfig struct {
 	// upgrade does not refuse work that was verified the old way; `roady init`
 	// turns it on for new ones.
 	VerifyRequiresEvidence bool `yaml:"verify_requires_evidence"`
+	// PlanApproval decides which changes send an approved plan back to
+	// pending. "scope" (the default when empty): only changes to intent —
+	// features and requirements, including their checks — need re-approval;
+	// adding, splitting or editing tasks keeps it. "every_change": any change
+	// does, as before.
+	PlanApproval string `yaml:"plan_approval,omitempty"`
+}
+
+const (
+	PlanApprovalScope       = "scope"
+	PlanApprovalEveryChange = "every_change"
+)
+
+// ApprovalMode returns the effective plan approval mode.
+func (c *PolicyConfig) ApprovalMode() string {
+	if c == nil || c.PlanApproval == "" {
+		return PlanApprovalScope
+	}
+	return c.PlanApproval
 }
 
 // Repository handles persistence of policy configurations.

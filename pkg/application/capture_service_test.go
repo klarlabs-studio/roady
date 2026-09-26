@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/felixgeelhaar/roady/pkg/application"
+	"github.com/felixgeelhaar/roady/pkg/domain"
 	"github.com/felixgeelhaar/roady/pkg/domain/planning"
 	"github.com/felixgeelhaar/roady/pkg/domain/spec"
 )
@@ -165,13 +166,73 @@ func TestCaptureRequirementIDsAreUniqueAcrossFeatures(t *testing.T) {
 	}
 }
 
-func TestCaptureChangeReturnsApprovedPlanToPending(t *testing.T) {
-	repo := captureRepo()
-	capture(t, repo, wholePlan())
+// Per-change approval: work added within approved intent keeps the approval;
+// a change to the intent itself needs re-approval.
+func TestCaptureApprovalFollowsScope(t *testing.T) {
+	approved := func() *MockRepo {
+		repo := captureRepo()
+		capture(t, repo, wholePlan())
+		repo.Plan.ApprovalStatus = planning.ApprovalApproved
+		return repo
+	}
+
+	repo := approved()
+	deps := []string{"task-pdf"}
+	res := capture(t, repo, application.CaptureDoc{Tasks: []application.CaptureTask{
+		{ID: "task-pdf-a4", Title: str("A4 layout"), Requirement: str("pdf"), DependsOn: &deps},
+		{ID: "task-pdf", Title: str("PDF output, split")},
+	}})
+	if res.PlanApproval != string(planning.ApprovalApproved) {
+		t.Fatalf("adding and editing tasks must keep the approval, got %q (%s)", res.PlanApproval, res.ApprovalReason)
+	}
+	if n := len(repo.Plan.Tasks); n != 4 {
+		t.Fatalf("expected the new task alongside the others, got %d tasks", n)
+	}
+
+	repo = approved()
+	res = capture(t, repo, application.CaptureDoc{Features: []application.CaptureFeature{{
+		ID: "inv", Requirements: []application.CaptureRequirement{{ID: "seq", Check: &spec.Check{Run: "true"}}},
+	}}})
+	if res.PlanApproval != string(planning.ApprovalPending) || !strings.Contains(res.ApprovalReason, "requirement:seq") {
+		t.Fatalf("changing a requirement must need re-approval naming it, got %q (%s)", res.PlanApproval, res.ApprovalReason)
+	}
+
+	repo = approved()
+	repo.Policy = &domain.PolicyConfig{PlanApproval: "every_change"}
+	res = capture(t, repo, application.CaptureDoc{Tasks: []application.CaptureTask{{ID: "task-pdf", Title: str("x")}}})
+	if res.PlanApproval != string(planning.ApprovalPending) {
+		t.Fatalf("every_change must reset on any change, got %q", res.PlanApproval)
+	}
+}
+
+// The plan update path follows the same rule: the reconciler returned every
+// rewritten plan as pending, so attaching a check to a task reset approval.
+func TestPlanUpdateKeepsApprovalWhenIntentUnchanged(t *testing.T) {
+	sp := &spec.ProductSpec{ID: "s", Title: "S", Features: []spec.Feature{{ID: "f", Title: "F",
+		Requirements: []spec.Requirement{{ID: "r", Title: "R"}}}}}
+	repo := &MockRepo{Spec: sp}
+	_ = repo.SaveSpecLock(sp)
+	repo.Plan = &planning.Plan{ID: "p", SpecID: "s", ApprovalStatus: planning.ApprovalApproved,
+		Tasks: []planning.Task{{ID: "task-r", Title: "R", FeatureID: "f"}}}
+	svc := application.NewPlanService(repo, application.NewAuditService(repo))
+
+	plan, _, err := svc.UpdatePlan([]planning.Task{{ID: "task-r", Title: "R", FeatureID: "f", Check: &planning.Check{Run: "go test ./..."}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.ApprovalStatus != planning.ApprovalApproved {
+		t.Fatalf("a task-only update must keep the approval, got %s", plan.ApprovalStatus)
+	}
+
+	// A spec that no longer matches its lock is a change of intent.
+	repo.Spec.Features[0].Requirements = append(repo.Spec.Features[0].Requirements, spec.Requirement{ID: "r2", Title: "R2"})
 	repo.Plan.ApprovalStatus = planning.ApprovalApproved
-	res := capture(t, repo, application.CaptureDoc{Tasks: []application.CaptureTask{{ID: "task-pdf", Title: str("PDF output, A4")}}})
-	if res.PlanApproval != string(planning.ApprovalPending) || res.ApprovalReason == "" {
-		t.Fatalf("expected pending with a reason, got %q %q", res.PlanApproval, res.ApprovalReason)
+	plan, _, err = svc.UpdatePlan([]planning.Task{{ID: "task-r", Title: "R", FeatureID: "f"}, {ID: "task-r2", Title: "R2", FeatureID: "f"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.ApprovalStatus != planning.ApprovalPending {
+		t.Fatalf("changed intent must need re-approval, got %s", plan.ApprovalStatus)
 	}
 }
 

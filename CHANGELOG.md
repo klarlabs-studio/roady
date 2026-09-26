@@ -38,6 +38,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   policy on for new projects; existing projects are unaffected until they add
   it. Roady's own `.roady/policy.yaml` turns it on.
 
+### Changed
+
+- **Adding or editing tasks no longer un-approves the plan.** Any change —
+  a new task, an edited estimate, a check attached to a task — returned an
+  approved plan to pending, so every agent was blocked until someone
+  re-approved work that had not changed scope. Under the new
+  `plan_approval: scope` (the default) the approval stands when only tasks
+  change; creating or editing a feature or requirement, including its check,
+  still needs re-approval and the result says which item did it. Applies to
+  `roady capture`, `roady plan generate` and `roady_plan_update`.
+  `plan_approval: every_change` restores the previous behaviour.
+
 ### Fixed
 
 - **`roady git sync` links a commit to a task finished before it.** A
