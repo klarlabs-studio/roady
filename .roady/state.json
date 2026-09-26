@@ -1,6 +1,6 @@
 {
   "project_id": "agent-handoff",
-  "version": 176,
+  "version": 179,
   "task_states": {
     "task-acceptance-checks": {
       "status": "pending",
@@ -18,11 +18,15 @@
       "elapsed_minutes": 0
     },
     "task-audit-deletion-is-alteration": {
-      "status": "in_progress",
+      "status": "done",
       "path": "",
       "owner": "Claude",
+      "evidence": [
+        "Commit: 93f64a88ba5eccb6cfd8a2771e8d63844d8086a9"
+      ],
       "started_at": "2026-09-26T16:23:38.27948448+02:00",
-      "elapsed_minutes": 0
+      "completed_at": "2026-09-26T16:24:52.953849285+02:00",
+      "elapsed_minutes": 1
     },
     "task-audit-tail-anchor": {
       "status": "pending",
@@ -139,8 +143,10 @@
       "elapsed_minutes": 0
     },
     "task-mcp-error-live-path": {
-      "status": "pending",
+      "status": "blocked",
       "path": "",
+      "owner": "Claude",
+      "started_at": "2026-09-26T16:25:01.182551128+02:00",
       "elapsed_minutes": 0
     },
     "task-mcp-errors-reach-agent": {
@@ -343,5 +349,5 @@
       "elapsed_minutes": 4
     }
   },
-  "updated_at": "2026-09-26T16:23:38.27948448+02:00"
+  "updated_at": "2026-09-26T16:30:08.411544189+02:00"
 }
