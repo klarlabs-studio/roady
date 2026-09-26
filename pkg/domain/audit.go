@@ -125,10 +125,3 @@ func canonicalJSON(m map[string]interface{}) string {
 
 	return string(ordered)
 }
-
-// UsageStats tracks the "cost" and telemetry of operations.
-type UsageStats struct {
-	TotalCommands int            `json:"total_commands"`
-	LastCommandAt time.Time      `json:"last_command_at"`
-	ProviderStats map[string]int `json:"provider_stats"` // e.g., "gemini-tokens": 500
-}

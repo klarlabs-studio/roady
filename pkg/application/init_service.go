@@ -88,5 +88,5 @@ func (s *InitService) InitializeProject(name string) error {
 		return err
 	}
 
-	return s.repo.UpdateUsage(domain.UsageStats{})
+	return nil
 }

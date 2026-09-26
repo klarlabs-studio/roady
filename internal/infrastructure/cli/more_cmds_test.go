@@ -215,113 +215,10 @@ func TestTaskCommand_CompleteWithEvidence(t *testing.T) {
 	}
 }
 
-func TestSyncCmd_UpdatesStatuses(t *testing.T) {
-	repoRoot := findRepoRoot(t)
-	root, cleanup := withTempDir(t)
-	defer cleanup()
-
-	repo := storage.NewFilesystemRepository(".")
-	_ = repo.Initialize()
-	_ = repo.SaveSpec(&spec.ProductSpec{
-		ID:       "spec-1",
-		Title:    "Project",
-		Features: []spec.Feature{{ID: "f1", Title: "Feature"}},
-	})
-	_ = repo.SavePlan(&planning.Plan{
-		ID:             "p1",
-		ApprovalStatus: planning.ApprovalApproved,
-		Tasks: []planning.Task{
-			{ID: "t1", FeatureID: "f1", Title: "Task 1"},
-			{ID: "t2", FeatureID: "f1", Title: "Task 2"},
-		},
-	})
-	state := planning.NewExecutionState("p1")
-	state.TaskStates["t1"] = planning.TaskResult{Status: planning.StatusPending}
-	state.TaskStates["t2"] = planning.TaskResult{Status: planning.StatusInProgress}
-	_ = repo.SaveState(state)
-
-	pluginBin := filepath.Join(repoRoot, "roady-plugin-mock")
-	if _, err := os.Stat(pluginBin); err != nil {
-		pluginBin = filepath.Join(root, "roady-plugin-mock")
-		source := filepath.Join(repoRoot, "cmd", "roady-plugin-mock", "main.go")
-		cmd := exec.Command("go", "build", "-o", pluginBin, source)
-		cmd.Dir = repoRoot
-		out, err := cmd.CombinedOutput()
-		if err != nil {
-			t.Fatalf("build plugin: %v (%s)", err, strings.TrimSpace(string(out)))
-		}
-	}
-
-	if err := syncCmd.RunE(syncCmd, []string{pluginBin}); err != nil {
-		t.Fatalf("sync failed: %v", err)
-	}
-
-	updated, _ := repo.LoadState()
-	if updated.TaskStates["t1"].Status != planning.StatusInProgress {
-		t.Fatalf("expected t1 to be in progress, got %s", updated.TaskStates["t1"].Status)
-	}
-	if updated.TaskStates["t2"].Status != planning.StatusDone {
-		t.Fatalf("expected t2 to be done, got %s", updated.TaskStates["t2"].Status)
-	}
-}
-
-func TestWatchCmd_RunOnce(t *testing.T) {
-	_, cleanup := withTempDir(t)
-	defer cleanup()
-
-	repo := storage.NewFilesystemRepository(".")
-	_ = repo.Initialize()
-	_ = repo.SavePlan(&planning.Plan{ID: "p1"})
-	_ = repo.SaveState(planning.NewExecutionState("p1"))
-
-	if err := os.MkdirAll("docs", 0700); err != nil {
-		t.Fatalf("mkdir docs: %v", err)
-	}
-	if err := os.WriteFile("docs/spec.md", []byte("# Project\n\n## Feature\nDesc"), 0600); err != nil {
-		t.Fatalf("write spec: %v", err)
-	}
-
-	t.Setenv("ROADY_WATCH_ONCE", "true")
-	t.Setenv("ROADY_WATCH_SEED_HASH", "seed")
-	if err := watchCmd.RunE(watchCmd, []string{"docs"}); err != nil {
-		t.Fatalf("watch run failed: %v", err)
-	}
-}
-
 func TestMCPCmd_Skip(t *testing.T) {
 	t.Setenv("ROADY_SKIP_MCP_START", "true")
 	if err := mcpCmd.RunE(mcpCmd, []string{}); err != nil {
 		t.Fatalf("mcp cmd failed: %v", err)
-	}
-}
-
-func TestWatchCmd_AutoSync(t *testing.T) {
-	_, cleanup := withTempDir(t)
-	defer cleanup()
-
-	repo := storage.NewFilesystemRepository(".")
-	_ = repo.Initialize()
-	_ = repo.SavePolicy(&domain.PolicyConfig{AllowAI: true})
-	_ = repo.SavePlan(&planning.Plan{ID: "p1"})
-	_ = repo.SaveState(planning.NewExecutionState("p1"))
-
-	if err := os.MkdirAll("docs", 0700); err != nil {
-		t.Fatalf("mkdir docs: %v", err)
-	}
-	if err := os.WriteFile("docs/spec.md", []byte("# Project\n\n## Feature\nDesc"), 0600); err != nil {
-		t.Fatalf("write spec: %v", err)
-	}
-
-	t.Setenv("ROADY_WATCH_ONCE", "true")
-	t.Setenv("ROADY_WATCH_SEED_HASH", "seed")
-	t.Setenv("ROADY_AI_PROVIDER", "mock")
-	t.Setenv("ROADY_AI_MODEL", "test")
-	autoSync = true
-	defer func() { autoSync = false }()
-	watchCmd.SetContext(context.Background())
-
-	if err := watchCmd.RunE(watchCmd, []string{"docs"}); err != nil {
-		t.Fatalf("watch auto-sync failed: %v", err)
 	}
 }
 
@@ -526,20 +423,6 @@ func TestStatusCmd_NoPlan(t *testing.T) {
 	}
 }
 
-func TestDiscoverCmd_NoProjects(t *testing.T) {
-	_, cleanup := withPlainTempDir(t)
-	defer cleanup()
-
-	output := captureStdout(t, func() {
-		if err := discoverCmd.RunE(discoverCmd, []string{"."}); err != nil {
-			t.Fatalf("discover failed: %v", err)
-		}
-	})
-	if !strings.Contains(output, "No Roady projects found") {
-		t.Fatalf("expected no project output, got:\n%s", output)
-	}
-}
-
 func TestAuditVerifyCmd_Violations(t *testing.T) {
 	if os.Getenv("ROADY_TEST_AUDIT_VERIFY") == "1" {
 		tempDir, _ := os.MkdirTemp("", "roady-audit-verify-*")
@@ -566,34 +449,6 @@ func TestAuditVerifyCmd_Violations(t *testing.T) {
 	err := cmd.Run()
 	if err == nil {
 		t.Fatal("expected audit verify to fail")
-	}
-}
-
-func TestDoctorCmd_BudgetCheck(t *testing.T) {
-	_, cleanup := withTempDir(t)
-	defer cleanup()
-
-	repo := storage.NewFilesystemRepository(".")
-	_ = repo.Initialize()
-	_ = repo.SaveSpec(&spec.ProductSpec{ID: "spec-1", Title: "Project"})
-	_ = repo.SavePlan(&planning.Plan{ID: "p1"})
-	state := planning.NewExecutionState("p1")
-	state.ProjectID = "p1"
-	_ = repo.SaveState(state)
-	_ = repo.SavePolicy(&domain.PolicyConfig{TokenLimit: 10})
-	_ = repo.UpdateUsage(domain.UsageStats{
-		ProviderStats: map[string]int{"mock:input": 2},
-	})
-	audit := application.NewAuditService(repo)
-	_ = audit.Log("spec.update", "tester", nil)
-
-	output := captureStdout(t, func() {
-		if err := doctorCmd.RunE(doctorCmd, []string{}); err != nil {
-			t.Fatalf("doctor failed: %v", err)
-		}
-	})
-	if !strings.Contains(output, "Budget") {
-		t.Fatalf("expected budget output, got:\n%s", output)
 	}
 }
 

@@ -192,10 +192,6 @@ func (s *PlanService) GetState() (*planning.ExecutionState, error) {
 
 }
 
-func (s *PlanService) GetUsage() (*domain.UsageStats, error) {
-	return s.repo.LoadUsage()
-}
-
 func (s *PlanService) ApprovePlan() error {
 	return s.ApprovePlanWithActor("cli")
 }

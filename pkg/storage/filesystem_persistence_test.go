@@ -7,7 +7,6 @@ import (
 
 	"github.com/felixgeelhaar/roady/pkg/domain"
 	"github.com/felixgeelhaar/roady/pkg/domain/planning"
-	"github.com/felixgeelhaar/roady/pkg/domain/plugin"
 )
 
 // --- Audit (events) round-trip tests ---
@@ -258,38 +257,6 @@ func TestLoadState_InvalidJSON(t *testing.T) {
 
 // --- Policy round-trip tests ---
 
-func TestSaveAndLoadPolicy(t *testing.T) {
-	tests := []struct {
-		name   string
-		policy *domain.PolicyConfig
-	}{
-		{"defaults", &domain.PolicyConfig{MaxWIP: 3, AllowAI: true}},
-		{"custom", &domain.PolicyConfig{MaxWIP: 10, AllowAI: false, TokenLimit: 5000}},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			d := t.TempDir()
-			r := NewFilesystemRepository(d)
-			_ = r.Initialize()
-
-			if err := r.SavePolicy(tt.policy); err != nil {
-				t.Fatalf("SavePolicy: %v", err)
-			}
-			loaded, err := r.LoadPolicy()
-			if err != nil {
-				t.Fatalf("LoadPolicy: %v", err)
-			}
-			if loaded.MaxWIP != tt.policy.MaxWIP {
-				t.Errorf("MaxWIP = %d, want %d", loaded.MaxWIP, tt.policy.MaxWIP)
-			}
-			if loaded.AllowAI != tt.policy.AllowAI {
-				t.Errorf("AllowAI = %v, want %v", loaded.AllowAI, tt.policy.AllowAI)
-			}
-		})
-	}
-}
-
 func TestLoadPolicy_MissingReturnsDefaults(t *testing.T) {
 	d := t.TempDir()
 	r := NewFilesystemRepository(d)
@@ -327,108 +294,6 @@ func TestLoadPolicy_Legacy(t *testing.T) {
 }
 
 // --- Plugin config round-trip tests ---
-
-func TestSaveAndLoadPluginConfigs(t *testing.T) {
-	d := t.TempDir()
-	r := NewFilesystemRepository(d)
-	_ = r.Initialize()
-
-	configs := plugin.NewPluginConfigs()
-	configs.Set("github", plugin.PluginConfig{
-		Binary: "/usr/local/bin/roady-plugin-github",
-		Config: map[string]string{"token": "abc123"},
-	})
-	configs.Set("jira", plugin.PluginConfig{
-		Binary: "/usr/local/bin/roady-plugin-jira",
-		Config: map[string]string{"url": "https://jira.example.com"},
-	})
-
-	if err := r.SavePluginConfigs(configs); err != nil {
-		t.Fatalf("SavePluginConfigs: %v", err)
-	}
-
-	loaded, err := r.LoadPluginConfigs()
-	if err != nil {
-		t.Fatalf("LoadPluginConfigs: %v", err)
-	}
-	if len(loaded.Plugins) != 2 {
-		t.Errorf("plugins = %d, want 2", len(loaded.Plugins))
-	}
-
-	gh := loaded.Get("github")
-	if gh == nil || gh.Binary != "/usr/local/bin/roady-plugin-github" {
-		t.Errorf("github plugin binary mismatch")
-	}
-}
-
-func TestLoadPluginConfigs_MissingFile(t *testing.T) {
-	d := t.TempDir()
-	r := NewFilesystemRepository(d)
-	_ = r.Initialize()
-
-	configs, err := r.LoadPluginConfigs()
-	if err != nil {
-		t.Fatalf("expected nil error, got %v", err)
-	}
-	if len(configs.Plugins) != 0 {
-		t.Errorf("expected empty plugins, got %d", len(configs.Plugins))
-	}
-}
-
-func TestGetPluginConfig_NotFound(t *testing.T) {
-	d := t.TempDir()
-	r := NewFilesystemRepository(d)
-	_ = r.Initialize()
-
-	_, err := r.GetPluginConfig("nonexistent")
-	if err == nil {
-		t.Error("expected error for missing plugin config")
-	}
-}
-
-func TestSetAndRemovePluginConfig(t *testing.T) {
-	d := t.TempDir()
-	r := NewFilesystemRepository(d)
-	_ = r.Initialize()
-
-	cfg := plugin.PluginConfig{Binary: "/bin/test", Config: map[string]string{}}
-	if err := r.SetPluginConfig("test", cfg); err != nil {
-		t.Fatalf("SetPluginConfig: %v", err)
-	}
-
-	got, err := r.GetPluginConfig("test")
-	if err != nil {
-		t.Fatalf("GetPluginConfig: %v", err)
-	}
-	if got.Binary != "/bin/test" {
-		t.Errorf("binary = %s, want /bin/test", got.Binary)
-	}
-
-	if err := r.RemovePluginConfig("test"); err != nil {
-		t.Fatalf("RemovePluginConfig: %v", err)
-	}
-
-	_, err = r.GetPluginConfig("test")
-	if err == nil {
-		t.Error("expected error after removal")
-	}
-}
-
-func TestLoadPluginConfigs_InvalidYAML(t *testing.T) {
-	d := t.TempDir()
-	r := NewFilesystemRepository(d)
-	_ = r.Initialize()
-
-	path, _ := r.ResolvePath(PluginsFile)
-	if err := os.WriteFile(path, []byte("[}invalid"), 0600); err != nil {
-		t.Fatal(err)
-	}
-
-	_, err := r.LoadPluginConfigs()
-	if err == nil {
-		t.Error("expected error for invalid YAML")
-	}
-}
 
 // --- Codebase inspector tests ---
 
@@ -534,22 +399,33 @@ func TestSaveState_ReadonlyDir(t *testing.T) {
 	}
 }
 
-func TestSavePluginConfigs_ReadonlyDir(t *testing.T) {
-	d := t.TempDir()
-	r := NewFilesystemRepository(d)
-	_ = r.Initialize()
-
-	if err := os.Chmod(filepath.Join(d, RoadyDir), 0400); err != nil {
-		t.Fatal(err)
+func TestSaveAndLoadPolicy(t *testing.T) {
+	tests := []struct {
+		name   string
+		policy *domain.PolicyConfig
+	}{
+		{"defaults", &domain.PolicyConfig{MaxWIP: 3, AllowAI: true}},
 	}
-	defer func() {
-		if err := os.Chmod(filepath.Join(d, RoadyDir), 0700); err != nil {
-			t.Fatal(err)
-		}
-	}()
 
-	err := r.SavePluginConfigs(plugin.NewPluginConfigs())
-	if err == nil {
-		t.Error("expected write error on readonly dir")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d := t.TempDir()
+			r := NewFilesystemRepository(d)
+			_ = r.Initialize()
+
+			if err := r.SavePolicy(tt.policy); err != nil {
+				t.Fatalf("SavePolicy: %v", err)
+			}
+			loaded, err := r.LoadPolicy()
+			if err != nil {
+				t.Fatalf("LoadPolicy: %v", err)
+			}
+			if loaded.MaxWIP != tt.policy.MaxWIP {
+				t.Errorf("MaxWIP = %d, want %d", loaded.MaxWIP, tt.policy.MaxWIP)
+			}
+			if loaded.AllowAI != tt.policy.AllowAI {
+				t.Errorf("AllowAI = %v, want %v", loaded.AllowAI, tt.policy.AllowAI)
+			}
+		})
 	}
 }

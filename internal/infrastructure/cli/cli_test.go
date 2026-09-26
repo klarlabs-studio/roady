@@ -4,8 +4,6 @@ import (
 	"bufio"
 	"strings"
 	"testing"
-
-	"github.com/felixgeelhaar/roady/pkg/domain/billing"
 )
 
 func TestIntOrDefault(t *testing.T) {
@@ -47,125 +45,6 @@ func TestBoolStr(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestGenerateTextTable(t *testing.T) {
-	entries := []billing.CostReportEntry{
-		{TaskID: "task-1", Title: "Short", RateName: "Standard", Hours: 2.5, Cost: 250.00},
-		{TaskID: "task-2", Title: "Very Long Task Title Here", RateName: "Premium", Hours: 1.0, Cost: 150.00},
-	}
-
-	got := generateTextTable(entries)
-
-	if len(got) == 0 {
-		t.Error("expected non-empty output")
-	}
-}
-
-func TestGenerateMarkdownTable(t *testing.T) {
-	entries := []billing.CostReportEntry{
-		{TaskID: "task-1", Title: "Task One", RateName: "Standard", Hours: 2.5, Cost: 250.00},
-	}
-
-	got := generateMarkdownTable(entries)
-
-	if len(got) == 0 {
-		t.Error("expected non-empty output")
-	}
-}
-
-func TestGenerateTextReport(t *testing.T) {
-	report := &billing.CostReport{
-		Currency:   "USD",
-		TotalHours: 10.0,
-		TotalCost:  1000.00,
-		Entries: []billing.CostReportEntry{
-			{TaskID: "task-1", Title: "Task One", RateName: "Standard", Hours: 10.0, Cost: 1000.00},
-		},
-	}
-
-	got := generateTextReport(report)
-
-	if len(got) == 0 {
-		t.Error("expected non-empty output")
-	}
-}
-
-func TestGenerateMarkdownReport(t *testing.T) {
-	report := &billing.CostReport{
-		Currency:   "EUR",
-		TotalHours: 5.0,
-		TotalCost:  500.00,
-		Entries: []billing.CostReportEntry{
-			{TaskID: "task-1", Title: "Task One", RateName: "Standard", Hours: 5.0, Cost: 500.00},
-		},
-	}
-
-	got := generateMarkdownReport(report)
-
-	if len(got) == 0 {
-		t.Error("expected non-empty output")
-	}
-}
-
-func TestPrintTextReport(t *testing.T) {
-	report := &billing.CostReport{
-		Currency:   "USD",
-		TotalHours: 8.0,
-		TotalCost:  800.00,
-		Entries: []billing.CostReportEntry{
-			{TaskID: "task-1", Title: "Task One", RateName: "Standard", Hours: 8.0, Cost: 800.00},
-		},
-	}
-
-	printTextReport(report)
-}
-
-func TestPrintTextReportWithTax(t *testing.T) {
-	report := &billing.CostReport{
-		Currency:     "USD",
-		TaxName:      "VAT",
-		TaxPercent:   20.0,
-		TotalTax:     160.00,
-		TotalHours:   8.0,
-		TotalCost:    800.00,
-		TotalWithTax: 960.00,
-		Entries: []billing.CostReportEntry{
-			{TaskID: "task-1", Title: "Task One", RateName: "Standard", Hours: 8.0, Cost: 800.00, Tax: 160.00, TotalWithTax: 960.00},
-		},
-	}
-
-	printTextReport(report)
-}
-
-func TestPrintMarkdownReport(t *testing.T) {
-	report := &billing.CostReport{
-		Currency:   "USD",
-		TotalHours: 8.0,
-		TotalCost:  800.00,
-		Entries: []billing.CostReportEntry{
-			{TaskID: "task-1", Title: "Task One", RateName: "Standard", Hours: 8.0, Cost: 800.00},
-		},
-	}
-
-	printMarkdownReport(report)
-}
-
-func TestPrintMarkdownReportWithTax(t *testing.T) {
-	report := &billing.CostReport{
-		Currency:     "USD",
-		TaxName:      "VAT",
-		TaxPercent:   20.0,
-		TotalTax:     160.00,
-		TotalHours:   8.0,
-		TotalCost:    800.00,
-		TotalWithTax: 960.00,
-		Entries: []billing.CostReportEntry{
-			{TaskID: "task-1", Title: "Task One", RateName: "Standard", Hours: 8.0, Cost: 800.00, Tax: 160.00, TotalWithTax: 960.00},
-		},
-	}
-
-	printMarkdownReport(report)
 }
 
 func TestPrompt_WithInput(t *testing.T) {

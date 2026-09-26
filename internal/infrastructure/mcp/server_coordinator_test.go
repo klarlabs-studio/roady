@@ -195,7 +195,6 @@ func TestServer_RegistersCanonicalAndDeprecatedToolNames(t *testing.T) {
 		// Canonical decompose + deprecation alias.
 		"roady_plan_decompose",
 		// Canonical recurring-drift + deprecation alias.
-		"roady_drift_recurring",
 		// Cost estimator (new in v0.10).
 	}
 
@@ -206,11 +205,10 @@ func TestServer_RegistersCanonicalAndDeprecatedToolNames(t *testing.T) {
 	}
 }
 
-// roady_report and roady_spec_analyze existed only as CLI commands, so an
-// agent could neither produce the stakeholder report the reporting work was
-// built for nor create a spec from source documents — the entry point to the
-// whole workflow. Same gap roady_audit_trail closed in 0.17.0.
-func TestServer_RegistersReportAndSpecAnalyze(t *testing.T) {
+// roady_spec_analyze existed only as a CLI command, so an agent could not
+// create a spec from source documents — the entry point to the whole
+// workflow. Same gap roady_audit_trail closed in 0.17.0.
+func TestServer_RegistersSpecAnalyze(t *testing.T) {
 	server := setupCoordinatorTestServer(t)
 
 	registered := make(map[string]bool)
@@ -218,42 +216,11 @@ func TestServer_RegistersReportAndSpecAnalyze(t *testing.T) {
 		registered[tool.Name] = true
 	}
 
-	for _, name := range []string{"roady_report", "roady_spec_analyze"} {
+	for _, name := range []string{"roady_spec_analyze"} {
 		if !registered[name] {
 			t.Errorf("%s is not registered; the capability is CLI-only", name)
 		}
 	}
-}
-
-func TestHandleReport_Formats(t *testing.T) {
-	server := setupCoordinatorTestServer(t)
-	ctx := context.Background()
-
-	for _, format := range []string{"", "markdown", "html", "json"} {
-		res, err := server.handleReport(ctx, ReportArgs{Format: format})
-		if err != nil {
-			t.Fatalf("handleReport(%q): %v", format, err)
-		}
-		if res == nil {
-			t.Fatalf("handleReport(%q): nil result", format)
-		}
-	}
-}
-
-// A bad format and a malformed since window are caller mistakes: they must
-// come back as an actionable tool error, not a protocol error or a silent
-// default.
-func TestHandleReport_RejectsBadInputActionably(t *testing.T) {
-	server := setupCoordinatorTestServer(t)
-	ctx := context.Background()
-
-	res, err := server.handleReport(ctx, ReportArgs{Format: "bogus"})
-	assertToolError(t, res, err, "bogus")
-
-	// 7xd used to be accepted as "7 days" by the CLI's parser while the MCP
-	// one rejected it; both now share application.ParseSince.
-	res, err = server.handleReport(ctx, ReportArgs{Since: "7xd"})
-	assertToolError(t, res, err, "7xd")
 }
 
 func TestHandleSpecAnalyze_RequiresADirectory(t *testing.T) {
@@ -341,7 +308,6 @@ func TestServer_ParityToolsAreRegistered(t *testing.T) {
 	for _, name := range []string{
 		"roady_plan_prune", "roady_plan_reject", "roady_audit_verify",
 		"roady_spec_validate", "roady_spec_import", "roady_state_rebuild",
-		"roady_timeline", "roady_debt_history", "roady_debt_score",
 	} {
 		if !registered[name] {
 			t.Errorf("%s is not registered; the capability remains CLI-only", name)
@@ -359,77 +325,6 @@ func TestServer_EveryToolIsAnnotated(t *testing.T) {
 			t.Errorf("tool %q has no entry in toolBehaviours", tool.Name)
 		}
 	}
-}
-
-func TestParityHandlers_ReturnResults(t *testing.T) {
-	server := setupCoordinatorTestServer(t)
-	ctx := context.Background()
-
-	t.Run("audit verify reports findings as data", func(t *testing.T) {
-		res, err := server.handleAuditVerify(ctx, AuditVerifyArgs{})
-		if err != nil {
-			t.Fatalf("handleAuditVerify: %v", err)
-		}
-		out, ok := res.(map[string]any)
-		if !ok {
-			t.Fatalf("got %T, want a map", res)
-		}
-		// A broken chain is a finding to act on, not a failed call.
-		if _, has := out["intact"]; !has {
-			t.Error("no intact flag; a caller cannot tell whether the chain verified")
-		}
-	})
-
-	t.Run("spec validate", func(t *testing.T) {
-		res, err := server.handleSpecValidate(ctx, PlanMutateArgs{})
-		if err != nil || res == nil {
-			t.Fatalf("handleSpecValidate: %v", err)
-		}
-	})
-
-	t.Run("timeline", func(t *testing.T) {
-		res, err := server.handleTimeline(ctx, PlanMutateArgs{})
-		if err != nil || res == nil {
-			t.Fatalf("handleTimeline: %v", err)
-		}
-	})
-
-	t.Run("debt history defaults its window", func(t *testing.T) {
-		res, err := server.handleDebtHistory(ctx, DebtWindowArgs{})
-		if err != nil {
-			t.Fatalf("handleDebtHistory: %v", err)
-		}
-		out, _ := res.(map[string]any)
-		if out["window_days"] != 30 {
-			t.Errorf("window_days = %v, want the 30-day default", out["window_days"])
-		}
-	})
-
-	t.Run("debt score without a component returns top debtors", func(t *testing.T) {
-		res, err := server.handleDebtScore(ctx, DebtScoreArgs{})
-		if err != nil || res == nil {
-			t.Fatalf("handleDebtScore: %v", err)
-		}
-	})
-
-	t.Run("spec import requires a path", func(t *testing.T) {
-		res, err := server.handleSpecImport(ctx, SpecImportArgs{})
-		assertToolError(t, res, err, "path")
-	})
-
-	t.Run("plan reject then prune", func(t *testing.T) {
-		if _, err := server.handlePlanReject(ctx, PlanMutateArgs{}); err != nil {
-			t.Fatalf("handlePlanReject: %v", err)
-		}
-		res, err := server.handlePlanPrune(ctx, PlanMutateArgs{})
-		if err != nil {
-			t.Fatalf("handlePlanPrune: %v", err)
-		}
-		out, _ := res.(map[string]any)
-		if _, has := out["tasks_retained"]; !has {
-			t.Error("prune did not report how many tasks it kept")
-		}
-	})
 }
 
 // The CLI and MCP must return the same verdict on the same log. They did not:
@@ -518,36 +413,6 @@ func TestHandleSemanticDrift_ReturnsQuestionsWithTheRequest(t *testing.T) {
 	assertToolError(t, res, err, "")
 }
 
-// roady_timeline must read what `roady status timeline` reads. It first used
-// the event-sourced projection while the CLI used the raw event log, so the
-// two surfaces described the same history with different fields — introduced
-// by the change that claimed to close the parity gap.
-func TestTimeline_ReadsTheSameSourceAsTheCLI(t *testing.T) {
-	server := setupCoordinatorTestServer(t)
-
-	res, err := server.handleTimeline(context.Background(), PlanMutateArgs{})
-	if err != nil {
-		t.Fatalf("handleTimeline: %v", err)
-	}
-	out, ok := res.(map[string]any)
-	if !ok {
-		t.Fatalf("got %T, want a map", res)
-	}
-
-	svc, err := server.servicesForPath("", "")
-	if err != nil {
-		t.Fatal(err)
-	}
-	want, err := svc.Workspace.Audit.GetTimeline()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if got := out["count"].(int); got != len(want) {
-		t.Errorf("MCP reports %d events, the CLI's source has %d", got, len(want))
-	}
-}
-
 // spec.lock.json is the drift baseline. `roady init` writes it with the spec,
 // but adopting Roady in an existing project means replacing that spec — and
 // nothing re-derived the lock, so drift was measured against a spec the
@@ -578,4 +443,50 @@ func TestHandleSpecLock_ReportsWhatItReconciled(t *testing.T) {
 	if again.(map[string]any)["changed"].(bool) {
 		t.Error("a second call reported changes; it should be idempotent")
 	}
+}
+
+func TestParityHandlers_ReturnResults(t *testing.T) {
+	server := setupCoordinatorTestServer(t)
+	ctx := context.Background()
+
+	t.Run("audit verify reports findings as data", func(t *testing.T) {
+		res, err := server.handleAuditVerify(ctx, AuditVerifyArgs{})
+		if err != nil {
+			t.Fatalf("handleAuditVerify: %v", err)
+		}
+		out, ok := res.(map[string]any)
+		if !ok {
+			t.Fatalf("got %T, want a map", res)
+		}
+		// A broken chain is a finding to act on, not a failed call.
+		if _, has := out["intact"]; !has {
+			t.Error("no intact flag; a caller cannot tell whether the chain verified")
+		}
+	})
+
+	t.Run("spec validate", func(t *testing.T) {
+		res, err := server.handleSpecValidate(ctx, PlanMutateArgs{})
+		if err != nil || res == nil {
+			t.Fatalf("handleSpecValidate: %v", err)
+		}
+	})
+
+	t.Run("spec import requires a path", func(t *testing.T) {
+		res, err := server.handleSpecImport(ctx, SpecImportArgs{})
+		assertToolError(t, res, err, "path")
+	})
+
+	t.Run("plan reject then prune", func(t *testing.T) {
+		if _, err := server.handlePlanReject(ctx, PlanMutateArgs{}); err != nil {
+			t.Fatalf("handlePlanReject: %v", err)
+		}
+		res, err := server.handlePlanPrune(ctx, PlanMutateArgs{})
+		if err != nil {
+			t.Fatalf("handlePlanPrune: %v", err)
+		}
+		out, _ := res.(map[string]any)
+		if _, has := out["tasks_retained"]; !has {
+			t.Error("prune did not report how many tasks it kept")
+		}
+	})
 }

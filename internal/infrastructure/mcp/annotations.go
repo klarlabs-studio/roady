@@ -42,11 +42,8 @@ var toolBehaviours = map[string]toolBehaviour{
 	"roady_plan_get":              {readOnly: true, idempotent: true},
 	"roady_state_get":             {readOnly: true, idempotent: true},
 	"roady_snapshot_get":          {readOnly: true, idempotent: true},
-	"roady_usage_get":             {readOnly: true, idempotent: true},
 	"roady_status":                {readOnly: true, idempotent: true},
 	"roady_tasks":                 {readOnly: true, idempotent: true},
-	"roady_org_members":           {readOnly: true, idempotent: true},
-	"roady_report":                {readOnly: true, idempotent: true},
 	"roady_spec_analyze":          {},
 	"roady_semantic_drift":        {readOnly: true, idempotent: true},
 	"roady_drift_record_semantic": {},
@@ -58,32 +55,11 @@ var toolBehaviours = map[string]toolBehaviour{
 	"roady_spec_import":           {destructive: true},
 	"roady_spec_lock":             {idempotent: true},
 	"roady_state_rebuild":         {destructive: true},
-	"roady_timeline":              {readOnly: true, idempotent: true},
-	"roady_debt_history":          {readOnly: true, idempotent: true},
-	"roady_debt_score":            {readOnly: true, idempotent: true},
 	"roady_policy_check":          {readOnly: true, idempotent: true},
 	"roady_drift_detect":          {readOnly: true, idempotent: true},
-	"roady_debt_report":           {readOnly: true, idempotent: true},
-	"roady_debt_summary":          {readOnly: true, idempotent: true},
-	"roady_debt_trend":            {readOnly: true, idempotent: true},
-	"roady_drift_recurring":       {readOnly: true, idempotent: true},
 	"roady_audit_trail":           {readOnly: true, idempotent: true},
-	"roady_deps_list":             {readOnly: true, idempotent: true},
-	"roady_deps_graph":            {readOnly: true, idempotent: true},
-	"roady_forecast":              {readOnly: true, idempotent: true},
-	"roady_cost_report":           {readOnly: true, idempotent: true},
-	"roady_cost_budget":           {readOnly: true, idempotent: true},
-	"roady_rate_list":             {readOnly: true, idempotent: true},
-	"roady_team_list":             {readOnly: true, idempotent: true},
-	"roady_messaging_list":        {readOnly: true, idempotent: true},
-	"roady_plugin_list":           {readOnly: true, idempotent: true},
-	"roady_org_status":            {readOnly: true, idempotent: true},
-	"roady_org_policy":            {readOnly: true, idempotent: true},
-	"roady_org_detect_drift":      {readOnly: true, idempotent: true},
 
 	// Reads that shell out to a plugin binary, so they leave the repo.
-	"roady_plugin_status":   {readOnly: true, idempotent: true, openWorld: true},
-	"roady_plugin_validate": {readOnly: true, idempotent: true, openWorld: true},
 
 	// --- AI: look like reads, but record token usage to the audit log -----
 	// Marking these read-only would be the exact mistake the spec warns
@@ -95,15 +71,8 @@ var toolBehaviours = map[string]toolBehaviour{
 	"roady_plan_prioritize": {openWorld: true},
 
 	// --- Additive writes: create or record, nothing lost ------------------
-	"roady_init":             {idempotent: true},
-	"roady_spec_add":         {},
-	"roady_task_assign":      {idempotent: true},
-	"roady_task_log_time":    {},
-	"roady_rate_add":         {idempotent: true},
-	"roady_team_add":         {idempotent: true},
-	"roady_rate_set_default": {idempotent: true},
-	"roady_rate_tax":         {idempotent: true},
-	"roady_deps_scan":        {idempotent: true},
+	"roady_init":     {idempotent: true},
+	"roady_spec_add": {},
 
 	// State moves that are reversible through the FSM.
 	"roady_task_transition": {},
@@ -124,14 +93,9 @@ var toolBehaviours = map[string]toolBehaviour{
 	"roady_plan_update":    {destructive: true},
 	"roady_plan_decompose": {destructive: true, openWorld: true},
 	"roady_drift_accept":   {destructive: true, idempotent: true},
-	"roady_rate_remove":    {destructive: true, idempotent: true},
-	"roady_team_remove":    {destructive: true, idempotent: true},
 
 	// --- Reach outside the repository -------------------------------------
-	"roady_sync":           {openWorld: true},
-	"roady_git_sync":       {openWorld: true, idempotent: true},
-	"roady_workspace_push": {openWorld: true},
-	"roady_workspace_pull": {openWorld: true, destructive: true},
+	"roady_git_sync": {openWorld: true, idempotent: true},
 }
 
 // tool starts a tool registration with its behaviour hints already applied,

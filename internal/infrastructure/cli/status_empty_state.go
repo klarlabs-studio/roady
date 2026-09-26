@@ -37,7 +37,7 @@ func emptyStateHintForRoot(root string) (emptyStateStep, bool) {
 			Stage:   "uninitialised",
 			Reason:  "No .roady/ directory found in this project.",
 			Command: "roady init",
-			Hint:    "Want a quick tour first? `roady demo` scaffolds a sample project in seconds.",
+			Hint:    "Then `roady setup <agent>` connects your coding agent (claude-code, codex, gemini, cursor, ...).",
 		}, true
 	}
 

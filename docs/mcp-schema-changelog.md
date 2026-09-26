@@ -6,6 +6,28 @@
 - **Minor** (1.x.0): New optional fields (`omitempty`), new tools, fields deprecated
 - **Major** (x.0.0): Required fields added/removed, tool signatures changed
 
+## v4.0.0 — Narrowed to capture, keep, prove
+
+**Major**: tools removed.
+
+### Removed
+
+`roady_cost_budget`, `roady_cost_report`, `roady_rate_add`, `roady_rate_list`,
+`roady_rate_remove`, `roady_rate_set_default`, `roady_rate_tax`,
+`roady_usage_get`, `roady_task_log_time`, `roady_forecast`, `roady_team_add`,
+`roady_team_list`, `roady_team_remove`, `roady_task_assign`,
+`roady_org_status`, `roady_org_members`, `roady_org_policy`,
+`roady_org_detect_drift`, `roady_workspace_push`, `roady_workspace_pull`,
+`roady_sync`, `roady_plugin_list`, `roady_plugin_status`,
+`roady_plugin_validate`, `roady_messaging_list`, `roady_debt_report`,
+`roady_debt_summary`, `roady_debt_score`, `roady_debt_trend`,
+`roady_debt_history`, `roady_drift_recurring`, `roady_deps_graph`,
+`roady_deps_list`, `roady_deps_scan`, `roady_report`, `roady_timeline`.
+
+`ROADY_MCP_TOOLS` groups `cost`, `team`, `org`, `debt`, `deps`, `plugin` and
+`sync` are gone (`roady_git_sync` moved to `core`); an unknown group still
+fails startup.
+
 ## v3.8.0 — Essential surface by default
 
 **Minor**: no tool removed or changed; what `tools/list` shows by default is.

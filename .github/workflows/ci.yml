@@ -94,7 +94,6 @@ jobs:
       run: |
         mkdir -p dist
         go build -v -o dist/roady ./cmd/roady
-        go build -v -o dist/roady-plugin-mock ./cmd/roady-plugin-mock
 
     - name: Test
       # -coverpkg=./... rolls cross-package coverage into the profile so

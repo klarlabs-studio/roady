@@ -60,12 +60,6 @@ func (s *PolicyService) ValidateTransition(taskID string, event string) error {
 // known, which is what per-owner WIP limits need. An empty owner skips the
 // per-owner check.
 func (s *PolicyService) ValidateTransitionForOwner(taskID, event, owner string) error {
-	// Role enforcement covers every transition, not just start — a viewer
-	// must not be able to complete or reopen work either.
-	if err := s.ValidateActorCanTransition(owner); err != nil {
-		return err
-	}
-
 	if event != "start" {
 		return nil
 	}

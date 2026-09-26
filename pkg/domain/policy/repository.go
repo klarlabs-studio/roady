@@ -9,12 +9,6 @@ type PolicyConfig struct {
 	// signal on a team.
 	MaxWIPPerOwner int  `yaml:"max_wip_per_owner"`
 	AllowAI        bool `yaml:"allow_ai"`
-	TokenLimit     int  `yaml:"token_limit"`
-	BudgetHours    int  `yaml:"budget_hours"`
-	// EnforceTeamRoles turns .roady/team.yaml from documentation into a
-	// guard: when true, an actor listed there must hold a role permitting
-	// the operation. Off by default so existing projects keep working.
-	EnforceTeamRoles bool `yaml:"enforce_team_roles"`
 	// VerifyRequiresEvidence makes verified mean proven: a task can only be
 	// verified with a passing acceptance check and a linked commit, unless a
 	// person overrides it on the record. Off for existing projects so an

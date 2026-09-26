@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/felixgeelhaar/roady/pkg/domain/dependency"
 	"github.com/felixgeelhaar/roady/pkg/domain/project"
 )
 
@@ -71,8 +70,6 @@ func MapError(err error) error {
 		return NewCLIError("task not found", "Run 'roady plan show' to list available tasks", err)
 	case errors.Is(err, project.ErrNoState):
 		return NewCLIError("no execution state found", "Run 'roady init' to initialize", err)
-	case errors.Is(err, dependency.ErrCyclicDependency):
-		return NewCLIError("cyclic dependency detected", "Review depends_on fields in plan.json", err)
 	}
 
 	return err

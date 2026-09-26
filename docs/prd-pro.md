@@ -21,10 +21,10 @@ Provide **organizational situational awareness** on top of Roady Core artifacts.
 - Team dashboards (read-only)
 - Who-is-working-on-what signals
 - Plan progress inference
-- Tracker sync (via plugins)
 - Policy enforcement
 - Audit trails
-- Cost aggregation
+
+_Note: tracker sync (plugins) and cost aggregation were prototyped in Core and later removed._
 
 ---
 

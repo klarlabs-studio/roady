@@ -4,7 +4,6 @@ package project
 import (
 	"context"
 	"sync"
-	"time"
 
 	"github.com/felixgeelhaar/roady/pkg/domain/planning"
 )
@@ -24,7 +23,7 @@ type StateRepository interface {
 // EventPublisher defines the interface for publishing domain events.
 type EventPublisher interface {
 	PublishPlanApproved(ctx context.Context, planID, approver string) error
-	PublishTaskStarted(ctx context.Context, taskID, owner, rateID string) error
+	PublishTaskStarted(ctx context.Context, taskID, owner string) error
 	PublishTaskCompleted(ctx context.Context, taskID, evidence string) error
 	PublishTaskBlocked(ctx context.Context, taskID, reason string) error
 	PublishTaskUnblocked(ctx context.Context, taskID string) error
@@ -118,7 +117,7 @@ func (c *Coordinator) ApprovePlan(ctx context.Context, approver string) error {
 }
 
 // StartTask validates dependencies and starts a task.
-func (c *Coordinator) StartTask(ctx context.Context, taskID, owner, rateID string) error {
+func (c *Coordinator) StartTask(ctx context.Context, taskID, owner string) error {
 	if owner == "" {
 		return ErrOwnerRequired
 	}
@@ -178,12 +177,6 @@ func (c *Coordinator) StartTask(ctx context.Context, taskID, owner, rateID strin
 	state.SetTaskStatus(taskID, planning.StatusInProgress)
 	state.SetTaskOwner(taskID, owner)
 	state.StartTask(taskID)
-	if rateID != "" {
-		result := state.TaskStates[taskID]
-		result.RateID = rateID
-		state.TaskStates[taskID] = result
-		state.UpdatedAt = time.Now()
-	}
 
 	if err := c.stateRepo.Save(ctx, state); err != nil {
 		return err
@@ -191,7 +184,7 @@ func (c *Coordinator) StartTask(ctx context.Context, taskID, owner, rateID strin
 
 	// Publish event (fire-and-forget, errors logged internally)
 	if c.publisher != nil {
-		_ = c.publisher.PublishTaskStarted(ctx, taskID, owner, rateID)
+		_ = c.publisher.PublishTaskStarted(ctx, taskID, owner)
 	}
 
 	return nil

@@ -114,3 +114,9 @@ func init() {
 
 	auditCmd.AddCommand(auditTrailCmd)
 }
+
+// parseSince accepts a relative duration in days or weeks ("7d", "2w") or an
+// absolute date ("2026-07-01"), through the parser the MCP server shares.
+func parseSince(value string, now time.Time) (time.Time, error) {
+	return application.ParseSince(value, now)
+}

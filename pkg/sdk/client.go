@@ -247,15 +247,6 @@ func (c *Client) TransitionTask(ctx context.Context, taskID, event, evidence str
 	return textResult(res)
 }
 
-// AssignTask assigns a task to a person or agent without changing its status.
-func (c *Client) AssignTask(ctx context.Context, taskID, assignee string) (string, error) {
-	res, err := c.call(ctx, "roady_task_assign", map[string]any{"task_id": taskID, "assignee": assignee})
-	if err != nil {
-		return "", err
-	}
-	return textResult(res)
-}
-
 // Status returns project status with optional filters.
 func (c *Client) Status(ctx context.Context, args map[string]any) (string, error) {
 	res, err := c.call(ctx, "roady_status", args)
@@ -321,15 +312,6 @@ func (c *Client) ExplainSpec(ctx context.Context) (string, error) {
 	return textResult(res)
 }
 
-// GetUsage retrieves project usage and telemetry statistics.
-func (c *Client) GetUsage(ctx context.Context) (string, error) {
-	res, err := c.call(ctx, "roady_usage_get", nil)
-	if err != nil {
-		return "", err
-	}
-	return textResult(res)
-}
-
 // --- Coordinator ---
 
 // GetSnapshot returns a consistent project snapshot.
@@ -370,24 +352,6 @@ func (c *Client) GetInProgressTasks(ctx context.Context) (string, error) {
 
 // --- Forecast / Org ---
 
-// Forecast predicts project completion based on current velocity.
-func (c *Client) Forecast(ctx context.Context) (*Forecast, error) {
-	res, err := c.call(ctx, "roady_forecast", nil)
-	if err != nil {
-		return nil, err
-	}
-	return unmarshalText[Forecast](res)
-}
-
-// OrgStatus returns status overview of all Roady projects.
-func (c *Client) OrgStatus(ctx context.Context) (string, error) {
-	res, err := c.call(ctx, "roady_org_status", nil)
-	if err != nil {
-		return "", err
-	}
-	return textResult(res)
-}
-
 // GitSync synchronizes task statuses from git commit markers.
 func (c *Client) GitSync(ctx context.Context) (string, error) {
 	res, err := c.call(ctx, "roady_git_sync", nil)
@@ -397,96 +361,11 @@ func (c *Client) GitSync(ctx context.Context) (string, error) {
 	return textResult(res)
 }
 
-// OrgPolicy returns merged policy for a project.
-func (c *Client) OrgPolicy(ctx context.Context) (string, error) {
-	res, err := c.call(ctx, "roady_org_policy", nil)
-	if err != nil {
-		return "", err
-	}
-	return textResult(res)
-}
-
-// OrgDetectDrift detects drift across all projects.
-func (c *Client) OrgDetectDrift(ctx context.Context) (string, error) {
-	res, err := c.call(ctx, "roady_org_detect_drift", nil)
-	if err != nil {
-		return "", err
-	}
-	return textResult(res)
-}
-
 // --- Sync ---
-
-// Sync syncs the plan with an external system via a plugin binary.
-func (c *Client) Sync(ctx context.Context, pluginPath string) (string, error) {
-	res, err := c.call(ctx, "roady_sync", map[string]any{"plugin_path": pluginPath})
-	if err != nil {
-		return "", err
-	}
-	return textResult(res)
-}
 
 // --- Deps ---
 
-// DepsList lists all cross-repository dependencies.
-func (c *Client) DepsList(ctx context.Context) (string, error) {
-	res, err := c.call(ctx, "roady_deps_list", nil)
-	if err != nil {
-		return "", err
-	}
-	return textResult(res)
-}
-
-// DepsScan scans health status of dependent repositories.
-func (c *Client) DepsScan(ctx context.Context) (string, error) {
-	res, err := c.call(ctx, "roady_deps_scan", nil)
-	if err != nil {
-		return "", err
-	}
-	return textResult(res)
-}
-
-// DepsGraph returns dependency graph summary with optional cycle detection.
-func (c *Client) DepsGraph(ctx context.Context, checkCycles bool) (string, error) {
-	args := map[string]any{}
-	if checkCycles {
-		args["check_cycles"] = true
-	}
-	res, err := c.call(ctx, "roady_deps_graph", args)
-	if err != nil {
-		return "", err
-	}
-	return textResult(res)
-}
-
 // --- Debt ---
-
-// DebtReport generates a comprehensive debt report.
-func (c *Client) DebtReport(ctx context.Context) (string, error) {
-	res, err := c.call(ctx, "roady_debt_report", nil)
-	if err != nil {
-		return "", err
-	}
-	return textResult(res)
-}
-
-// DebtSummary returns a quick overview of debt status.
-func (c *Client) DebtSummary(ctx context.Context) (string, error) {
-	res, err := c.call(ctx, "roady_debt_summary", nil)
-	if err != nil {
-		return "", err
-	}
-	return textResult(res)
-}
-
-// StickyDrift returns unresolved drift items older than 7 days.
-func (c *Client) StickyDrift(ctx context.Context) (string, error) {
-	res, err := c.call(ctx, "roady_drift_recurring", nil)
-	if err != nil {
-		return "", err
-	}
-	return textResult(res)
-}
 
 // AuditTrailQuery selects the subject of an evidence trail. Exactly one of
 // TaskID, Agent, or Session identifies it; TaskID combined with Agent narrows
@@ -528,78 +407,11 @@ func (c *Client) AuditTrail(ctx context.Context, q AuditTrailQuery) (string, err
 	return textResult(res)
 }
 
-// DebtTrend analyzes drift trend over the given number of days.
-func (c *Client) DebtTrend(ctx context.Context, days int) (string, error) {
-	args := map[string]any{}
-	if days > 0 {
-		args["days"] = days
-	}
-	res, err := c.call(ctx, "roady_debt_trend", args)
-	if err != nil {
-		return "", err
-	}
-	return textResult(res)
-}
-
 // --- Plugins ---
-
-// PluginList lists all registered plugins.
-func (c *Client) PluginList(ctx context.Context) (string, error) {
-	res, err := c.call(ctx, "roady_plugin_list", nil)
-	if err != nil {
-		return "", err
-	}
-	return textResult(res)
-}
-
-// PluginValidate validates a registered plugin.
-func (c *Client) PluginValidate(ctx context.Context) (string, error) {
-	res, err := c.call(ctx, "roady_plugin_validate", nil)
-	if err != nil {
-		return "", err
-	}
-	return textResult(res)
-}
-
-// PluginStatus checks health status of plugins.
-func (c *Client) PluginStatus(ctx context.Context) (string, error) {
-	res, err := c.call(ctx, "roady_plugin_status", nil)
-	if err != nil {
-		return "", err
-	}
-	return textResult(res)
-}
 
 // --- Messaging ---
 
-// MessagingList lists configured messaging adapters.
-func (c *Client) MessagingList(ctx context.Context) (string, error) {
-	res, err := c.call(ctx, "roady_messaging_list", nil)
-	if err != nil {
-		return "", err
-	}
-	return textResult(res)
-}
-
 // --- Workspace Sync ---
-
-// WorkspacePush commits and pushes .roady/ changes to git remote.
-func (c *Client) WorkspacePush(ctx context.Context) (*SyncResult, error) {
-	res, err := c.call(ctx, "roady_workspace_push", nil)
-	if err != nil {
-		return nil, err
-	}
-	return unmarshalText[SyncResult](res)
-}
-
-// WorkspacePull pulls remote .roady/ changes with conflict detection.
-func (c *Client) WorkspacePull(ctx context.Context) (*SyncResult, error) {
-	res, err := c.call(ctx, "roady_workspace_pull", nil)
-	if err != nil {
-		return nil, err
-	}
-	return unmarshalText[SyncResult](res)
-}
 
 // --- Smart Decompose ---
 
@@ -613,30 +425,3 @@ func (c *Client) SmartDecompose(ctx context.Context) (*SmartPlan, error) {
 }
 
 // --- Team ---
-
-// TeamList returns the current team configuration.
-func (c *Client) TeamList(ctx context.Context) (*TeamConfig, error) {
-	res, err := c.call(ctx, "roady_team_list", nil)
-	if err != nil {
-		return nil, err
-	}
-	return unmarshalText[TeamConfig](res)
-}
-
-// TeamAdd adds or updates a team member with a role.
-func (c *Client) TeamAdd(ctx context.Context, name, role string) (string, error) {
-	res, err := c.call(ctx, "roady_team_add", map[string]any{"name": name, "role": role})
-	if err != nil {
-		return "", err
-	}
-	return textResult(res)
-}
-
-// TeamRemove removes a team member.
-func (c *Client) TeamRemove(ctx context.Context, name string) (string, error) {
-	res, err := c.call(ctx, "roady_team_remove", map[string]any{"name": name})
-	if err != nil {
-		return "", err
-	}
-	return textResult(res)
-}

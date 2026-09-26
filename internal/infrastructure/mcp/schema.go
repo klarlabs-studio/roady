@@ -8,7 +8,7 @@ import (
 )
 
 // SchemaVersion is the current MCP tool schema version (semver).
-const SchemaVersion = "3.8.0"
+const SchemaVersion = "4.0.0"
 
 // DeprecatedField records a field or tool that has been deprecated.
 type DeprecatedField struct {

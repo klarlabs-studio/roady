@@ -36,8 +36,6 @@ const (
 	SurfaceCLI Surface = "cli"
 	// SurfaceMCP is a tool call from an agent over MCP.
 	SurfaceMCP Surface = "mcp"
-	// SurfacePlugin is an external syncer acting on Roady's behalf.
-	SurfacePlugin Surface = "plugin"
 	// SurfaceUnknown is used when nothing identified itself.
 	SurfaceUnknown Surface = "unknown"
 )

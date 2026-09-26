@@ -169,20 +169,6 @@ func TestClient_ExplainSpec(t *testing.T) {
 	}
 }
 
-func TestClient_GetUsage(t *testing.T) {
-	mt := newMockTransport()
-	mt.setToolResponse("Total: 42 commands, 1500 tokens", false)
-	c := newTestClient(t, mt)
-
-	msg, err := c.GetUsage(context.Background())
-	if err != nil {
-		t.Fatalf("GetUsage: %v", err)
-	}
-	if msg == "" {
-		t.Error("expected non-empty usage")
-	}
-}
-
 func TestClient_Status(t *testing.T) {
 	mt := newMockTransport()
 	mt.setToolResponse("3 pending, 2 in progress, 1 done", false)
@@ -233,20 +219,6 @@ func TestClient_TransitionTask_NoEvidence(t *testing.T) {
 	msg, err := c.TransitionTask(context.Background(), "task-1", "start", "")
 	if err != nil {
 		t.Fatalf("TransitionTask: %v", err)
-	}
-	if msg == "" {
-		t.Error("expected non-empty result")
-	}
-}
-
-func TestClient_AssignTask(t *testing.T) {
-	mt := newMockTransport()
-	mt.setToolResponse("Task assigned to alice", false)
-	c := newTestClient(t, mt)
-
-	msg, err := c.AssignTask(context.Background(), "task-1", "alice")
-	if err != nil {
-		t.Fatalf("AssignTask: %v", err)
 	}
 	if msg == "" {
 		t.Error("expected non-empty result")
@@ -323,20 +295,6 @@ func TestClient_GetInProgressTasks(t *testing.T) {
 	}
 }
 
-func TestClient_OrgStatus(t *testing.T) {
-	mt := newMockTransport()
-	mt.setToolResponse("2 projects active", false)
-	c := newTestClient(t, mt)
-
-	msg, err := c.OrgStatus(context.Background())
-	if err != nil {
-		t.Fatalf("OrgStatus: %v", err)
-	}
-	if msg == "" {
-		t.Error("expected non-empty result")
-	}
-}
-
 func TestClient_GitSync(t *testing.T) {
 	mt := newMockTransport()
 	mt.setToolResponse("Synced 3 tasks from git", false)
@@ -345,258 +303,6 @@ func TestClient_GitSync(t *testing.T) {
 	msg, err := c.GitSync(context.Background())
 	if err != nil {
 		t.Fatalf("GitSync: %v", err)
-	}
-	if msg == "" {
-		t.Error("expected non-empty result")
-	}
-}
-
-func TestClient_OrgPolicy(t *testing.T) {
-	mt := newMockTransport()
-	mt.setToolResponse("max_wip: 5, allow_ai: true", false)
-	c := newTestClient(t, mt)
-
-	msg, err := c.OrgPolicy(context.Background())
-	if err != nil {
-		t.Fatalf("OrgPolicy: %v", err)
-	}
-	if msg == "" {
-		t.Error("expected non-empty result")
-	}
-}
-
-func TestClient_OrgDetectDrift(t *testing.T) {
-	mt := newMockTransport()
-	mt.setToolResponse("No drift detected", false)
-	c := newTestClient(t, mt)
-
-	msg, err := c.OrgDetectDrift(context.Background())
-	if err != nil {
-		t.Fatalf("OrgDetectDrift: %v", err)
-	}
-	if msg == "" {
-		t.Error("expected non-empty result")
-	}
-}
-
-func TestClient_Sync(t *testing.T) {
-	mt := newMockTransport()
-	mt.setToolResponse("Synced with plugin", false)
-	c := newTestClient(t, mt)
-
-	msg, err := c.Sync(context.Background(), "/path/to/plugin")
-	if err != nil {
-		t.Fatalf("Sync: %v", err)
-	}
-	if msg == "" {
-		t.Error("expected non-empty result")
-	}
-}
-
-func TestClient_DepsList(t *testing.T) {
-	mt := newMockTransport()
-	mt.setToolResponse("3 dependencies", false)
-	c := newTestClient(t, mt)
-
-	msg, err := c.DepsList(context.Background())
-	if err != nil {
-		t.Fatalf("DepsList: %v", err)
-	}
-	if msg == "" {
-		t.Error("expected non-empty result")
-	}
-}
-
-func TestClient_DepsScan(t *testing.T) {
-	mt := newMockTransport()
-	mt.setToolResponse("All deps healthy", false)
-	c := newTestClient(t, mt)
-
-	msg, err := c.DepsScan(context.Background())
-	if err != nil {
-		t.Fatalf("DepsScan: %v", err)
-	}
-	if msg == "" {
-		t.Error("expected non-empty result")
-	}
-}
-
-func TestClient_DepsGraph(t *testing.T) {
-	mt := newMockTransport()
-	mt.setToolResponse("Graph: 3 nodes, no cycles", false)
-	c := newTestClient(t, mt)
-
-	msg, err := c.DepsGraph(context.Background(), true)
-	if err != nil {
-		t.Fatalf("DepsGraph: %v", err)
-	}
-	if msg == "" {
-		t.Error("expected non-empty result")
-	}
-}
-
-func TestClient_DepsGraph_NoCycles(t *testing.T) {
-	mt := newMockTransport()
-	mt.setToolResponse("Graph: 3 nodes", false)
-	c := newTestClient(t, mt)
-
-	msg, err := c.DepsGraph(context.Background(), false)
-	if err != nil {
-		t.Fatalf("DepsGraph: %v", err)
-	}
-	if msg == "" {
-		t.Error("expected non-empty result")
-	}
-}
-
-func TestClient_DebtReport(t *testing.T) {
-	mt := newMockTransport()
-	mt.setToolResponse("5 debt items", false)
-	c := newTestClient(t, mt)
-
-	msg, err := c.DebtReport(context.Background())
-	if err != nil {
-		t.Fatalf("DebtReport: %v", err)
-	}
-	if msg == "" {
-		t.Error("expected non-empty result")
-	}
-}
-
-func TestClient_DebtSummary(t *testing.T) {
-	mt := newMockTransport()
-	mt.setToolResponse("Health: moderate", false)
-	c := newTestClient(t, mt)
-
-	msg, err := c.DebtSummary(context.Background())
-	if err != nil {
-		t.Fatalf("DebtSummary: %v", err)
-	}
-	if msg == "" {
-		t.Error("expected non-empty result")
-	}
-}
-
-func TestClient_StickyDrift(t *testing.T) {
-	mt := newMockTransport()
-	mt.setToolResponse("No sticky drift", false)
-	c := newTestClient(t, mt)
-
-	msg, err := c.StickyDrift(context.Background())
-	if err != nil {
-		t.Fatalf("StickyDrift: %v", err)
-	}
-	if msg == "" {
-		t.Error("expected non-empty result")
-	}
-}
-
-func TestClient_DebtTrend(t *testing.T) {
-	mt := newMockTransport()
-	mt.setToolResponse("Trend: improving over 30 days", false)
-	c := newTestClient(t, mt)
-
-	msg, err := c.DebtTrend(context.Background(), 30)
-	if err != nil {
-		t.Fatalf("DebtTrend: %v", err)
-	}
-	if msg == "" {
-		t.Error("expected non-empty result")
-	}
-}
-
-func TestClient_DebtTrend_ZeroDays(t *testing.T) {
-	mt := newMockTransport()
-	mt.setToolResponse("Trend: default", false)
-	c := newTestClient(t, mt)
-
-	msg, err := c.DebtTrend(context.Background(), 0)
-	if err != nil {
-		t.Fatalf("DebtTrend: %v", err)
-	}
-	if msg == "" {
-		t.Error("expected non-empty result")
-	}
-}
-
-func TestClient_PluginList(t *testing.T) {
-	mt := newMockTransport()
-	mt.setToolResponse("github, jira", false)
-	c := newTestClient(t, mt)
-
-	msg, err := c.PluginList(context.Background())
-	if err != nil {
-		t.Fatalf("PluginList: %v", err)
-	}
-	if msg == "" {
-		t.Error("expected non-empty result")
-	}
-}
-
-func TestClient_PluginValidate(t *testing.T) {
-	mt := newMockTransport()
-	mt.setToolResponse("All plugins valid", false)
-	c := newTestClient(t, mt)
-
-	msg, err := c.PluginValidate(context.Background())
-	if err != nil {
-		t.Fatalf("PluginValidate: %v", err)
-	}
-	if msg == "" {
-		t.Error("expected non-empty result")
-	}
-}
-
-func TestClient_PluginStatus(t *testing.T) {
-	mt := newMockTransport()
-	mt.setToolResponse("All plugins healthy", false)
-	c := newTestClient(t, mt)
-
-	msg, err := c.PluginStatus(context.Background())
-	if err != nil {
-		t.Fatalf("PluginStatus: %v", err)
-	}
-	if msg == "" {
-		t.Error("expected non-empty result")
-	}
-}
-
-func TestClient_MessagingList(t *testing.T) {
-	mt := newMockTransport()
-	mt.setToolResponse("slack, webhook", false)
-	c := newTestClient(t, mt)
-
-	msg, err := c.MessagingList(context.Background())
-	if err != nil {
-		t.Fatalf("MessagingList: %v", err)
-	}
-	if msg == "" {
-		t.Error("expected non-empty result")
-	}
-}
-
-func TestClient_TeamAdd(t *testing.T) {
-	mt := newMockTransport()
-	mt.setToolResponse("Added alice as developer", false)
-	c := newTestClient(t, mt)
-
-	msg, err := c.TeamAdd(context.Background(), "alice", "developer")
-	if err != nil {
-		t.Fatalf("TeamAdd: %v", err)
-	}
-	if msg == "" {
-		t.Error("expected non-empty result")
-	}
-}
-
-func TestClient_TeamRemove(t *testing.T) {
-	mt := newMockTransport()
-	mt.setToolResponse("Removed bob", false)
-	c := newTestClient(t, mt)
-
-	msg, err := c.TeamRemove(context.Background(), "bob")
-	if err != nil {
-		t.Fatalf("TeamRemove: %v", err)
 	}
 	if msg == "" {
 		t.Error("expected non-empty result")
@@ -703,48 +409,6 @@ func TestClient_GetSnapshot(t *testing.T) {
 	}
 }
 
-func TestClient_Forecast(t *testing.T) {
-	mt := newMockTransport()
-	mt.setToolResponse(`{"remaining":5,"completed":15,"total":20,"confidence":0.85}`, false)
-	c := newTestClient(t, mt)
-
-	fc, err := c.Forecast(context.Background())
-	if err != nil {
-		t.Fatalf("Forecast: %v", err)
-	}
-	if fc.Confidence != 0.85 {
-		t.Errorf("got confidence %f, want 0.85", fc.Confidence)
-	}
-}
-
-func TestClient_WorkspacePush(t *testing.T) {
-	mt := newMockTransport()
-	mt.setToolResponse(`{"action":"push","message":"Pushed"}`, false)
-	c := newTestClient(t, mt)
-
-	result, err := c.WorkspacePush(context.Background())
-	if err != nil {
-		t.Fatalf("WorkspacePush: %v", err)
-	}
-	if result.Action != "push" {
-		t.Errorf("got action %q, want %q", result.Action, "push")
-	}
-}
-
-func TestClient_WorkspacePull(t *testing.T) {
-	mt := newMockTransport()
-	mt.setToolResponse(`{"action":"pull","message":"Pulled"}`, false)
-	c := newTestClient(t, mt)
-
-	result, err := c.WorkspacePull(context.Background())
-	if err != nil {
-		t.Fatalf("WorkspacePull: %v", err)
-	}
-	if result.Action != "pull" {
-		t.Errorf("got action %q, want %q", result.Action, "pull")
-	}
-}
-
 func TestClient_SmartDecompose(t *testing.T) {
 	mt := newMockTransport()
 	mt.setToolResponse(`{"tasks":[{"id":"st1","title":"Smart Task"}],"summary":"AI plan"}`, false)
@@ -756,20 +420,6 @@ func TestClient_SmartDecompose(t *testing.T) {
 	}
 	if len(sp.Tasks) != 1 {
 		t.Errorf("got %d tasks, want 1", len(sp.Tasks))
-	}
-}
-
-func TestClient_TeamList(t *testing.T) {
-	mt := newMockTransport()
-	mt.setToolResponse(`{"members":[{"name":"alice","role":"dev"}]}`, false)
-	c := newTestClient(t, mt)
-
-	tc, err := c.TeamList(context.Background())
-	if err != nil {
-		t.Fatalf("TeamList: %v", err)
-	}
-	if len(tc.Members) != 1 {
-		t.Errorf("got %d members, want 1", len(tc.Members))
 	}
 }
 
@@ -843,90 +493,6 @@ func TestClient_TransitionTaskTyped(t *testing.T) {
 	}
 }
 
-func TestClient_DebtReportTyped(t *testing.T) {
-	mt := newMockTransport()
-	mt.setToolResponse(`{"total_issues":5,"health_level":"moderate"}`, false)
-	c := newTestClient(t, mt)
-
-	dr, err := c.DebtReportTyped(context.Background())
-	if err != nil {
-		t.Fatalf("DebtReportTyped: %v", err)
-	}
-	if dr.TotalIssues != 5 {
-		t.Errorf("got total_issues %d, want 5", dr.TotalIssues)
-	}
-}
-
-func TestClient_DebtSummaryTyped(t *testing.T) {
-	mt := newMockTransport()
-	mt.setToolResponse(`{"total_issues":10,"health_level":"good"}`, false)
-	c := newTestClient(t, mt)
-
-	ds, err := c.DebtSummaryTyped(context.Background())
-	if err != nil {
-		t.Fatalf("DebtSummaryTyped: %v", err)
-	}
-	if ds.TotalIssues != 10 {
-		t.Errorf("got total %d, want 10", ds.TotalIssues)
-	}
-}
-
-func TestClient_DebtTrendTyped(t *testing.T) {
-	mt := newMockTransport()
-	mt.setToolResponse(`{"days":30,"direction":"improving"}`, false)
-	c := newTestClient(t, mt)
-
-	dt, err := c.DebtTrendTyped(context.Background(), 30)
-	if err != nil {
-		t.Fatalf("DebtTrendTyped: %v", err)
-	}
-	if dt.Direction != "improving" {
-		t.Errorf("got direction %q, want %q", dt.Direction, "improving")
-	}
-}
-
-func TestClient_DepsGraphTyped(t *testing.T) {
-	mt := newMockTransport()
-	mt.setToolResponse(`{"summary":{"total_deps":3,"healthy_deps":2,"unhealthy_deps":1}}`, false)
-	c := newTestClient(t, mt)
-
-	dg, err := c.DepsGraphTyped(context.Background(), true)
-	if err != nil {
-		t.Fatalf("DepsGraphTyped: %v", err)
-	}
-	if dg.Summary.TotalDeps != 3 {
-		t.Errorf("got total_deps %d, want 3", dg.Summary.TotalDeps)
-	}
-}
-
-func TestClient_OrgStatusTyped(t *testing.T) {
-	mt := newMockTransport()
-	mt.setToolResponse(`{"projects":[{"name":"proj1"}]}`, false)
-	c := newTestClient(t, mt)
-
-	om, err := c.OrgStatusTyped(context.Background())
-	if err != nil {
-		t.Fatalf("OrgStatusTyped: %v", err)
-	}
-	if len(om.Projects) != 1 {
-		t.Errorf("got %d projects, want 1", len(om.Projects))
-	}
-}
-
-func TestClient_OrgPolicyTyped(t *testing.T) {
-	mt := newMockTransport()
-	mt.setToolResponse(`{"max_wip":5,"allow_ai":true}`, false)
-	c := newTestClient(t, mt)
-
-	op, err := c.OrgPolicyTyped(context.Background())
-	if err != nil {
-		t.Fatalf("OrgPolicyTyped: %v", err)
-	}
-	if op.MaxWIP != 5 {
-		t.Errorf("got max_wip %d, want 5", op.MaxWIP)
-	}
-}
-
 func TestClient_CheckPolicyTyped_NoViolations(t *testing.T) {
 	mt := newMockTransport()
 	mt.setToolResponse("No policy violations found.", false)
@@ -994,7 +560,7 @@ func TestClient_GetSchema(t *testing.T) {
 func TestClient_Compatible(t *testing.T) {
 	mt := newMockTransport()
 	// Same major as SupportedSchemaMajor, newer minor: compatible.
-	mt.setResourceResponse(`{"schema_version":"3.2.0","server_version":"0.15.0","changelog":"https://example.com"}`)
+	mt.setResourceResponse(`{"schema_version":"4.2.0","server_version":"0.15.0","changelog":"https://example.com"}`)
 	c := newTestClient(t, mt)
 
 	if err := c.Compatible(context.Background()); err != nil {
@@ -1005,7 +571,7 @@ func TestClient_Compatible(t *testing.T) {
 func TestClient_Compatible_Incompatible(t *testing.T) {
 	mt := newMockTransport()
 	// A server still on the previous major must be rejected.
-	mt.setResourceResponse(`{"schema_version":"2.0.0","server_version":"0.14.0","changelog":"https://example.com"}`)
+	mt.setResourceResponse(`{"schema_version":"3.8.0","server_version":"0.14.0","changelog":"https://example.com"}`)
 	c := newTestClient(t, mt)
 
 	err := c.Compatible(context.Background())
@@ -1061,8 +627,8 @@ func TestNewClient_CustomRetry(t *testing.T) {
 // be imported here, so the literal is the coupling — when the server's major
 // changes, this test is the reminder to move the SDK with it.
 func TestSupportedSchemaMajor(t *testing.T) {
-	if SupportedSchemaMajor != "3" {
-		t.Errorf("expected '3', got %q", SupportedSchemaMajor)
+	if SupportedSchemaMajor != "4" {
+		t.Errorf("expected '4', got %q", SupportedSchemaMajor)
 	}
 }
 

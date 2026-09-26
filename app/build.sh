@@ -6,7 +6,7 @@ cd "$(dirname "$0")"
 rm -rf dist
 mkdir -p dist
 
-apps=(status spec plan state drift policy forecast usage org git-sync sync deps debt init billing)
+apps=(status spec plan state drift policy git-sync init)
 
 for app in "${apps[@]}"; do
   echo "Building $app..."

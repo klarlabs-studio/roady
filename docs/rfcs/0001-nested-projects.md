@@ -64,16 +64,6 @@ roady -P feature-auth task start <id>
 # Or via environment.
 export ROADY_PROJECT=feature-auth
 roady status
-
-# Discover everything across the tree, including sub-projects.
-roady discover .
-# Found 3 Roady projects:
-# - /path/to/repo
-# - /path/to/repo/.roady/projects/feature-auth  (sub-project: feature-auth)
-# - /path/to/repo/.roady/projects/feature-payments  (sub-project: feature-payments)
-
-# Cross-project status surface includes sub-projects.
-roady org status .
 ```
 
 ## MCP surface
@@ -116,6 +106,8 @@ All higher-level repository methods (SaveSpec, LoadPlan, SaveState, etc.) are un
 
 ## Discovery
 
+> Removed: `roady discover`, `roady org`, and `OrgService` were later deleted. Sub-projects are addressed only via `--project` / `project`.
+
 `OrgService.DiscoverProjectsWithSub() ([]DiscoveredProject, error)` walks the tree, returns every `.roady/` it finds AND every sub-project under `.roady/projects/<name>/`. The legacy `DiscoverProjects() ([]string, error)` is kept and now returns just the root-project paths.
 
 `roady discover` and `roady org status` surface sub-projects with a `(name)` suffix and the on-disk path of the sub-project directory.
@@ -146,12 +138,9 @@ No data movement, no config flips.
 |---|---|
 | Existing flat `.roady/` repos | Unchanged. |
 | `storage.NewFilesystemRepository(root)` | Unchanged signature; returns root-project repo. |
-| `application.OrgService.DiscoverProjects()` | Unchanged signature; returns root projects only. |
 | `wiring.NewWorkspace(root)` | Unchanged signature; returns root-project workspace. |
 | `wiring.BuildAppServices(root)` | Unchanged signature; targets root project. |
 | MCP request structs | `project_path` unchanged; `project` is new and optional. |
-| `roady discover` output | Adds extra lines for sub-projects with a `(sub-project: <name>)` suffix. |
-| `roady org status` | Adds sub-project rows. |
 
 No deprecations.
 

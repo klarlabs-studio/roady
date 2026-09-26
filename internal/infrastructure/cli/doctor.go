@@ -86,24 +86,6 @@ var doctorCmd = &cobra.Command{
 			return nil
 		})
 
-		check("AI Governance", func() error {
-			cfg, _ := repo.LoadPolicy()
-			if cfg != nil && cfg.TokenLimit > 0 {
-				stats, _ := repo.LoadUsage()
-				if stats != nil {
-					total := 0
-					for _, c := range stats.ProviderStats {
-						total += c
-					}
-					if total >= cfg.TokenLimit {
-						return fmt.Errorf("AI budget exhausted (%d/%d)", total, cfg.TokenLimit)
-					}
-					fmt.Printf("(Budget: %d/%d) ", total, cfg.TokenLimit)
-				}
-			}
-			return nil
-		})
-
 		if hasIssues {
 			fmt.Println("\nissues found! Please fix them before continuing.")
 			return fmt.Errorf("doctor found issues")

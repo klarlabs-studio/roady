@@ -61,7 +61,7 @@ Provenance is stamped onto every event automatically. Precedence:
 | `ROADY_SESSION_ID` | Explicit session. Otherwise one is generated per process. |
 | `ROADY_AGENT` | Explicit agent name. |
 | Runtime detection | `CLAUDECODE`, `CURSOR_TRACE_ID`, `CODEX_SANDBOX`, `GEMINI_CLI` |
-| Surface | `cli`, `mcp`, or `plugin` — set automatically. |
+| Surface | `cli` or `mcp` — set automatically. |
 
 A session ID is minted **once per process**. One CLI invocation is one session;
 one long-lived `roady mcp` server is one session spanning the agent's whole

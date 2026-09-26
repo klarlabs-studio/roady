@@ -7,7 +7,7 @@
 > Kept for the structural observations, which still hold.
 
 ## Domain-Centric Structure
-- `pkg/domain` defines bounded contexts: `spec`, `planning`, `drift`, `policy`, and `plugin`. Each contains only domain logic plus interfaces that describe intent (e.g., `WorkspaceRepository`, `Policy`, `Task`).
+- `pkg/domain` defines bounded contexts: `spec`, `planning`, `drift`, `policy`, and `plugin` (the `plugin` context was later removed with the tracker syncers). Each contains only domain logic plus interfaces that describe intent (e.g., `WorkspaceRepository`, `Policy`, `Task`).
 - `pkg/application` orchestrates domain workflows (init, spec import, drift check, AI planning) and keeps infrastructure access through repository interfaces, which keeps domain layers stable regardless of CLI/MCP wiring.
 - Infrastructure (`internal/infrastructure`) stays outside the domain/external surface: `config/` reads project-specific policy, `wiring/` composes repositories/providers/services, `cli/` and `mcp/` expose user-facing commands and verbs. This mirrors the classic DDD layering of UI → application → domain → infrastructure.
 

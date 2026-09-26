@@ -9,7 +9,7 @@ import (
 // toolGroup names a family of tools that a given project either uses or never
 // touches. Every registered tool belongs to exactly one.
 //
-// The point is context, not access control. All seventy tools are advertised
+// The point is context, not access control. Every tool is advertised
 // to every client on every session, and a client pays for each one in its
 // prompt whether or not the project has a rate card or a debt ledger. The
 // report that prompted this counted five tools actually used across a very
@@ -22,23 +22,13 @@ const (
 	// a task list uses.
 	groupCore toolGroup = "core"
 
-	groupCost      toolGroup = "cost"      // budgets, rate cards, tax
-	groupTeam      toolGroup = "team"      // roster and assignment
-	groupOrg       toolGroup = "org"       // cross-repo org rollups
-	groupDebt      toolGroup = "debt"      // technical-debt ledger
-	groupDeps      toolGroup = "deps"      // dependency graph and scanning
-	groupPlugin    toolGroup = "plugin"    // external syncer plugins
-	groupSync      toolGroup = "sync"      // anything that leaves the repo
-	groupAnalytics toolGroup = "analytics" // forecasting, reporting, trends
+	groupAnalytics toolGroup = "analytics" // semantic drift judgement
 	groupAudit     toolGroup = "audit"     // hash-chained event log
 )
 
 // allGroups is the enumeration used to validate configuration and to build
 // the "all" profile. Order is the order shown in error messages.
-var allGroups = []toolGroup{
-	groupCore, groupCost, groupTeam, groupOrg, groupDebt,
-	groupDeps, groupPlugin, groupSync, groupAnalytics, groupAudit,
-}
+var allGroups = []toolGroup{groupCore, groupAnalytics, groupAudit}
 
 // toolGroups assigns every tool to a group.
 //
@@ -76,7 +66,6 @@ var toolGroups = map[string]toolGroup{
 	"roady_plan_import":     groupCore,
 	"roady_next":            groupCore,
 	"roady_task_dispatch":   groupCore,
-	"roady_task_log_time":   groupCore,
 	"roady_drift_detect":    groupCore,
 	"roady_drift_accept":    groupCore,
 	"roady_drift_explain":   groupCore,
@@ -84,57 +73,10 @@ var toolGroups = map[string]toolGroup{
 	"roady_state_rebuild":   groupCore,
 	"roady_plan_prioritize": groupCore,
 
-	// --- cost: finance surface -------------------------------------------
-	"roady_cost_budget":      groupCost,
-	"roady_cost_report":      groupCost,
-	"roady_rate_add":         groupCost,
-	"roady_rate_list":        groupCost,
-	"roady_rate_remove":      groupCost,
-	"roady_rate_set_default": groupCost,
-	"roady_rate_tax":         groupCost,
-	"roady_usage_get":        groupCost,
-
-	// --- team -------------------------------------------------------------
-	"roady_team_add":    groupTeam,
-	"roady_team_list":   groupTeam,
-	"roady_team_remove": groupTeam,
-	"roady_task_assign": groupTeam,
-
-	// --- org ---------------------------------------------------------------
-	"roady_org_status":       groupOrg,
-	"roady_org_members":      groupOrg,
-	"roady_org_policy":       groupOrg,
-	"roady_org_detect_drift": groupOrg,
-
-	// --- debt ---------------------------------------------------------------
-	"roady_debt_report":  groupDebt,
-	"roady_debt_summary": groupDebt,
-	"roady_debt_score":   groupDebt,
-	"roady_debt_trend":   groupDebt,
-	"roady_debt_history": groupDebt,
-
-	// --- deps ----------------------------------------------------------------
-	"roady_deps_graph": groupDeps,
-	"roady_deps_list":  groupDeps,
-	"roady_deps_scan":  groupDeps,
-
-	// --- plugin ---------------------------------------------------------------
-	"roady_plugin_list":     groupPlugin,
-	"roady_plugin_status":   groupPlugin,
-	"roady_plugin_validate": groupPlugin,
-
 	// --- sync: leaves the repository ------------------------------------------
-	"roady_sync":           groupSync,
-	"roady_git_sync":       groupSync,
-	"roady_workspace_push": groupSync,
-	"roady_workspace_pull": groupSync,
-	"roady_messaging_list": groupSync,
+	"roady_git_sync": groupCore,
 
 	// --- analytics -------------------------------------------------------------
-	"roady_forecast":              groupAnalytics,
-	"roady_report":                groupAnalytics,
-	"roady_timeline":              groupAnalytics,
-	"roady_drift_recurring":       groupAnalytics,
 	"roady_semantic_drift":        groupAnalytics,
 	"roady_drift_record_semantic": groupAnalytics,
 
@@ -146,12 +88,12 @@ var toolGroups = map[string]toolGroup{
 // essentialTools are what an agent needs to work a plan: what to do next,
 // recording intent of any size (or a plan it already wrote), moving a task
 // through its lifecycle, proving it done, and reading the project. About
-// 2.7k tokens of tools/list, against ~19k for everything.
+// 2.7k tokens of tools/list, against ~10k for all 38.
 //
 // It is the default advertised surface. Every other tool stays registered
 // and callable — the SDK and any client that knows a tool's name keep
 // working, and every CLI operation stays reachable — it is just not listed,
-// so an agent does not pay for seventy tools in its prompt to use seven.
+// so an agent does not pay for every tool in its prompt to use seven.
 var essentialTools = map[string]bool{
 	"roady_next":            true,
 	"roady_capture":         true,

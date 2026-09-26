@@ -122,7 +122,7 @@ roady drift accept --change-checks       # likewise: capture, spec lock, plan ge
 
 Done or verified tasks whose check changed are reopened, and each change is
 logged as `task.check_changed` with the old and new check. There is no MCP
-equivalent, and `roady watch` never auto-accepts such a change.
+equivalent, and nothing accepts such a change automatically.
 
 **What this does not do.** Roady does not authenticate people: an agent
 running the CLI in a shell can pass `--change-checks` too. The guarantee is

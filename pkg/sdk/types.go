@@ -104,39 +104,6 @@ type Snapshot struct {
 	SnapshotTime  string   `json:"snapshot_time"`
 }
 
-// Forecast represents a project completion forecast.
-type Forecast struct {
-	Remaining      int              `json:"remaining"`
-	Completed      int              `json:"completed"`
-	Total          int              `json:"total"`
-	Velocity       float64          `json:"velocity"`
-	EstimatedDays  float64          `json:"estimated_days"`
-	CompletionRate float64          `json:"completion_rate"`
-	Trend          string           `json:"trend"`
-	TrendSlope     float64          `json:"trend_slope"`
-	Confidence     float64          `json:"confidence"`
-	CILow          float64          `json:"ci_low"`
-	CIExpected     float64          `json:"ci_expected"`
-	CIHigh         float64          `json:"ci_high"`
-	Burndown       []BurndownPoint  `json:"burndown"`
-	Windows        []VelocityWindow `json:"windows"`
-	DataPoints     int              `json:"data_points"`
-}
-
-// BurndownPoint is a single point on the burndown chart.
-type BurndownPoint struct {
-	Date      string `json:"date"`
-	Actual    int    `json:"actual"`
-	Projected int    `json:"projected"`
-}
-
-// VelocityWindow is a velocity measurement window.
-type VelocityWindow struct {
-	Days     int     `json:"days"`
-	Velocity float64 `json:"velocity"`
-	Count    int     `json:"count"`
-}
-
 // StatusResult represents project status output.
 type StatusResult struct {
 	TotalTasks    int            `json:"total_tasks"`
@@ -184,69 +151,6 @@ type SpecReview struct {
 	Findings []ReviewFinding `json:"findings"`
 }
 
-// DebtReport represents a comprehensive debt report.
-type DebtReport struct {
-	TotalIssues    int            `json:"total_issues"`
-	Categories     map[string]int `json:"categories"`
-	TopDebtors     []any          `json:"top_debtors"`
-	HealthLevel    string         `json:"health_level"`
-	Recommendation string         `json:"recommendation"`
-}
-
-// DebtSummary is a quick overview of debt status.
-type DebtSummary struct {
-	TotalIssues int    `json:"total_issues"`
-	HealthLevel string `json:"health_level"`
-	TopDebtor   string `json:"top_debtor"`
-}
-
-// DebtTrend represents drift trend over time.
-type DebtTrend struct {
-	Days       int    `json:"days"`
-	DataPoints []any  `json:"data_points"`
-	Direction  string `json:"direction"`
-}
-
-// DependencySummary is a dependency summary.
-type DependencySummary struct {
-	TotalDeps     int `json:"total_deps"`
-	HealthyDeps   int `json:"healthy_deps"`
-	UnhealthyDeps int `json:"unhealthy_deps"`
-}
-
-// DepsGraphResult is the dependency graph result.
-type DepsGraphResult struct {
-	Summary  DependencySummary `json:"summary"`
-	HasCycle *bool             `json:"has_cycle,omitempty"`
-}
-
-// OrgMetrics represents org-level aggregated metrics.
-type OrgMetrics struct {
-	Projects []any `json:"projects"`
-}
-
-// OrgPolicy represents merged policy for a project.
-type OrgPolicy struct {
-	MaxWIP      int  `json:"max_wip"`
-	AllowAI     bool `json:"allow_ai"`
-	TokenLimit  int  `json:"token_limit"`
-	BudgetHours int  `json:"budget_hours"`
-}
-
-// PluginInfo represents plugin information.
-type PluginInfo struct {
-	Name   string `json:"name"`
-	Path   string `json:"path"`
-	Status string `json:"status"`
-}
-
-// PluginHealth represents plugin health status.
-type PluginHealth struct {
-	Name    string `json:"name"`
-	Healthy bool   `json:"healthy"`
-	Message string `json:"message"`
-}
-
 // PolicyViolation represents a policy compliance violation.
 type PolicyViolation struct {
 	Rule    string `json:"rule"`
@@ -270,14 +174,6 @@ type DeprecatedField struct {
 	Migration string `json:"migration"`
 }
 
-// SyncResult holds the outcome of a workspace push or pull.
-type SyncResult struct {
-	Action   string   `json:"action"`
-	Files    []string `json:"files,omitempty"`
-	Conflict bool     `json:"conflict"`
-	Message  string   `json:"message"`
-}
-
 // SmartTask is a task with codebase-aware fields.
 type SmartTask struct {
 	Task
@@ -289,15 +185,4 @@ type SmartTask struct {
 type SmartPlan struct {
 	Tasks   []SmartTask `json:"tasks"`
 	Summary string      `json:"summary"`
-}
-
-// TeamMember represents a team member with a role.
-type TeamMember struct {
-	Name string `json:"name"`
-	Role string `json:"role"`
-}
-
-// TeamConfig holds the team configuration.
-type TeamConfig struct {
-	Members []TeamMember `json:"members"`
 }

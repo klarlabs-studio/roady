@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- **Everything that is not capture, keep or prove.** Roady is the plan an AI
+  agent works from and the proof it did; these did not serve that and are
+  gone from the CLI, the MCP server, the SDK, the docs and the site:
+  - money and time: billing rates, tax, cost reports and budgets, time
+    logging (`task log`, `task start --rate`), usage and token tracking
+    (`usage.json`), forecasting;
+  - team and org: the team roster and role enforcement, `task assign`, org
+    rollups, `discover`, `workspace push/pull`;
+  - integrations: the tracker sync plugins (Jira, Linear, GitHub, Asana,
+    Notion, Trello) and `roady-plugin-*` binaries, messaging, webhooks,
+    `notify`, SSE;
+  - analysis extras: debt scoring and recurring drift, cross-repo
+    dependencies, `timeline`, `report`, the TUI `dashboard`, `watch`,
+    `demo`, `openapi`, and the MCP UI apps for those.
+
+  36 MCP tools are removed (38 remain). Task owners, `task mine`, sub-projects,
+  drift (including semantic drift), dispatch and the audit log stay. A
+  `policy.yaml` that still sets `budget_hours`, `enforce_team_roles` or
+  `token_limit` keeps loading; those keys are ignored. `roady config wizard`
+  no longer drops policy settings it does not ask about.
+
 ### Added
 
 - **Setup for Codex, Gemini CLI, Cursor, OpenCode, Copilot and Kiro.** `roady

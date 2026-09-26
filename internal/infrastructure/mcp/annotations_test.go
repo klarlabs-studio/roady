@@ -126,9 +126,6 @@ func TestStateChangingToolsAreClassified(t *testing.T) {
 		"roady_plan_update",
 		"roady_plan_decompose",
 		"roady_drift_accept",
-		"roady_rate_remove",
-		"roady_team_remove",
-		"roady_workspace_pull",
 	}
 
 	for _, name := range mustBeDestructive {
@@ -148,12 +145,7 @@ func TestStateChangingToolsAreClassified(t *testing.T) {
 // bounded by the working directory.
 func TestExternalToolsAreOpenWorld(t *testing.T) {
 	external := []string{
-		"roady_sync",
 		"roady_git_sync",
-		"roady_workspace_push",
-		"roady_workspace_pull",
-		"roady_plugin_status",
-		"roady_plugin_validate",
 	}
 
 	for _, name := range external {

@@ -65,4 +65,3 @@ does not change because the inference moved to the caller.
 - `roady_cost_estimate` — Roady spends no tokens, so it cannot project a bill
 - `roady spec parse` — its whole job was having a model structure raw text
 - `roady spec analyze --reconcile` — same
-- `roady watch --auto-sync` now regenerates with the deterministic planner

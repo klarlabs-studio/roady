@@ -5,28 +5,25 @@ import (
 	"testing"
 )
 
-func TestMain_Execute(t *testing.T) {
-	// Help
-	os.Args = []string{"roady", "--help"}
+func runMain(t *testing.T, args ...string) (code int) {
+	t.Helper()
+	oldArgs, oldExit := os.Args, exit
+	defer func() { os.Args, exit = oldArgs, oldExit }()
+	code = -1
+	exit = func(c int) { code = c }
+	os.Args = append([]string{"roady"}, args...)
 	main()
+	return code
 }
 
-func TestMain_Doctor(t *testing.T) {
-	// Doctor in uninitialized dir should exit 1, but we can't catch it easily.
-	// However, calling it hits the main() lines.
-	os.Args = []string{"roady", "doctor"}
-	// main() // This will call os.Exit(1).
+func TestMainSucceeds(t *testing.T) {
+	if code := runMain(t, "--help"); code != -1 {
+		t.Errorf("--help exited with %d", code)
+	}
 }
 
-func TestMain_Invalid(t *testing.T) {
-	// Invalid command returns error, main should handle it
-	os.Args = []string{"roady", "invalid-cmd-999"}
-	// We can't easily catch the os.Exit(1) without a wrapper,
-	// but main() will run and call cli.Execute() which returns error.
-}
-
-func TestMain_Failure(t *testing.T) {
-	// This will call os.Exit(1). How to test without exiting?
-	// We've already refactored main to exit on error.
-	// We can't easily test the Exit call itself without a wrapper.
+func TestMainExitsNonZeroOnError(t *testing.T) {
+	if code := runMain(t, "invalid-cmd-999"); code != 1 {
+		t.Errorf("an unknown command exited with %d, want 1", code)
+	}
 }

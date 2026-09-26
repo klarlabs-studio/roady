@@ -237,7 +237,7 @@ Get a comprehensive overview of the project status.
 ## What it does
 1. Runs roady status for task overview
 2. Checks for drift with roady drift detect
-3. Shows AI usage with roady usage
+3. Runs roady next for the current task and what done means
 `
 
 	roadyReviewCommand = `# Check for Drift
@@ -249,7 +249,7 @@ Detect any discrepancies between the current implementation and the plan.
 
 ## What it does
 1. Runs roady drift detect to find implementation gaps
-2. Runs roady debt summary for planning debt overview
+2. Runs roady drift explain for a prompt to explain what was found
 3. Provides explanation of any drift found
 
 ## When to use

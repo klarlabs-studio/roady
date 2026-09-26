@@ -10,7 +10,7 @@ Roady provides a unified planning layer for any AI coding tool via the Model Con
 | No spec tracking | Spec → Plan → Execution pipeline |
 | No drift detection | Intent/Plan/Code/Policy drift detection |
 | No cross-session memory | Durable, git-versioned state |
-| Single-user | Team, billing, dependencies |
+| No proof of done | Acceptance checks, evidence-gated verify, audit log |
 | Tool-specific | Works with any MCP-compatible AI |
 
 ## One-Command Setup
@@ -216,38 +216,21 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 ## MCP Tools Reference
 
-All platforms have access to 40+ MCP tools:
+Seven tools are listed by default — the whole working loop:
 
-### Planning
-| Tool | Description |
-|------|-------------|
-| `roady_spec_get` | Get current specification |
-| `roady_plan_get` | Get task list with dependencies |
-| `roady_plan_generate` | Generate plan from spec |
-| `roady_plan_approve` | Approve plan for execution |
-| `roady_plan_update` | Smart injection of tasks |
+| Tool | Does |
+|------|------|
+| `roady_next` | The current task (or the next to start): why, done-when, dependencies |
+| `roady_capture` | Record features, requirements and tasks in one write |
+| `roady_plan_import` | Import a plan file an agent wrote as tasks |
+| `roady_task_transition` | Start, block, unblock, complete, stop, reopen, verify |
+| `roady_task_check` | Run a task's acceptance check and record the result |
+| `roady_status` | Project status, with filters for ready, blocked, active |
+| `roady_query` | Project context for a question, for your model to answer |
 
-### Execution
-| Tool | Description |
-|------|-------------|
-| `roady_get_ready_tasks` | Tasks ready to start |
-| `roady_task_transition` | Start/complete/block tasks |
-| `roady_task_assign` | Assign tasks |
-
-### Verification
-| Tool | Description |
-|------|-------------|
-| `roady_drift_detect` | Check implementation vs plan |
-| `roady_drift_explain` | AI explanation of drift |
-| `roady_drift_accept` | Lock spec snapshot |
-
-### Analysis
-| Tool | Description |
-|------|-------------|
-| `roady_status` | Project status overview |
-| `roady_forecast` | Completion predictions |
-| `roady_debt_report` | Planning debt analysis |
-| `roady_spec_explain` | AI architectural overview |
+Every other tool (spec and plan management, drift, policy, audit, dispatch)
+stays callable by name; `ROADY_MCP_TOOLS=all` lists them too. See
+[mcp-guide.md](mcp-guide.md).
 
 ## Workflow Example
 
@@ -293,5 +276,5 @@ roady mcp --transport ws --addr :8080
 
 1. **Commit with task IDs**: `git commit -m "feat: ... [roady:task-id]"`
 2. **Check drift before starting**: `roady drift detect`
-3. **Sync workspace**: `roady workspace push` for team sharing
+3. **Prove it done**: `roady task check <task-id>` before calling a task complete
 4. **Disable built-in tasks**: Set `CLAUDE_CODE_ENABLE_TASKS=false` to prevent conflicts

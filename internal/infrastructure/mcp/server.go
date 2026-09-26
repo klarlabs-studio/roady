@@ -12,17 +12,10 @@ import (
 
 	"github.com/felixgeelhaar/roady/internal/infrastructure/wiring"
 	"github.com/felixgeelhaar/roady/pkg/application"
-	"github.com/felixgeelhaar/roady/pkg/domain"
-	"github.com/felixgeelhaar/roady/pkg/domain/billing"
-	"github.com/felixgeelhaar/roady/pkg/domain/debt"
 	"github.com/felixgeelhaar/roady/pkg/domain/drift"
-	"github.com/felixgeelhaar/roady/pkg/domain/events"
-	"github.com/felixgeelhaar/roady/pkg/domain/org"
 	"github.com/felixgeelhaar/roady/pkg/domain/planning"
 	"github.com/felixgeelhaar/roady/pkg/domain/project"
 	"github.com/felixgeelhaar/roady/pkg/domain/spec"
-	"github.com/felixgeelhaar/roady/pkg/domain/team"
-	reportrender "github.com/felixgeelhaar/roady/pkg/infrastructure/report"
 	"github.com/felixgeelhaar/roady/pkg/storage"
 	"go.klarlabs.de/mcp"
 	mcpserver "go.klarlabs.de/mcp/server"
@@ -39,25 +32,17 @@ const defaultHandlerTimeout = 60 * time.Second
 const maxCachedServices = 8
 
 type Server struct {
-	mcpServer   *mcp.Server
-	services    *wiring.AppServices
-	initSvc     *application.InitService
-	specSvc     *application.SpecService
-	planSvc     *application.PlanService
-	driftSvc    *application.DriftService
-	policySvc   *application.PolicyService
-	taskSvc     *application.TaskService
-	billingSvc  *application.BillingService
-	gitSvc      *application.GitService
-	syncSvc     *application.SyncService
-	auditSvc    *application.EventSourcedAuditService
-	depSvc      *application.DependencyService
-	debtSvc     *application.DebtService
-	forecastSvc *application.ForecastService
-	orgSvc      *application.OrgService
-	pluginSvc   *application.PluginService
-	teamSvc     *application.TeamService
-	root        string
+	mcpServer *mcp.Server
+	services  *wiring.AppServices
+	initSvc   *application.InitService
+	specSvc   *application.SpecService
+	planSvc   *application.PlanService
+	driftSvc  *application.DriftService
+	policySvc *application.PolicyService
+	taskSvc   *application.TaskService
+	gitSvc    *application.GitService
+	auditSvc  *application.EventSourcedAuditService
+	root      string
 
 	// svcCache caches AppServices built for cross-project paths so that
 	// repeated requests don't rebuild the entire service stack (which
@@ -194,20 +179,14 @@ func (s *Server) servicesForPath(pathOverride, project string) (*wiring.AppServi
 		}
 		// Fallback for servers constructed without services (e.g. tests).
 		return &wiring.AppServices{
-			Init:       s.initSvc,
-			Spec:       s.specSvc,
-			Plan:       s.planSvc,
-			Drift:      s.driftSvc,
-			Policy:     s.policySvc,
-			Task:       s.taskSvc,
-			Billing:    s.billingSvc,
-			Git:        s.gitSvc,
-			Sync:       s.syncSvc,
-			Audit:      s.auditSvc,
-			Forecast:   s.forecastSvc,
-			Dependency: s.depSvc,
-			Debt:       s.debtSvc,
-			Team:       s.teamSvc,
+			Init:   s.initSvc,
+			Spec:   s.specSvc,
+			Plan:   s.planSvc,
+			Drift:  s.driftSvc,
+			Policy: s.policySvc,
+			Task:   s.taskSvc,
+			Git:    s.gitSvc,
+			Audit:  s.auditSvc,
 		}, nil
 	}
 
@@ -268,24 +247,16 @@ func NewServer(root string) (*Server, error) {
 			mcp.WithBuildInfo(BuildCommit, BuildDate),
 			mcp.WithInstructions("Use tools to read spec/plan, generate plans, detect drift, and transition tasks."),
 		),
-		services:    services,
-		initSvc:     services.Init,
-		specSvc:     services.Spec,
-		planSvc:     services.Plan,
-		driftSvc:    services.Drift,
-		policySvc:   services.Policy,
-		taskSvc:     services.Task,
-		billingSvc:  services.Billing,
-		gitSvc:      services.Git,
-		syncSvc:     services.Sync,
-		auditSvc:    services.Audit,
-		depSvc:      services.Dependency,
-		debtSvc:     services.Debt,
-		forecastSvc: services.Forecast,
-		orgSvc:      application.NewOrgService(root),
-		pluginSvc:   application.NewPluginService(services.Workspace.Repo),
-		teamSvc:     services.Team,
-		root:        root,
+		services:  services,
+		initSvc:   services.Init,
+		specSvc:   services.Spec,
+		planSvc:   services.Plan,
+		driftSvc:  services.Drift,
+		policySvc: services.Policy,
+		taskSvc:   services.Task,
+		gitSvc:    services.Git,
+		auditSvc:  services.Audit,
+		root:      root,
 	}
 
 	// Resolve the advertised tool surface before registering anything: a bad
@@ -364,17 +335,7 @@ type AcceptDriftArgs struct {
 	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
-type GetUsageArgs struct {
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
-}
-
 type CheckPolicyArgs struct {
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
-}
-
-type ForecastArgs struct {
 	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
 	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
@@ -459,22 +420,6 @@ type CostEstimateArgs struct {
 }
 
 type SmartDecomposeArgs struct {
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
-}
-
-type WorkspacePushArgs struct {
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
-}
-
-type WorkspacePullArgs struct {
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
-}
-
-type SyncArgs struct {
-	PluginPath  string `json:"plugin_path" jsonschema:"description=Path to the syncer plugin binary"`
 	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
 	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
@@ -582,13 +527,6 @@ func (s *Server) registerTools() {
 		UIResource("ui://roady/plan").
 		Handler(s.handleApprovePlan)
 
-	// Tool: roady_usage_get
-	s.tool("roady_usage_get").
-		Description("Retrieve project usage and telemetry statistics").
-		UIResource("ui://roady/usage").
-		OutputSchema(domain.UsageStats{}).
-		Handler(s.handleGetUsage)
-
 	// Tool: roady_drift_explain
 	s.tool("roady_drift_explain").
 		Description("Provide an AI-generated explanation and resolution steps for current project drift").
@@ -600,13 +538,6 @@ func (s *Server) registerTools() {
 		Description("Add a new feature to the product specification and sync to docs/backlog.md").
 		UIResource("ui://roady/spec").
 		Handler(s.handleAddFeature)
-
-	// Tool: roady_forecast (Horizon 5)
-	s.tool("roady_forecast").
-		Description("Predict project completion based on current task velocity").
-		UIResource("ui://roady/forecast").
-		OutputSchema(forecastResp{}).
-		Handler(s.handleForecast)
 
 	// Tool: roady_semantic_drift — the question the structural detectors
 	// cannot ask. Roady frames it; the caller's model answers it.
@@ -658,29 +589,6 @@ func (s *Server) registerTools() {
 		UIResource("ui://roady/state").
 		Handler(s.handleStateRebuild)
 
-	s.tool("roady_timeline").
-		Description("Return the project's event timeline, newest last.").
-		UIResource("ui://roady/status").
-		Handler(s.handleTimeline)
-
-	s.tool("roady_debt_history").
-		Description("Drift snapshots over a window of days, for seeing whether debt is accumulating or clearing.").
-		UIResource("ui://roady/debt").
-		Handler(s.handleDebtHistory)
-
-	s.tool("roady_debt_score").
-		Description("Debt score for one component, or the top debtors when no component is given.").
-		UIResource("ui://roady/debt").
-		Handler(s.handleDebtScore)
-
-	// Tool: roady_report — stakeholder progress, the answer to "keep leadership
-	// informed". It was CLI-only, so the agents expected to produce it had to
-	// shell out; the same gap roady_audit_trail closed in 0.17.0.
-	s.tool("roady_report").
-		Description("Render a stakeholder progress report (progress, forecast, risks, ownership, recent changes) as markdown, self-contained html, or json.").
-		UIResource("ui://roady/status").
-		Handler(s.handleReport)
-
 	// Tool: roady_spec_analyze — build a spec from a directory of documents.
 	// Without it an agent could read and amend a spec but never create one from
 	// source material, so the entry point to the whole workflow was unreachable.
@@ -689,70 +597,11 @@ func (s *Server) registerTools() {
 		UIResource("ui://roady/spec").
 		Handler(s.handleSpecAnalyze)
 
-	// Tool: roady_org_members
-	s.tool("roady_org_members").
-		Description("List the repositories belonging to this workspace, from the repos: list in .roady/org.yaml when declared, otherwise by walking the tree. Reports declared members that cannot be reached.").
-		UIResource("ui://roady/org").
-		OutputSchema(org.MemberSet{}).
-		Handler(s.handleOrgMembers)
-
-	// Tool: roady_org_status (Horizon 4)
-	s.tool("roady_org_status").
-		Description("Get a status overview of all Roady projects in the directory tree").
-		UIResource("ui://roady/org").
-		OutputSchema(org.OrgMetrics{}).
-		Handler(s.handleOrgStatus)
-
 	// Tool: roady_git_sync (Horizon 5)
 	s.tool("roady_git_sync").
 		Description("Synchronize task statuses by scanning git commit messages for markers").
 		UIResource("ui://roady/git-sync").
 		Handler(s.handleGitSync)
-
-	// Tool: roady_sync (External Plugins)
-	s.tool("roady_sync").
-		Description("Sync the plan with an external system via a plugin binary").
-		UIResource("ui://roady/sync").
-		Handler(s.handleSync)
-
-	// Tool: roady_deps_list (Horizon 5)
-	s.tool("roady_deps_list").
-		Description("List all cross-repository dependencies").
-		UIResource("ui://roady/deps").
-		Handler(s.handleDepsList)
-
-	// Tool: roady_deps_scan (Horizon 5)
-	s.tool("roady_deps_scan").
-		Description("Scan health status of all dependent repositories").
-		UIResource("ui://roady/deps").
-		OutputSchema(application.ScanResult{}).
-		Handler(s.handleDepsScan)
-
-	// Tool: roady_deps_graph (Horizon 5)
-	s.tool("roady_deps_graph").
-		Description("Get dependency graph summary with optional cycle detection").
-		UIResource("ui://roady/deps").
-		Handler(s.handleDepsGraph)
-
-	// Tool: roady_debt_report (Horizon 5)
-	s.tool("roady_debt_report").
-		Description("Generate comprehensive debt report with category breakdown and top debtors").
-		UIResource("ui://roady/debt").
-		OutputSchema(debt.DebtReport{}).
-		Handler(s.handleDebtReport)
-
-	// Tool: roady_debt_summary (Horizon 5)
-	s.tool("roady_debt_summary").
-		Description("Quick overview of debt status including health level and top debtor").
-		UIResource("ui://roady/debt").
-		OutputSchema(application.DebtSummary{}).
-		Handler(s.handleDebtSummary)
-
-	// Tool: roady_drift_recurring (v0.10.0 - canonical name for sticky drift)
-	s.tool("roady_drift_recurring").
-		Description("Return drift items that have remained unresolved for more than 7 days. Canonical name; supersedes roady_sticky_drift.").
-		UIResource("ui://roady/debt").
-		Handler(s.handleStickyDrift)
 
 	// Tool: roady_task_dispatch
 	s.tool("roady_task_dispatch").
@@ -765,49 +614,6 @@ func (s *Server) registerTools() {
 		Description("Evidence trail for a task, agent, or session: hash-chain integrity, findings, the task's evidence and its doc:line spec citation, who acted, and every recorded event. Attests to a tamper-evident record of what was asserted, not to who acted -- actor and agent are caller-supplied and unauthenticated.").
 		UIResource("ui://roady/status").
 		Handler(s.handleAuditTrail)
-
-	// Tool: roady_debt_trend (Horizon 5)
-	s.tool("roady_debt_trend").
-		Description("Analyze drift trend over time").
-		UIResource("ui://roady/debt").
-		OutputSchema(events.DriftTrend{}).
-		Handler(s.handleDebtTrend)
-
-	// Tool: roady_org_policy (v0.7.0)
-	s.tool("roady_org_policy").
-		Description("Get merged policy for a project (org defaults + project overrides)").
-		UIResource("ui://roady/org").
-		Handler(s.handleOrgPolicy)
-
-	// Tool: roady_org_detect_drift (v0.7.0)
-	s.tool("roady_org_detect_drift").
-		Description("Detect drift across all projects in the directory tree").
-		UIResource("ui://roady/org").
-		Handler(s.handleOrgDetectDrift)
-
-	// Tool: roady_plugin_list (v0.7.0)
-	s.tool("roady_plugin_list").
-		Description("List all registered plugins with their status").
-		UIResource("ui://roady/plugins").
-		Handler(s.handlePluginList)
-
-	// Tool: roady_plugin_validate (v0.7.0)
-	s.tool("roady_plugin_validate").
-		Description("Validate a registered plugin by loading and initializing it").
-		UIResource("ui://roady/plugins").
-		Handler(s.handlePluginValidate)
-
-	// Tool: roady_plugin_status (v0.7.0)
-	s.tool("roady_plugin_status").
-		Description("Check health status of one or all plugins").
-		UIResource("ui://roady/plugins").
-		Handler(s.handlePluginStatus)
-
-	// Tool: roady_messaging_list (v0.7.0)
-	s.tool("roady_messaging_list").
-		Description("List configured messaging adapters").
-		UIResource("ui://roady/messaging").
-		Handler(s.handleMessagingList)
 
 	// Tool: roady_query (v0.8.0)
 	s.tool("roady_query").
@@ -829,12 +635,6 @@ func (s *Server) registerTools() {
 		OutputSchema(spec.SpecReview{}).
 		Handler(s.handleReviewSpec)
 
-	// Tool: roady_task_assign (v0.8.0)
-	s.tool("roady_task_assign").
-		Description("Assign a task to a person or agent without changing its status").
-		UIResource("ui://roady/state").
-		Handler(s.handleAssignTask)
-
 	// Tool: roady_snapshot_get (v0.6.0 - Coordinator)
 	s.tool("roady_snapshot_get").
 		Description("Get a consistent project snapshot with progress, categorized task counts, and task lists").
@@ -853,167 +653,12 @@ func (s *Server) registerTools() {
 		UIResource("ui://roady/status").
 		Handler(s.handleTasks)
 
-	// Tool: roady_workspace_push (v0.8.0)
-	s.tool("roady_workspace_push").
-		Description("Commit and push .roady/ workspace state to git remote").
-		UIResource("ui://roady/workspace").
-		Handler(s.handleWorkspacePush)
-
-	// Tool: roady_workspace_pull (v0.8.0)
-	s.tool("roady_workspace_pull").
-		Description("Pull remote .roady/ workspace changes and merge with conflict detection").
-		UIResource("ui://roady/workspace").
-		Handler(s.handleWorkspacePull)
-
 	// Tool: roady_plan_decompose (v0.10.0 - canonical name)
 	s.tool("roady_plan_decompose").
 		Description("Build a codebase-aware decomposition prompt for your model. Returns the request; write the result back with roady_plan_update. Canonical name; supersedes roady_smart_decompose.").
 		UIResource("ui://roady/plan").
 		Handler(s.handleSmartDecompose)
 
-	// Tool: roady_team_list (v0.8.0)
-	s.tool("roady_team_list").
-		Description("List all team members and their roles").
-		UIResource("ui://roady/team").
-		Handler(s.handleTeamList)
-
-	// Tool: roady_team_add (v0.8.0)
-	s.tool("roady_team_add").
-		Description("Add or update a team member with a role (admin, member, viewer)").
-		UIResource("ui://roady/team").
-		Handler(s.handleTeamAdd)
-
-	// Tool: roady_team_remove (v0.8.0)
-	s.tool("roady_team_remove").
-		Description("Remove a team member").
-		UIResource("ui://roady/team").
-		Handler(s.handleTeamRemove)
-
-	// Billing tools
-	// Tool: roady_rate_list
-	s.tool("roady_rate_list").
-		Description("List all billing rates").
-		UIResource("ui://roady/billing").
-		Handler(s.handleRateList)
-
-	// Tool: roady_rate_add
-	s.tool("roady_rate_add").
-		Description("Add a new billing rate").
-		UIResource("ui://roady/billing").
-		Handler(s.handleRateAdd)
-
-	// Tool: roady_task_log_time
-	s.tool("roady_task_log_time").
-		Description("Log time to a task for billing").
-		UIResource("ui://roady/billing").
-		Handler(s.handleTaskLogTime)
-
-	// Tool: roady_cost_report
-	s.tool("roady_cost_report").
-		Description("Generate a cost report for time tracking").
-		UIResource("ui://roady/billing").
-		OutputSchema(billing.CostReport{}).
-		Handler(s.handleCostReport)
-
-	// Tool: roady_cost_budget
-	s.tool("roady_cost_budget").
-		Description("Show budget status based on budget_hours in policy").
-		UIResource("ui://roady/billing").
-		OutputSchema(billing.BudgetStatus{}).
-		Handler(s.handleCostBudget)
-
-	// Tool: roady_rate_remove
-	s.tool("roady_rate_remove").
-		Description("Remove a billing rate").
-		UIResource("ui://roady/billing").
-		Handler(s.handleRateRemove)
-
-	// Tool: roady_rate_set_default
-	s.tool("roady_rate_set_default").
-		Description("Set the default billing rate").
-		UIResource("ui://roady/billing").
-		Handler(s.handleRateSetDefault)
-
-	// Tool: roady_rate_tax
-	s.tool("roady_rate_tax").
-		Description("Configure tax settings for billing").
-		UIResource("ui://roady/billing").
-		Handler(s.handleRateTax)
-}
-
-func (s *Server) handleForecast(ctx context.Context, args ForecastArgs) (any, error) {
-	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
-	if err != nil {
-		return mcpErrCause("Failed to load project at the given path.", err), nil
-	}
-	forecast, err := svc.Forecast.GetForecast()
-	if err != nil {
-		return mcpErrCause("Unable to generate forecast. Ensure a plan exists and tasks have been transitioned.", err), nil
-	}
-	if forecast == nil {
-		return "No plan found. Generate a plan first.", nil
-	}
-
-	// Build a JSON-friendly response with burndown data for the UI. The
-	// forecastResp/burndownPt/windowPt types are declared in output_schemas.go
-	// so roady_forecast can advertise them as its outputSchema.
-	resp := forecastResp{
-		Remaining:      forecast.RemainingTasks,
-		Completed:      forecast.CompletedTasks,
-		Total:          forecast.TotalTasks,
-		Velocity:       forecast.Velocity,
-		EstimatedDays:  forecast.EstimatedDays,
-		CompletionRate: forecast.CompletionRate(),
-		Trend:          string(forecast.Trend.Direction),
-		TrendSlope:     forecast.Trend.Slope,
-		Confidence:     forecast.Trend.Confidence,
-		CILow:          forecast.ConfidenceInterval.Low,
-		CIExpected:     forecast.ConfidenceInterval.Expected,
-		CIHigh:         forecast.ConfidenceInterval.High,
-		DataPoints:     forecast.DataPoints,
-	}
-
-	for _, bp := range forecast.Burndown {
-		resp.Burndown = append(resp.Burndown, burndownPt{
-			Date:      bp.Date.Format("2006-01-02"),
-			Actual:    bp.Actual,
-			Projected: bp.Projected,
-		})
-	}
-
-	for _, w := range forecast.Trend.Windows {
-		resp.Windows = append(resp.Windows, windowPt{
-			Days:     w.Days,
-			Velocity: w.Velocity,
-			Count:    w.Count,
-		})
-	}
-
-	return resp, nil
-}
-
-func (s *Server) handleOrgStatus(ctx context.Context, args GetSpecArgs) (any, error) {
-	orgSvc := s.orgSvc
-	if orgSvc == nil {
-		return "Org service not available.", nil
-	}
-	metrics, err := orgSvc.AggregateMetrics()
-	if err != nil {
-		return mcpErrCause("Failed to aggregate org metrics.", err), nil
-	}
-	return metrics, nil
-}
-
-func (s *Server) handleOrgMembers(ctx context.Context, args GetSpecArgs) (any, error) {
-	orgSvc := s.orgSvc
-	if orgSvc == nil {
-		return mcpErr("Org service not available."), nil
-	}
-	set, err := orgSvc.ResolveMembers()
-	if err != nil {
-		return mcpErrCause("Failed to resolve workspace members. Check the repos: list in .roady/org.yaml.", err), nil
-	}
-	return set, nil
 }
 
 // rootFor resolves the project directory a tool call addresses, mirroring
@@ -1038,58 +683,6 @@ func projectDirName(root string) string {
 		return base
 	}
 	return "Project"
-}
-
-type ReportArgs struct {
-	Format      string `json:"format,omitempty" jsonschema:"description=markdown (default), html for a self-contained shareable page, or json for the structured report.,enum=markdown,enum=html,enum=json"`
-	Since       string `json:"since,omitempty" jsonschema:"description=Only include changes since this point: 7d, 2w, or an absolute date like 2026-07-01."`
-	Name        string `json:"name,omitempty" jsonschema:"description=Project name for the report header. Defaults to the project directory name."`
-	MaxChanges  int    `json:"max_changes,omitempty" jsonschema:"description=Cap the change list. Defaults to 25."`
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
-}
-
-func (s *Server) handleReport(ctx context.Context, args ReportArgs) (any, error) {
-	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
-	if err != nil {
-		return mcpErrCause("Failed to load project at the given path.", err), nil
-	}
-
-	since, err := application.ParseSince(args.Since, time.Now())
-	if err != nil {
-		return mcpErr(err.Error()), nil
-	}
-
-	name := strings.TrimSpace(args.Name)
-	if name == "" {
-		name = projectDirName(s.rootFor(args.ProjectPath))
-	}
-
-	rep, err := svc.Report.Generate(ctx, application.ReportOptions{
-		Project:    name,
-		Since:      since,
-		MaxChanges: args.MaxChanges,
-	})
-	if err != nil {
-		return mcpErrCause("Failed to generate the report. Ensure a plan and state exist.", err), nil
-	}
-
-	switch strings.ToLower(strings.TrimSpace(args.Format)) {
-	case "", "markdown", "md":
-		return reportrender.Markdown(rep), nil
-	case "html":
-		rendered, rerr := reportrender.HTML(rep)
-		if rerr != nil {
-			return mcpErr("Failed to render the report as html."), nil
-		}
-		return rendered, nil
-	case "json":
-		// Returned as the structured report so a caller can read fields
-		// directly rather than re-parsing rendered text.
-		return rep, nil
-	default:
-		return mcpErr(fmt.Sprintf("Unknown format %q: use markdown, html, or json.", args.Format)), nil
-	}
 }
 
 type SpecAnalyzeArgs struct {
@@ -1292,74 +885,6 @@ func (s *Server) handleStateRebuild(ctx context.Context, args PlanMutateArgs) (a
 	return out, nil
 }
 
-func (s *Server) handleTimeline(ctx context.Context, args PlanMutateArgs) (any, error) {
-	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
-	if err != nil {
-		return mcpErrCause("Failed to load project at the given path.", err), nil
-	}
-	// The same source the CLI reads. svc.Audit is the event-sourced service,
-	// whose GetTimeline returns a projection with different fields — so the
-	// two surfaces answered "what happened here" with different data, in the
-	// change that claimed to close the parity gap.
-	timeline, err := svc.Workspace.Audit.GetTimeline()
-	if err != nil {
-		return mcpErrCause("Failed to load the timeline. Ensure an event log exists.", err), nil
-	}
-	return map[string]any{"events": timeline, "count": len(timeline)}, nil
-}
-
-type DebtWindowArgs struct {
-	WindowDays  int    `json:"window_days,omitempty" jsonschema:"description=How many days of history to include. Defaults to 30."`
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
-}
-
-func (s *Server) handleDebtHistory(ctx context.Context, args DebtWindowArgs) (any, error) {
-	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
-	if err != nil {
-		return mcpErrCause("Failed to load project at the given path.", err), nil
-	}
-	window := args.WindowDays
-	if window <= 0 {
-		window = 30
-	}
-	history, err := svc.Debt.GetDriftHistory(window)
-	if err != nil {
-		return mcpErrCause("Failed to load drift history.", err), nil
-	}
-	return map[string]any{"window_days": window, "snapshots": history, "count": len(history)}, nil
-}
-
-type DebtScoreArgs struct {
-	Component   string `json:"component,omitempty" jsonschema:"description=Component id to score. Omit for the top debtors across the project."`
-	Limit       int    `json:"limit,omitempty" jsonschema:"description=How many top debtors to return when no component is given. Defaults to 10."`
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
-}
-
-func (s *Server) handleDebtScore(ctx context.Context, args DebtScoreArgs) (any, error) {
-	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
-	if err != nil {
-		return mcpErrCause("Failed to load project at the given path.", err), nil
-	}
-	if component := strings.TrimSpace(args.Component); component != "" {
-		score, sErr := svc.Debt.GetDebtScore(component)
-		if sErr != nil {
-			return mcpErr(fmt.Sprintf("Failed to score %s: %v", component, sErr)), nil
-		}
-		return score, nil
-	}
-	limit := args.Limit
-	if limit <= 0 {
-		limit = 10
-	}
-	top, err := svc.Debt.GetTopDebtors(ctx, limit)
-	if err != nil {
-		return mcpErrCause("Failed to load top debtors.", err), nil
-	}
-	return map[string]any{"top_debtors": top, "count": len(top)}, nil
-}
-
 func (s *Server) handleSemanticDrift(ctx context.Context, args PlanMutateArgs) (any, error) {
 	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
 	if err != nil {
@@ -1423,18 +948,6 @@ func (s *Server) handleGitSync(ctx context.Context, args GitSyncArgs) (any, erro
 	results, err := svc.Git.SyncMarkers(10)
 	if err != nil {
 		return mcpErrCause("Failed to sync git markers. Ensure you are in a git repository with commit history.", err), nil
-	}
-	return results, nil
-}
-
-func (s *Server) handleSync(ctx context.Context, args SyncArgs) (any, error) {
-	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
-	if err != nil {
-		return mcpErrCause("Failed to load project at the given path.", err), nil
-	}
-	results, err := svc.Sync.SyncWithPlugin(args.PluginPath)
-	if err != nil {
-		return mcpErrCause("Failed to sync with plugin. Ensure the plugin binary exists and is executable.", err), nil
 	}
 	return results, nil
 }
@@ -1564,18 +1077,6 @@ func (s *Server) handleAddFeature(ctx context.Context, args AddFeatureArgs) (any
 	return msg, nil
 }
 
-func (s *Server) handleGetUsage(ctx context.Context, args GetUsageArgs) (any, error) {
-	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
-	if err != nil {
-		return mcpErrCause("Failed to load project at the given path.", err), nil
-	}
-	usage, err := svc.Plan.GetUsage()
-	if err != nil {
-		return mcpErrCause("Failed to retrieve usage data. Ensure the project is initialized.", err), nil
-	}
-	return usage, nil
-}
-
 func (s *Server) handleApprovePlan(ctx context.Context, args ApprovePlanArgs) (any, error) {
 	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
 	if err != nil {
@@ -1601,13 +1102,6 @@ type TransitionTaskArgs struct {
 	Actor       string `json:"actor,omitempty" jsonschema:"description=Who transitions (default ai-agent)"`
 	SessionID   string `json:"session_id,omitempty" jsonschema:"description=Agent session ID; recorded in the audit trail"`
 	Agent       string `json:"agent,omitempty" jsonschema:"description=Agent name (e.g. codex); recorded in the audit trail"`
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
-}
-
-type AssignTaskArgs struct {
-	TaskID      string `json:"task_id" jsonschema:"description=The ID of the task to assign"`
-	Assignee    string `json:"assignee" jsonschema:"description=The person or agent to assign the task to"`
 	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
 	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
@@ -1663,18 +1157,6 @@ type StatusArgs struct {
 	JSON        FlexBool `json:"json,omitempty" jsonschema:"description=Return structured JSON output instead of text"`
 	ProjectPath string   `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
 	Project     string   `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
-}
-
-func (s *Server) handleAssignTask(ctx context.Context, args AssignTaskArgs) (any, error) {
-	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
-	if err != nil {
-		return mcpErrCause("Failed to load project at the given path.", err), nil
-	}
-	err = svc.Task.AssignTask(ctx, args.TaskID, args.Assignee)
-	if err != nil {
-		return mcpErr(fmt.Sprintf("Failed to assign task '%s' to '%s': %v", args.TaskID, args.Assignee, err)), nil
-	}
-	return fmt.Sprintf("Task %s assigned to %s", args.TaskID, args.Assignee), nil
 }
 
 func (s *Server) handleTransitionTask(ctx context.Context, args TransitionTaskArgs) (any, error) {
@@ -2083,64 +1565,7 @@ func (s *Server) ServeGRPC(ctx context.Context, addr string) error {
 
 // Dependency MCP handlers
 
-func (s *Server) handleDepsList(ctx context.Context, args GetSpecArgs) (any, error) {
-	deps, err := s.depSvc.ListDependencies()
-	if err != nil {
-		return mcpErrCause("Failed to list dependencies. Ensure .roady/deps.yaml exists.", err), nil
-	}
-	return deps, nil
-}
-
-func (s *Server) handleDepsScan(ctx context.Context, args GetSpecArgs) (any, error) {
-	result, err := s.depSvc.ScanDependentRepos(nil)
-	if err != nil {
-		return mcpErrCause("Failed to scan dependent repositories. Check that dependency paths are valid.", err), nil
-	}
-	return result, nil
-}
-
-type DepsGraphArgs struct {
-	CheckCycles bool `json:"check_cycles,omitempty" jsonschema:"description=Whether to check for cyclic dependencies"`
-}
-
-func (s *Server) handleDepsGraph(ctx context.Context, args DepsGraphArgs) (any, error) {
-	summary, err := s.depSvc.GetDependencySummary()
-	if err != nil {
-		return mcpErrCause("Failed to get dependency summary. Ensure .roady/deps.yaml exists.", err), nil
-	}
-
-	response := map[string]any{
-		"summary": summary,
-	}
-
-	if args.CheckCycles {
-		hasCycle, err := s.depSvc.CheckForCycles()
-		if err != nil {
-			return mcpErrCause("Failed to check for dependency cycles.", err), nil
-		}
-		response["has_cycle"] = hasCycle
-	}
-
-	return response, nil
-}
-
 // Debt MCP handlers
-
-func (s *Server) handleDebtReport(ctx context.Context, args GetSpecArgs) (any, error) {
-	report, err := s.debtSvc.GetDebtReport(ctx)
-	if err != nil {
-		return mcpErrCause("Failed to generate debt report. Ensure drift detection has been run.", err), nil
-	}
-	return report, nil
-}
-
-func (s *Server) handleDebtSummary(ctx context.Context, args GetSpecArgs) (any, error) {
-	summary, err := s.debtSvc.GetDebtSummary(ctx)
-	if err != nil {
-		return mcpErrCause("Failed to get debt summary. Ensure drift detection has been run.", err), nil
-	}
-	return summary, nil
-}
 
 // handleDispatchTask prepares a task for handoff.
 //
@@ -2204,30 +1629,6 @@ func (s *Server) handleAuditTrail(ctx context.Context, args AuditTrailArgs) (any
 // Empty means the whole history.
 func parseTrailSince(value string) (time.Time, error) {
 	return application.ParseSince(value, time.Now())
-}
-
-func (s *Server) handleStickyDrift(ctx context.Context, args GetSpecArgs) (any, error) {
-	items, err := s.debtSvc.GetStickyDrift()
-	if err != nil {
-		return mcpErrCause("Failed to get sticky drift items. Ensure drift history exists.", err), nil
-	}
-	return items, nil
-}
-
-type DebtTrendArgs struct {
-	Days int `json:"days,omitempty" jsonschema:"description=Analysis window in days (default: 30)"`
-}
-
-func (s *Server) handleDebtTrend(ctx context.Context, args DebtTrendArgs) (any, error) {
-	days := args.Days
-	if days <= 0 {
-		days = 30
-	}
-	trend, err := s.debtSvc.GetDriftTrend(days)
-	if err != nil {
-		return mcpErrCause("Failed to get debt trend. Ensure drift history exists.", err), nil
-	}
-	return trend, nil
 }
 
 // Coordinator-based snapshot and task query handlers (v0.6.0)
@@ -2341,44 +1742,6 @@ func (s *Server) handleGetInProgressTasks(ctx context.Context, args GetInProgres
 
 // --- Workspace Sync Handlers ---
 
-func (s *Server) handleWorkspacePush(ctx context.Context, args WorkspacePushArgs) (any, error) {
-	root := s.root
-	auditSvc := s.auditSvc
-	if args.ProjectPath != "" && args.ProjectPath != s.root {
-		overrideSvc, err := s.servicesForPath(args.ProjectPath, args.Project)
-		if err != nil {
-			return mcpErrCause("Failed to load project at the given path.", err), nil
-		}
-		root = args.ProjectPath
-		auditSvc = overrideSvc.Audit
-	}
-	svc := application.NewWorkspaceSyncService(root, auditSvc)
-	result, err := svc.Push(ctx)
-	if err != nil {
-		return mcpErr(fmt.Sprintf("workspace push failed: %s", err)), nil
-	}
-	return result, nil
-}
-
-func (s *Server) handleWorkspacePull(ctx context.Context, args WorkspacePullArgs) (any, error) {
-	root := s.root
-	auditSvc := s.auditSvc
-	if args.ProjectPath != "" && args.ProjectPath != s.root {
-		overrideSvc, err := s.servicesForPath(args.ProjectPath, args.Project)
-		if err != nil {
-			return mcpErrCause("Failed to load project at the given path.", err), nil
-		}
-		root = args.ProjectPath
-		auditSvc = overrideSvc.Audit
-	}
-	svc := application.NewWorkspaceSyncService(root, auditSvc)
-	result, err := svc.Pull(ctx)
-	if err != nil {
-		return mcpErr(fmt.Sprintf("workspace pull failed: %s", err)), nil
-	}
-	return result, nil
-}
-
 // --- Smart Decompose Handler ---
 
 func (s *Server) handleSmartDecompose(ctx context.Context, args SmartDecomposeArgs) (any, error) {
@@ -2397,248 +1760,6 @@ func (s *Server) handleSmartDecompose(ctx context.Context, args SmartDecomposeAr
 }
 
 // --- Team Handlers ---
-
-type TeamAddArgs struct {
-	Name        string `json:"name" jsonschema:"description=The name of the team member"`
-	Role        string `json:"role" jsonschema:"description=The role: admin, member, or viewer"`
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
-}
-
-type TeamRemoveArgs struct {
-	Name        string `json:"name" jsonschema:"description=The name of the team member to remove"`
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
-}
-
-func (s *Server) handleTeamList(ctx context.Context, args GetSpecArgs) (any, error) {
-	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
-	if err != nil {
-		return mcpErrCause("Failed to load project at the given path.", err), nil
-	}
-	cfg, err := svc.Team.ListMembers()
-	if err != nil {
-		return mcpErrCause("failed to list team members", err), nil
-	}
-	return cfg, nil
-}
-
-func (s *Server) handleTeamAdd(ctx context.Context, args TeamAddArgs) (any, error) {
-	if args.Name == "" {
-		return mcpErr("name is required"), nil
-	}
-	if args.Role == "" {
-		return mcpErr("role is required"), nil
-	}
-	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
-	if err != nil {
-		return mcpErrCause("Failed to load project at the given path.", err), nil
-	}
-	if err := svc.Team.AddMember(args.Name, teamRole(args.Role)); err != nil {
-		return mcpErr(fmt.Sprintf("failed to add member: %s", err)), nil
-	}
-	return fmt.Sprintf("Member %s added with role %s", args.Name, args.Role), nil
-}
-
-func (s *Server) handleTeamRemove(ctx context.Context, args TeamRemoveArgs) (any, error) {
-	if args.Name == "" {
-		return mcpErr("name is required"), nil
-	}
-	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
-	if err != nil {
-		return mcpErrCause("Failed to load project at the given path.", err), nil
-	}
-	if err := svc.Team.RemoveMember(args.Name); err != nil {
-		return mcpErr(fmt.Sprintf("failed to remove member: %s", err)), nil
-	}
-	return fmt.Sprintf("Member %s removed", args.Name), nil
-}
-
-type RateListArgs struct {
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
-}
-
-func (s *Server) handleRateList(ctx context.Context, args RateListArgs) (any, error) {
-	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
-	if err != nil {
-		return mcpErrCause("Failed to load project at the given path.", err), nil
-	}
-	config, err := svc.Billing.ListRates()
-	if err != nil {
-		return mcpErr(fmt.Sprintf("failed to list rates: %s", err)), nil
-	}
-	return config, nil
-}
-
-type RateAddArgs struct {
-	ID          string  `json:"id" jsonschema:"description=Rate ID (e.g., senior, junior)"`
-	Name        string  `json:"name" jsonschema:"description=Rate name"`
-	HourlyRate  float64 `json:"hourly_rate" jsonschema:"description=Hourly rate amount"`
-	IsDefault   bool    `json:"is_default" jsonschema:"description=Set as default rate"`
-	ProjectPath string  `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
-	Project     string  `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
-}
-
-func (s *Server) handleRateAdd(ctx context.Context, args RateAddArgs) (any, error) {
-	if args.ID == "" || args.Name == "" {
-		return mcpErr("id and name are required"), nil
-	}
-	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
-	if err != nil {
-		return mcpErrCause("Failed to load project at the given path.", err), nil
-	}
-	rate := billing.Rate{
-		ID:         args.ID,
-		Name:       args.Name,
-		HourlyRate: args.HourlyRate,
-		IsDefault:  args.IsDefault,
-	}
-	if err := svc.Billing.AddRate(rate); err != nil {
-		return mcpErr(fmt.Sprintf("failed to add rate: %s", err)), nil
-	}
-	return fmt.Sprintf("Rate %s added: %s - $%.2f/hr", args.ID, args.Name, args.HourlyRate), nil
-}
-
-type TaskLogTimeArgs struct {
-	TaskID      string `json:"task_id" jsonschema:"description=Task ID"`
-	Minutes     int    `json:"minutes" jsonschema:"description=Minutes to log"`
-	RateID      string `json:"rate_id" jsonschema:"description=Rate ID (optional)"`
-	Description string `json:"description" jsonschema:"description=Description (optional)"`
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
-}
-
-func (s *Server) handleTaskLogTime(ctx context.Context, args TaskLogTimeArgs) (any, error) {
-	if args.TaskID == "" || args.Minutes <= 0 {
-		return mcpErr("task_id and minutes are required"), nil
-	}
-	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
-	if err != nil {
-		return mcpErrCause("Failed to load project at the given path.", err), nil
-	}
-	if err := svc.Billing.LogTime(args.TaskID, args.RateID, args.Minutes, args.Description); err != nil {
-		return mcpErr(fmt.Sprintf("failed to log time: %s", err)), nil
-	}
-	return fmt.Sprintf("Logged %d minutes to task %s", args.Minutes, args.TaskID), nil
-}
-
-type CostReportArgs struct {
-	TaskID      string `json:"task_id" jsonschema:"description=Filter by task ID (optional)"`
-	Period      string `json:"period" jsonschema:"description=Filter by period (optional)"`
-	Format      string `json:"format" jsonschema:"description=Output format: text, json, csv, markdown"`
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
-}
-
-func (s *Server) handleCostReport(ctx context.Context, args CostReportArgs) (any, error) {
-	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
-	if err != nil {
-		return mcpErrCause("Failed to load project at the given path.", err), nil
-	}
-	opts := application.CostReportOpts{
-		TaskID: args.TaskID,
-		Period: args.Period,
-		Format: args.Format,
-	}
-	report, err := svc.Billing.GetCostReport(opts)
-	if err != nil {
-		return mcpErr(fmt.Sprintf("failed to generate cost report: %s", err)), nil
-	}
-	if report == nil {
-		return "No time entries found", nil
-	}
-	return report, nil
-}
-
-type CostBudgetArgs struct {
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
-}
-
-func (s *Server) handleCostBudget(ctx context.Context, args CostBudgetArgs) (any, error) {
-	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
-	if err != nil {
-		return mcpErrCause("Failed to load project at the given path.", err), nil
-	}
-	status, err := svc.Billing.GetBudgetStatus()
-	if err != nil {
-		return mcpErr(fmt.Sprintf("failed to get budget status: %s", err)), nil
-	}
-	if status == nil {
-		return "No budget configured. Set budget_hours in policy.yaml.", nil
-	}
-	return status, nil
-}
-
-type RateRemoveArgs struct {
-	ID          string `json:"id" jsonschema:"description=Rate ID to remove"`
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
-}
-
-func (s *Server) handleRateRemove(ctx context.Context, args RateRemoveArgs) (any, error) {
-	if args.ID == "" {
-		return mcpErr("rate id is required"), nil
-	}
-	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
-	if err != nil {
-		return mcpErrCause("Failed to load project at the given path.", err), nil
-	}
-	if err := svc.Billing.RemoveRate(args.ID); err != nil {
-		return mcpErr(fmt.Sprintf("failed to remove rate: %s", err)), nil
-	}
-	return fmt.Sprintf("Rate %s removed", args.ID), nil
-}
-
-type RateSetDefaultArgs struct {
-	ID          string `json:"id" jsonschema:"description=Rate ID to set as default"`
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
-}
-
-func (s *Server) handleRateSetDefault(ctx context.Context, args RateSetDefaultArgs) (any, error) {
-	if args.ID == "" {
-		return mcpErr("rate id is required"), nil
-	}
-	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
-	if err != nil {
-		return mcpErrCause("Failed to load project at the given path.", err), nil
-	}
-	if err := svc.Billing.SetDefaultRate(args.ID); err != nil {
-		return mcpErr(fmt.Sprintf("failed to set default rate: %s", err)), nil
-	}
-	return fmt.Sprintf("Rate %s set as default", args.ID), nil
-}
-
-type RateTaxArgs struct {
-	Name        string  `json:"name" jsonschema:"description=Tax name (e.g., VAT, Sales Tax)"`
-	Percent     float64 `json:"percent" jsonschema:"description=Tax percentage (e.g., 20 for 20%%)"`
-	Included    bool    `json:"included" jsonschema:"description=Tax is included in rate"`
-	ProjectPath string  `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
-	Project     string  `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
-}
-
-func (s *Server) handleRateTax(ctx context.Context, args RateTaxArgs) (any, error) {
-	if args.Name == "" {
-		return mcpErr("tax name is required"), nil
-	}
-	if args.Percent < 0 || args.Percent > 100 {
-		return mcpErr("tax percent must be between 0 and 100"), nil
-	}
-	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
-	if err != nil {
-		return mcpErrCause("Failed to load project at the given path.", err), nil
-	}
-	if err := svc.Billing.SetTax(args.Name, args.Percent, args.Included); err != nil {
-		return mcpErr(fmt.Sprintf("failed to set tax: %s", err)), nil
-	}
-	return fmt.Sprintf("Tax configured: %s at %.1f%%", args.Name, args.Percent), nil
-}
-
-func teamRole(s string) team.Role {
-	return team.Role(s)
-}
 
 // orEmpty returns the slice or an empty slice if nil (for clean JSON output).
 func orEmpty(s []string) []string {

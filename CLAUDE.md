@@ -4,17 +4,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Roady is a planning-first system of record for software work. It acts as a durable memory layer between **intent** (specs), **plans** (task DAGs), and **execution** (state tracking). Designed for individuals, teams, and AI agents via MCP (Model Context Protocol).
+Roady is a planning-first system of record for software work. It acts as a durable memory layer between **intent** (specs), **plans** (task DAGs), and **execution** (state tracking). Built for AI coding agents (via MCP and CLI) and the people who direct them.
+The product is three things: **capture** intent at any size, **keep** the
+agent on it across sessions and compaction, and **prove** work done with
+acceptance checks and a hash-chained audit log. Anything that does not serve
+those was removed (billing, teams/org, tracker sync, messaging, debt,
+forecasting, dashboards); do not reintroduce it.
 
 ## Build & Test Commands
 
 ```bash
 # Build main binary
 go build -o roady ./cmd/roady
-
-# Build every plugin binary (asana, github, jira, linear, mock, notion, trello).
-# Enumerated rather than listed, so this does not go stale as plugins are added.
-for p in cmd/roady-plugin-*; do go build -o "$(basename "$p")" "./$p"; done
 
 # Run all tests
 go test ./...
@@ -42,40 +43,36 @@ pkg/domain/           # Pure domain logic (no external dependencies)
 ├── spec/            # ProductSpec, Feature, Requirement entities
 ├── planning/        # Plan, Task, ExecutionState, DAG validation
 ├── drift/           # Issue, Report, drift detection types
-├── policy/          # Policy rules (WIP limits, dependencies)
-└── plugin/          # Syncer interface for external integrations
+├── policy/          # Policy rules (WIP limits, evidence, approval mode)
+├── audit/ events/ provenance/  # Hash-chained log, projections, who-did-what
+└── project/ dispatch/ prompt/  # Coordinator, subagent dispatch, prompt building
 
 pkg/application/      # Use-case services orchestrating domain logic
-├── init_service.go
-├── spec_service.go
-├── plan_service.go
-├── drift_service.go
-├── policy_service.go
-├── task_service.go
-├── audit_service.go
-├── prompt_service.go
-├── report_service.go
-├── audit_trail_service.go
-├── git_service.go
-└── sync_service.go
+├── capture_service.go   # one write for intent of any size (capture, add/edit/split/move)
+├── plan_import.go       # harness plan files -> tasks
+├── brief.go             # roady next
+├── check_service.go     # acceptance checks; evidence_gate.go, check_guard.go
+├── plan_service.go / task_service.go / spec_service.go / drift_service.go
+├── policy_service.go / git_service.go / dispatch_service.go
+└── audit_service.go / audit_trail_service.go / prompt_service.go
+```
 
+```
 internal/infrastructure/  # Adapters and framework integrations
-├── cli/             # Cobra CLI commands (root, init, spec, plan, drift, etc.)
+├── cli/             # Cobra CLI commands, agent hooks (hook.go) and setup
 ├── mcp/             # MCP server implementation
 └── wiring/          # Service composition and dependency injection
 
 pkg/storage/         # Filesystem repository (YAML/JSON in .roady/)
-pkg/plugin/          # HashiCorp go-plugin loader for external syncers
+pkg/sdk/             # Go client for the MCP server
 ```
 
 ### Key Dependencies
 
 - **cobra**: CLI framework
-- **bubbletea/lipgloss**: TUI dashboard
 - **go.klarlabs.de/mcp**: MCP server protocol
 - **statekit**: FSM for task state transitions
 - **fortify**: Resilience (retry, timeout) for AI calls
-- **go-plugin**: HashiCorp plugin system for external syncers
 
 `go.mod` is authoritative; this list names what each is for, not what version
 is pinned.
@@ -121,21 +118,8 @@ Guards enforce:
 
 ### MCP Tools
 
-The MCP server lives in `internal/infrastructure/mcp/`. It currently exposes
-about seventy tools, grouped roughly as:
-
-- **spec / plan / state** — `roady_spec_get`, `roady_plan_get`, `roady_state_get`,
-  `roady_plan_generate`, `roady_plan_approve`, `roady_spec_add`
-- **drift** — `roady_drift_detect`, `roady_drift_accept`, `roady_drift_explain`
-- **tasks** — `roady_task_transition`, `roady_tasks`, `roady_task_assign`
-- **governance & audit** — `roady_policy_check`, `roady_audit_trail`, `roady_audit_verify`
-- **cost, debt, deps, org, team, rates** — families prefixed `roady_cost_`,
-  `roady_debt_`, `roady_deps_`, `roady_org_`, `roady_team_`, `roady_rate_`
-
-This deliberately does not enumerate them. An earlier version listed sixteen
-by name; the server had grown to seventy and every one of the sixteen was still
-correct, so the list was not wrong — just quietly four-fifths incomplete, which
-reads the same as complete. For the current set, ask the code:
+The MCP server lives in `internal/infrastructure/mcp/`. For the current set
+of tools, ask the code rather than a list that goes stale:
 
 ```bash
 grep -rhoE '"roady_[a-z_]+"' internal/infrastructure/mcp/*.go | tr -d '"' | sort -u
@@ -153,19 +137,18 @@ roady mcp --transport ws --addr :8080
 A client pays for every listed tool in its prompt. By default the server
 **lists** seven — `roady_next`, `roady_capture`, `roady_plan_import`,
 `roady_task_transition`, `roady_task_check`, `roady_status`, `roady_query`,
-about 2.5k tokens instead of ~19k — and keeps every other tool **registered
+about 2.5k tokens instead of ~10k — and keeps every other tool **registered
 and callable**, so the SDK and clients that call a tool by name keep working.
 `ROADY_MCP_TOOLS` changes that:
 
 ```bash
 roady mcp                                 # essential tools listed, all callable
-ROADY_MCP_TOOLS=essential,debt roady mcp  # plus the debt ledger listed
-ROADY_MCP_TOOLS=all roady mcp             # everything listed (~19k tokens)
-ROADY_MCP_TOOLS=core,debt roady mcp       # only these groups exist at all
+ROADY_MCP_TOOLS=essential,audit roady mcp # plus the audit tools listed
+ROADY_MCP_TOOLS=all roady mcp             # all 38 tools listed (~10k tokens)
+ROADY_MCP_TOOLS=core roady mcp            # only the core group exists at all
 ```
 
-Groups: `core`, `cost`, `team`, `org`, `debt`, `deps`, `plugin`, `sync`,
-`analytics`, `audit`. A profile of groups registers only those (and `core`,
+Groups: `core`, `analytics` (semantic drift), `audit`. A profile of groups registers only those (and `core`,
 always). An unknown group name fails startup rather than quietly starting a
 smaller server.
 
@@ -175,14 +158,6 @@ fails the build — otherwise an unclassified tool would silently disappear
 from every profile, which looks exactly like a tool that does not exist.
 tools/list is trimmed by a middleware (`list_filter.go`), so an unlisted tool
 is still dispatched normally.
-
-### Plugin System
-
-Plugins use HashiCorp go-plugin over RPC:
-- Interface: `pkg/domain/plugin/Syncer`
-- Loader: `pkg/plugin/loader.go`
-- Implementations: `cmd/roady-plugin-*` — asana, github, jira, linear, mock,
-  notion, trello
 
 ## Common Workflows
 

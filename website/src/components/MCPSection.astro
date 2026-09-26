@@ -1,11 +1,9 @@
 ---
 // MCP Integration Section.
 //
-// REFRESHED for v0.11. Tool list now uses the canonical v0.10 names
-// (roady_tasks, roady_plan_decompose, roady_drift_recurring,
-// roady_assign_task); deprecated names removed. AI-Interaction example
-// uses a real tool. D3 visualisation sub-block collapsed into a single
-// callout (was a feature-museum pattern in disguise).
+// Tool list mirrors the seven essential tools the server lists by default
+// (ROADY_MCP_TOOLS=all lists the rest). D3 visualisation sub-block
+// collapsed into a single callout.
 ---
 
 <section id="mcp" class="py-24 bg-gradient-to-b from-[#0B0E14] to-violet-900/10">
@@ -18,7 +16,7 @@
       <p class="text-gray-400 max-w-2xl mx-auto">
         Every Roady operation is an MCP tool. Your agent reads and writes the same
         plan-of-record you see in <code class="mono text-violet-400">roady status</code>.
-        One <code class="mono text-violet-400">roady setup</code> command per supported tool.
+        One <code class="mono text-violet-400">roady setup</code> command per supported tool installs the MCP server and session hooks.
       </p>
     </div>
 
@@ -32,40 +30,36 @@
           </h3>
           <div class="grid grid-cols-2 gap-3 text-sm">
             <div class="px-3 py-2 bg-black/30 rounded-lg">
-              <code class="text-violet-300 mono">roady_tasks</code>
-              <p class="text-xs text-gray-500 mt-1">List tasks by status (ready / in_progress / blocked / all)</p>
+              <code class="text-violet-300 mono">roady_next</code>
+              <p class="text-xs text-gray-500 mt-1">Brief for the current or next task</p>
             </div>
             <div class="px-3 py-2 bg-black/30 rounded-lg">
-              <code class="text-violet-300 mono">roady_get_plan</code>
-              <p class="text-xs text-gray-500 mt-1">Read the approved plan</p>
+              <code class="text-violet-300 mono">roady_capture</code>
+              <p class="text-xs text-gray-500 mt-1">Record intent of any size in one write</p>
             </div>
             <div class="px-3 py-2 bg-black/30 rounded-lg">
-              <code class="text-violet-300 mono">roady_transition_task</code>
+              <code class="text-violet-300 mono">roady_plan_import</code>
+              <p class="text-xs text-gray-500 mt-1">Turn an agent's plan file into tasks</p>
+            </div>
+            <div class="px-3 py-2 bg-black/30 rounded-lg">
+              <code class="text-violet-300 mono">roady_task_transition</code>
               <p class="text-xs text-gray-500 mt-1">Start / complete / block / verify</p>
             </div>
             <div class="px-3 py-2 bg-black/30 rounded-lg">
-              <code class="text-violet-300 mono">roady_detect_drift</code>
-              <p class="text-xs text-gray-500 mt-1">Has reality diverged from intent?</p>
+              <code class="text-violet-300 mono">roady_task_check</code>
+              <p class="text-xs text-gray-500 mt-1">Run a task's acceptance check</p>
             </div>
             <div class="px-3 py-2 bg-black/30 rounded-lg">
-              <code class="text-violet-300 mono">roady_plan_decompose</code>
-              <p class="text-xs text-gray-500 mt-1">Codebase-aware AI decomposition</p>
-            </div>
-            <div class="px-3 py-2 bg-black/30 rounded-lg">
-              <code class="text-violet-300 mono">roady_drift_recurring</code>
-              <p class="text-xs text-gray-500 mt-1">Drift unresolved &gt; 7 days</p>
-            </div>
-            <div class="px-3 py-2 bg-black/30 rounded-lg">
-              <code class="text-violet-300 mono">roady_audit_trail</code>
-              <p class="text-xs text-gray-500 mt-1">Which agent did what, with chain verification</p>
+              <code class="text-violet-300 mono">roady_status</code>
+              <p class="text-xs text-gray-500 mt-1">Where the plan stands</p>
             </div>
             <div class="px-3 py-2 bg-black/30 rounded-lg">
               <code class="text-violet-300 mono">roady_query</code>
-              <p class="text-xs text-gray-500 mt-1">NL question over project state</p>
+              <p class="text-xs text-gray-500 mt-1">Question over project state</p>
             </div>
           </div>
           <p class="text-xs text-gray-500 mt-4">
-            Plus 30+ more &mdash; <code class="mono text-violet-400">roady openapi</code> emits the full schema. Streamed AI responses arrive as MCP progress notifications when the client subscribes.
+            These seven are listed by default; drift, spec, plan, policy, and audit tools stay callable by name. <code class="mono text-violet-400">ROADY_MCP_TOOLS=all</code> lists every tool.
           </p>
         </div>
 
@@ -102,20 +96,22 @@
             </div>
             <div class="text-gray-500 mb-2"># One-command setup, per supported AI tool</div>
             <pre class="text-violet-300"><code>roady setup claude-code
-roady setup claude-desktop
+roady setup codex
+roady setup gemini
+roady setup cursor
 roady setup opencode
-roady setup openai
-roady setup gemini</code></pre>
+roady setup copilot
+roady setup kiro</code></pre>
             <div class="mt-6 pt-4 border-t border-white/10">
               <div class="text-gray-500 mb-2">// Real interaction inside Claude Code</div>
               <div class="text-violet-400">You:</div>
               <div class="text-gray-300 ml-4">"What's blocked, and why?"</div>
               <div class="text-emerald-400 mt-3">Tool call:</div>
-              <pre class="text-gray-300 ml-4"><code>roady_tasks &#123; status: "blocked" &#125;</code></pre>
+              <pre class="text-gray-300 ml-4"><code>roady_query &#123; question: "what is blocked?" &#125;</code></pre>
               <div class="text-emerald-400 mt-3">Tool call:</div>
-              <pre class="text-gray-300 ml-4"><code>roady_drift_recurring &#123;&#125;</code></pre>
+              <pre class="text-gray-300 ml-4"><code>roady_next &#123;&#125;</code></pre>
               <div class="text-violet-400 mt-3">Claude:</div>
-              <div class="text-gray-300 ml-4">2 blocked tasks. Both depend on auth-signup, which is in_progress for 4 days &mdash; flagged as recurring drift. Want me to break it down?</div>
+              <div class="text-gray-300 ml-4">2 blocked tasks. Both depend on auth-signup, which is still in_progress and its acceptance check is failing. Want me to pick it up?</div>
             </div>
           </div>
         </div>

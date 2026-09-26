@@ -35,11 +35,12 @@ It exists to be the **durable memory layer** between intent and execution, helpi
 - **Single logical plan:** One source of truth for the workspace.
 - **Async collaboration:** Shared via Git, just like code.
 - **CLI + MCP:** Interfaces for both humans and AI agents.
-- **Plugin system:** Extendable through gRPC/RPC integrations.
 
 ### Pro (Commercial)
 - **Multi-user visibility:** Shared dashboards and progress views.
 - **Team coordination:** Orchestrating across multiple contributors.
+
+_Note: the in-repo team roster, task assignment, org rollups, and tracker-sync plugins that once prototyped these ideas were removed from Core._
 - **Governance & compliance:** Automated audit ledgers and policy guardrails.
 - **Cross-repo intelligence:** Planning that spans multiple repositories and services.
 

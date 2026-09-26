@@ -156,7 +156,7 @@ Roady must answer instantly:
 - Domain Driven Design (DDD)
 - Event-oriented
 - Deterministic artifacts
-- Plugin-first extensibility
+- MCP-first agent interface
 
 ---
 
@@ -200,7 +200,7 @@ Rules:
 ### Policy Domain
 Purpose:
 - Constrain behavior (e.g., WIP limits).
-- Govern AI usage (routing, costs).
+- Govern AI usage (provider/model routing).
 - Prevent prohibited transitions.
 
 Policy never:
@@ -234,7 +234,6 @@ Uses **fortify** to handle:
 - **Provider Abstraction**: Decoupled via `ai.Provider` interface.
 - **Factory Pattern**: Centralized instantiation of Ollama, OpenAI, Anthropic, Gemini, or Mock.
 - **Policy Control**: `policy.yaml` controls AI usage and limits; `.roady/ai.yaml` sets provider/model defaults.
-- **Telemetry**: Usage and token stats emitted to `usage.json`.
 
 ---
 
@@ -246,7 +245,6 @@ Command groups:
 - `roady plan *`: `generate`, `approve`, `reject`, `prune`.
 - `roady drift *`: `detect`, `explain`.
 - `roady status`: High-level summary.
-- `roady usage`: Telemetry overview.
 
 Flags:
 - `--validate`: Strict check.
@@ -256,26 +254,12 @@ Flags:
 
 ---
 
-## Plugin System
-
-- **gRPC + MCP**: Primary extension protocols.
-- **Optional**: Core works without any plugins.
-- **Sandboxed**: Plugins cannot access data outside `.roady/` without permission.
-- **Explicit Permissions**: Defined in the workspace configuration.
-
----
-
-## Audit & Telemetry
+## Audit
 
 ### Event Log (`events.jsonl`)
 - **Format**: JSON-Lines for high performance and grep-ability.
 - **Content**: Every state transition, plan change, and AI operation is recorded.
 - **Actor**: Tracks whether an action was performed by a `human` or an `ai`.
-
-### Usage Tracking (`usage.json`)
-- **Counters**: Total command counts and model-specific token usage.
-- **Aggregation**: The `AuditService` automatically accumulates usage data from event metadata.
-- **Purpose**: Provides visibility into AI costs and project velocity.
 
 ---
 
@@ -318,7 +302,6 @@ Note: `pkg/mcp` currently forwards to `internal/infrastructure/mcp` for compatib
 - **`roady_plan_generate` / `roady_plan_approve`**: Orchestrate the planning lifecycle.
 - **`roady_task_transition`**: Enable agents to "check out" and "check in" work.
 - **`roady_drift_detect` / `roady_drift_explain`**: Empower agents to self-correct and identify misalignments.
-- **`roady_usage_get`**: Permit agents to monitor their own resource consumption.
 
 ---
 
@@ -340,12 +323,10 @@ Roady uses a local-first, git-friendly storage strategy.
 
 - **`state.json`**: The current execution status and paths for each task.
 
-- **`policy.yaml`**: Project-wide constraints and AI usage limits.
+- **`policy.yaml`**: Project-wide constraints (WIP limits, AI enablement).
 - **`ai.yaml`**: Provider/model defaults for AI requests.
 
 - **`events.jsonl`**: The immutable audit trail of all project changes.
-
-- **`usage.json`**: Accumulated telemetry and AI token consumption.
 
 - **`drift/`**: (Optional) Stored machine-readable drift reports for historical analysis.
 
@@ -366,7 +347,3 @@ Roady provides high-resolution visibility into the planning lifecycle:
 - **Structured Logs**: All operations emit events to the local audit trail.
 
 - **Drift Events**: Discrepancies are identified as first-class signals with severity levels.
-
-- **AI Usage Metrics**: Detailed tracking of token counts and provider performance.
-
-- **TUI Dashboard**: Real-time visualization of plan health and project velocity.

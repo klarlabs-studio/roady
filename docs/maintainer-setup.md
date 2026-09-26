@@ -60,11 +60,10 @@ locally see findings before push; everyone else sees them only at
 review time. If `nox` ever ships publicly, add a CI step in
 `.github/workflows/ci.yml` that mirrors the hook (advisory, non-gating).
 
-## 4. Telemetry / usage stats (future)
+## 4. Telemetry
 
-Not currently wired. When wired (see `ROADMAP.md` "Roady Cloud"), will
-require a privacy-respecting opt-in flag in `policy.yaml` and a
-configurable endpoint. Out of scope for v0.11.
+Roady collects no usage telemetry. Local usage tracking (`roady usage`,
+`usage.json`) was removed.
 
 ## 5. Roady Cloud waitlist inbox
 

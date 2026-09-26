@@ -168,3 +168,13 @@ func shortSession(id string) string {
 	}
 	return id[:12] + "…"
 }
+
+func orDash(s string) string {
+	if strings.TrimSpace(s) == "" {
+		return "—"
+	}
+	return s
+}
+func escapePipes(s string) string {
+	return strings.ReplaceAll(s, "|", "\\|")
+}

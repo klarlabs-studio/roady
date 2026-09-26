@@ -124,88 +124,7 @@ func main() {
 		}
 	}
 
-	// Example 7: Get usage statistics
-	fmt.Println("\n=== Usage Statistics ===")
-	usage, err := services.Plan.GetUsage()
-	if err != nil {
-		log.Printf("Warning: Could not get usage: %v", err)
-	} else {
-		fmt.Printf("Total Commands: %d\n", usage.TotalCommands)
-		if len(usage.ProviderStats) > 0 {
-			totalTokens := 0
-			for provider, tokens := range usage.ProviderStats {
-				fmt.Printf("  %s: %d tokens\n", provider, tokens)
-				totalTokens += tokens
-			}
-			fmt.Printf("Total Tokens: %d\n", totalTokens)
-		}
-	}
-
-	// Example 8: Get velocity forecast
-	fmt.Println("\n=== Velocity Forecast ===")
-	forecast, err := services.Forecast.GetForecast()
-	if err != nil {
-		log.Printf("Warning: Could not get forecast: %v", err)
-	} else {
-		fmt.Printf("Remaining Tasks: %d\n", forecast.RemainingTasks)
-		fmt.Printf("Current Velocity: %.2f tasks/day\n", forecast.Velocity)
-		if forecast.Velocity > 0 {
-			fmt.Printf("Estimated Days to Complete: %.1f\n", forecast.EstimatedDays)
-			fmt.Printf("Confidence: [%.1f - %.1f - %.1f] days\n",
-				forecast.ConfidenceInterval.Low,
-				forecast.ConfidenceInterval.Expected,
-				forecast.ConfidenceInterval.High)
-		}
-		fmt.Printf("Trend Direction: %s\n", forecast.Trend.Direction)
-	}
-
-	// Example 9: Get dependency graph
-	fmt.Println("\n=== Repository Dependencies ===")
-	deps, err := services.Dependency.ListDependencies()
-	switch {
-	case err != nil:
-		log.Printf("Warning: Could not list dependencies: %v", err)
-	case len(deps) == 0:
-		fmt.Println("No cross-repo dependencies defined")
-	default:
-		fmt.Printf("Dependencies: %d\n", len(deps))
-		for _, d := range deps {
-			fmt.Printf("  - %s -> %s (%s)\n", d.SourceRepo, d.TargetRepo, d.Type)
-		}
-	}
-
-	// Example 10: Get planning debt analysis
-	fmt.Println("\n=== Planning Debt ===")
-	debtReport, err := services.Debt.GetDebtReport(ctx)
-	if err != nil {
-		log.Printf("Warning: Could not get debt report: %v", err)
-	} else {
-		fmt.Printf("Total Items: %d\n", debtReport.TotalItems)
-		fmt.Printf("Sticky Items: %d\n", debtReport.StickyItems)
-		fmt.Printf("Average Score: %.1f\n", debtReport.AverageScore)
-		fmt.Printf("Health Level: %s\n", debtReport.GetHealthLevel())
-
-		// Show top debtors
-		topDebtors := debtReport.GetTopDebtors(3)
-		if len(topDebtors) > 0 {
-			fmt.Printf("Top Debt Components:\n")
-			for _, score := range topDebtors {
-				fmt.Printf("  - %s: score %.1f (%d items)\n",
-					score.ComponentID, score.Score, len(score.Items))
-			}
-		}
-
-		// Show sticky drift
-		if len(debtReport.StickyDrift) > 0 {
-			fmt.Printf("Sticky Drift (unresolved >7 days):\n")
-			for _, item := range debtReport.StickyDrift {
-				fmt.Printf("  - %s: %d days pending (%s)\n",
-					item.ComponentID, item.DaysPending, item.DriftType)
-			}
-		}
-	}
-
-	// Example 11: Generate plan (if needed)
+	// Example 7: Generate plan (if needed)
 	// Uncomment to generate a new plan from the spec
 	/*
 		fmt.Println("\n=== Generating Plan ===")
@@ -216,7 +135,7 @@ func main() {
 		fmt.Printf("Generated plan with %d tasks\n", len(newPlan.Tasks))
 	*/
 
-	// Example 12: Approve plan (if needed)
+	// Example 8: Approve plan (if needed)
 	// Uncomment to approve the current plan
 	/*
 		fmt.Println("\n=== Approving Plan ===")
@@ -227,7 +146,7 @@ func main() {
 		fmt.Println("Plan approved successfully!")
 	*/
 
-	// Example 13: Task transitions
+	// Example 9: Task transitions
 	// Uncomment to start/complete tasks
 	/*
 		taskID := "task-example"

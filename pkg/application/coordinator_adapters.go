@@ -66,10 +66,9 @@ func (p *AuditEventPublisher) PublishPlanApproved(ctx context.Context, planID, a
 }
 
 // PublishTaskStarted implements project.EventPublisher.
-func (p *AuditEventPublisher) PublishTaskStarted(ctx context.Context, taskID, owner, rateID string) error {
+func (p *AuditEventPublisher) PublishTaskStarted(ctx context.Context, taskID, owner string) error {
 	return p.audit.Log("task.started", owner, map[string]interface{}{
 		"task_id": taskID,
-		"rate_id": rateID,
 	})
 }
 

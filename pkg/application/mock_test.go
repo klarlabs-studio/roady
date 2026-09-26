@@ -2,7 +2,6 @@ package application_test
 
 import (
 	"github.com/felixgeelhaar/roady/pkg/domain"
-	"github.com/felixgeelhaar/roady/pkg/domain/billing"
 	"github.com/felixgeelhaar/roady/pkg/domain/planning"
 	"github.com/felixgeelhaar/roady/pkg/domain/spec"
 )
@@ -44,16 +43,6 @@ func (m *MockRepo) SavePolicy(c *domain.PolicyConfig) error      { m.Policy = c;
 func (m *MockRepo) LoadPolicy() (*domain.PolicyConfig, error)    { return m.Policy, m.LoadError }
 func (m *MockRepo) RecordEvent(e domain.Event) error             { return m.SaveError }
 func (m *MockRepo) LoadEvents() ([]domain.Event, error)          { return []domain.Event{}, m.LoadError }
-func (m *MockRepo) UpdateUsage(u domain.UsageStats) error        { return m.SaveError }
-func (m *MockRepo) LoadUsage() (*domain.UsageStats, error)       { return &domain.UsageStats{}, m.LoadError }
-func (m *MockRepo) SaveRates(c *billing.RateConfig) error        { return m.SaveError }
-func (m *MockRepo) LoadRates() (*billing.RateConfig, error) {
-	return &billing.RateConfig{}, m.LoadError
-}
-func (m *MockRepo) SaveTimeEntries(e []billing.TimeEntry) error { return m.SaveError }
-func (m *MockRepo) LoadTimeEntries() ([]billing.TimeEntry, error) {
-	return []billing.TimeEntry{}, m.LoadError
-}
 
 type MockInspector struct {
 	Exists       bool

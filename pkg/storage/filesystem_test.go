@@ -1,15 +1,48 @@
 package storage
 
 import (
+	"github.com/felixgeelhaar/roady/pkg/domain"
+	"github.com/felixgeelhaar/roady/pkg/domain/planning"
+	"github.com/felixgeelhaar/roady/pkg/domain/spec"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/felixgeelhaar/roady/pkg/domain"
-	"github.com/felixgeelhaar/roady/pkg/domain/planning"
-	"github.com/felixgeelhaar/roady/pkg/domain/spec"
 )
+
+func TestFilesystemRepository_ResolvePath_Edge(t *testing.T) {
+	repo := NewFilesystemRepository("/tmp")
+
+	tests := []struct {
+		name    string
+		input   string
+		wantErr bool
+	}{
+		{"Empty", "", true},
+		{"Dot", ".", true},
+		{"Parent", "..", true},
+		{"Subdir", "sub/file", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := repo.ResolvePath(tt.input)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ResolvePath(%s) error = %v, wantErr %v", tt.input, err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestFilesystemRepository_InitError(t *testing.T) {
+	tempFile, _ := os.CreateTemp("", "roady-init-fail-*")
+	defer func() { _ = os.Remove(tempFile.Name()) }()
+
+	repo := NewFilesystemRepository(tempFile.Name())
+	if err := repo.Initialize(); err == nil {
+		t.Error("expected init error when root is a file")
+	}
+}
 
 func TestFilesystemRepository_Thorough(t *testing.T) {
 	tempDir, _ := os.MkdirTemp("", "roady-storage-thorough-*")
@@ -84,10 +117,6 @@ func TestFilesystemRepository_Thorough(t *testing.T) {
 	}
 
 	// 6. Usage Update
-	u := domain.UsageStats{TotalCommands: 1}
-	if err := repo.UpdateUsage(u); err != nil {
-		t.Fatal(err)
-	}
 
 	// 7. Events Record
 	ev := domain.Event{ID: "e1", Action: "act"}
@@ -181,30 +210,6 @@ func TestFilesystemRepository_Thorough(t *testing.T) {
 	}
 }
 
-func TestFilesystemRepository_ResolvePath_Edge(t *testing.T) {
-	repo := NewFilesystemRepository("/tmp")
-
-	tests := []struct {
-		name    string
-		input   string
-		wantErr bool
-	}{
-		{"Empty", "", true},
-		{"Dot", ".", true},
-		{"Parent", "..", true},
-		{"Subdir", "sub/file", true},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			_, err := repo.ResolvePath(tt.input)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("ResolvePath(%s) error = %v, wantErr %v", tt.input, err, tt.wantErr)
-			}
-		})
-	}
-}
-
 func TestFilesystemRepository_Errors(t *testing.T) {
 	tempDir, _ := os.MkdirTemp("", "roady-readonly-*")
 	defer func() { _ = os.RemoveAll(tempDir) }()
@@ -237,18 +242,5 @@ func TestFilesystemRepository_Errors(t *testing.T) {
 	}
 	if err := repo.SaveSpecLock(&spec.ProductSpec{ID: "fail"}); err == nil {
 		t.Error("expected write error on readonly dir (lock)")
-	}
-	if err := repo.UpdateUsage(domain.UsageStats{}); err == nil {
-		t.Error("expected write error on readonly dir (usage)")
-	}
-}
-
-func TestFilesystemRepository_InitError(t *testing.T) {
-	tempFile, _ := os.CreateTemp("", "roady-init-fail-*")
-	defer func() { _ = os.Remove(tempFile.Name()) }()
-
-	repo := NewFilesystemRepository(tempFile.Name())
-	if err := repo.Initialize(); err == nil {
-		t.Error("expected init error when root is a file")
 	}
 }

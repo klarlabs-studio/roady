@@ -67,72 +67,44 @@ roady mcp --transport ws --addr :8080
 
 ## Available Tools
 
-### Core State Tools
+By default the server **lists** seven essential tools and keeps every other
+tool registered and callable by name. Set `ROADY_MCP_TOOLS=all` to list
+everything.
 
-| Tool | Description | Returns |
-|------|-------------|---------|
-| `roady_init` | Initialize a new roady project | Confirmation message |
-| `roady_spec_get` | Retrieve the current product specification | JSON ProductSpec |
-| `roady_plan_get` | Retrieve the current execution plan | JSON Plan with tasks |
-| `roady_state_get` | Retrieve task execution states | JSON ExecutionState |
-| `roady_status` | Get a high-level project summary | Status summary text |
+### Essential Tools (listed by default)
 
-### Planning Tools
+| Tool | Description |
+|------|-------------|
+| `roady_next` | Brief for the task in progress, or the one to start next |
+| `roady_capture` | Record intent of any size in one write |
+| `roady_plan_import` | Import an agent's plan file as roady tasks |
+| `roady_task_transition` | Transition task state (start/complete/block/stop/unblock/verify) |
+| `roady_task_check` | Run a task's acceptance check |
+| `roady_status` | High-level project summary |
+| `roady_query` | Ask a question about the plan and state |
 
-| Tool | Description | Parameters |
-|------|-------------|------------|
-| `roady_plan_generate` | Generate plan using 1:1 heuristic | None |
-| `roady_plan_update` | Update with specific task list | `tasks[]` - Task definitions |
-| `roady_plan_approve` | Approve plan for execution | None |
-| `roady_spec_explain` | AI architectural walkthrough | None |
+### Spec, Plan & State Tools
 
-### Drift Detection Tools
+| Tool | Description |
+|------|-------------|
+| `roady_init` | Initialize a new roady project |
+| `roady_spec_get` / `roady_spec_add` / `roady_spec_import` / `roady_spec_analyze` | Read, extend, or import the spec |
+| `roady_spec_explain` / `roady_spec_review` / `roady_spec_validate` / `roady_spec_lock` | Explain, review, validate, or lock the spec |
+| `roady_plan_get` / `roady_plan_generate` / `roady_plan_update` | Read or build the plan |
+| `roady_plan_approve` / `roady_plan_reject` / `roady_plan_prune` | Plan approval lifecycle |
+| `roady_plan_decompose` / `roady_plan_prioritize` | Break down or reorder tasks |
+| `roady_state_get` / `roady_state_rebuild` / `roady_snapshot_get` | Execution state and full snapshot |
+| `roady_tasks` / `roady_task_dispatch` | List tasks, dispatch work |
 
-| Tool | Description | Returns |
-|------|-------------|---------|
-| `roady_drift_detect` | Detect spec/plan discrepancies | DriftReport JSON |
-| `roady_drift_accept` | Accept drift, lock spec snapshot | Confirmation |
-| `roady_drift_explain` | AI explanation of drift causes | Analysis text |
+### Drift, Governance & Audit Tools
 
-### Task Lifecycle Tools
-
-| Tool | Description | Parameters |
-|------|-------------|------------|
-| `roady_task_transition` | Transition task state | `task_id`, `event` (start/complete/block/stop), optional `evidence` |
-| `roady_policy_check` | Validate against WIP limits | None |
-
-### Forecasting & Analytics Tools
-
-| Tool | Description | Returns |
-|------|-------------|---------|
-| `roady_forecast` | Predict completion based on velocity | Velocity, remaining tasks, estimated days |
-| `roady_usage_get` | Get AI token consumption stats | UsageStats JSON |
-
-### Dependency Management Tools (Horizon 5)
-
-| Tool | Description | Returns |
-|------|-------------|---------|
-| `roady_deps_list` | List cross-repo dependencies | Dependencies JSON |
-| `roady_deps_scan` | Scan dependent repo health | Health status |
-| `roady_deps_graph` | Get dependency graph | Graph with cycle detection |
-
-### Debt Analysis Tools (Horizon 5)
-
-| Tool | Description | Returns |
-|------|-------------|---------|
-| `roady_debt_report` | Comprehensive debt analysis | DebtReport JSON |
-| `roady_debt_summary` | Quick debt overview | Summary text |
-| `roady_sticky_drift` | Items unresolved >7 days | Sticky items list |
-| `roady_debt_trend` | Drift trend over time | Trend analysis |
-
-### Integration Tools
-
-| Tool | Description | Parameters |
-|------|-------------|------------|
-| `roady_spec_add` | Add feature to spec | `title`, `description` |
-| `roady_git_sync` | Sync via commit markers | None |
-| `roady_sync` | External plugin sync | `plugin_path` |
-| `roady_org_status` | Multi-project overview | None |
+| Tool | Description |
+|------|-------------|
+| `roady_drift_detect` / `roady_drift_explain` / `roady_drift_accept` | Detect, explain, or accept drift |
+| `roady_semantic_drift` / `roady_drift_record_semantic` | Semantic drift prompt and result |
+| `roady_policy_check` | Validate against WIP limits and policy |
+| `roady_audit_trail` / `roady_audit_verify` | Read and verify the hash-chained audit log |
+| `roady_git_sync` | Sync task state from `[roady:<task-id>]` commit markers |
 
 ---
 
@@ -240,11 +212,8 @@ if drift["has_issues"]:
 # Get current status
 status = await mcp.call("roady_status")
 
-# Get velocity forecast
-forecast = await mcp.call("roady_forecast")
-
-# Check debt status
-debt = await mcp.call("roady_debt_summary")
+# Get a brief for the next task
+brief = await mcp.call("roady_next")
 ```
 
 ---
@@ -277,7 +246,7 @@ Example event:
 
 1. **Always check policy** before starting tasks to respect WIP limits
 2. **Provide evidence** when completing tasks for audit trails
-3. **Monitor debt** periodically to catch sticky drift early
+3. **Run acceptance checks** (`roady_task_check`) before verifying tasks
 4. **Use git sync** after commits with `[roady:task-id]` markers
 5. **Accept drift explicitly** rather than ignoring discrepancies
 

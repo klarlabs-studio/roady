@@ -35,7 +35,6 @@ type TaskResult struct {
 	StartedAt      *time.Time `json:"started_at,omitempty"`   // When task moved to in_progress
 	CompletedAt    *time.Time `json:"completed_at,omitempty"` // When task moved to done/verified
 	ElapsedMinutes int        `json:"elapsed_minutes"`        // Total elapsed time in minutes
-	RateID         string     `json:"rate_id,omitempty"`      // Rate used for billing
 
 	// Checks records every run of the task's acceptance check, newest last.
 	Checks []CheckResult `json:"checks,omitempty"`

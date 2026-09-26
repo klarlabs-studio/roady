@@ -18,10 +18,10 @@ func TestResolveSurface(t *testing.T) {
 		allReg   bool
 		wantErr  bool
 	}{
-		{profile: "", listed: []string{"roady_next", "roady_capture", "roady_task_transition"}, unlisted: []string{"roady_plan_get", "roady_debt_report"}, allReg: true},
+		{profile: "", listed: []string{"roady_next", "roady_capture", "roady_task_transition"}, unlisted: []string{"roady_plan_get", "roady_audit_trail"}, allReg: true},
 		{profile: "essential", listed: []string{"roady_status"}, unlisted: []string{"roady_spec_get"}, allReg: true},
-		{profile: "essential,debt", listed: []string{"roady_next", "roady_debt_report"}, unlisted: []string{"roady_cost_report", "roady_plan_get"}, allReg: true},
-		{profile: "essential,core", listed: []string{"roady_plan_get"}, unlisted: []string{"roady_debt_report"}, allReg: true},
+		{profile: "essential,audit", listed: []string{"roady_next", "roady_audit_trail"}, unlisted: []string{"roady_semantic_drift", "roady_plan_get"}, allReg: true},
+		{profile: "essential,core", listed: []string{"roady_plan_get"}, unlisted: []string{"roady_audit_trail"}, allReg: true},
 		{profile: "essential,dept", wantErr: true},
 		{profile: "all", allReg: true},
 	}
@@ -59,7 +59,7 @@ func TestResolveSurface(t *testing.T) {
 
 	// A group profile keeps its old meaning: only those groups exist.
 	got, err := resolveSurface("core")
-	if err != nil || got.listed != nil || got.groups[groupDebt] {
+	if err != nil || got.listed != nil || got.groups[groupAudit] {
 		t.Errorf("core: %+v %v", got, err)
 	}
 }

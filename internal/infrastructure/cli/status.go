@@ -431,32 +431,6 @@ func hasActiveFilters() bool {
 	return statusFilter != "" || priorityFilter != "" || readyOnly || blockedOnly || activeOnly
 }
 
-// Status subcommands - consolidated from top-level commands
-var statusForecastCmd = &cobra.Command{
-	Use:   "forecast",
-	Short: "Predict project completion based on current velocity",
-	Long: `Forecast provides project completion predictions with optional detailed analysis.
-
-Flags:
-  --detailed   Show confidence intervals and all velocity windows
-  --burndown   Show burndown chart data
-  --trend      Show velocity trend analysis
-  --json       Output in JSON format`,
-	RunE: RunForecast,
-}
-
-var statusUsageCmd = &cobra.Command{
-	Use:   "usage",
-	Short: "Show project usage and AI token statistics",
-	RunE:  RunUsage,
-}
-
-var statusTimelineCmd = &cobra.Command{
-	Use:   "timeline",
-	Short: "Show a chronological view of project activity",
-	RunE:  RunTimeline,
-}
-
 func outputSnapshot(services *wiring.AppServices, jsonOut bool) error {
 	ctx := context.Background()
 	snapshot, err := services.Plan.GetProjectSnapshot(ctx)
@@ -537,16 +511,6 @@ func init() {
 		"Output in JSON format")
 	statusCmd.Flags().BoolVar(&snapshotMode, "snapshot", false,
 		"Show coordinator-based project snapshot with progress and categorized task counts")
-
-	// Add subcommands for consolidated views
-	statusForecastCmd.Flags().BoolVar(&forecastDetailed, "detailed", false, "Show detailed forecast with confidence intervals")
-	statusForecastCmd.Flags().BoolVar(&forecastBurndown, "burndown", false, "Show burndown chart data")
-	statusForecastCmd.Flags().BoolVar(&forecastTrend, "trend", false, "Show velocity trend analysis")
-	statusForecastCmd.Flags().BoolVar(&forecastJSON, "json", false, "Output in JSON format")
-
-	statusCmd.AddCommand(statusForecastCmd)
-	statusCmd.AddCommand(statusUsageCmd)
-	statusCmd.AddCommand(statusTimelineCmd)
 
 	RootCmd.AddCommand(statusCmd)
 }

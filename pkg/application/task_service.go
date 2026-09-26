@@ -42,7 +42,7 @@ func (s *TaskService) TransitionTask(taskID string, event string, actor string, 
 	// Use coordinator for supported operations
 	switch event {
 	case "start":
-		err := s.coordinator.StartTask(ctx, taskID, actor, "")
+		err := s.coordinator.StartTask(ctx, taskID, actor)
 		if err != nil {
 			return s.mapCoordinatorError(err, event)
 		}
@@ -255,7 +255,7 @@ func (s *TaskService) LinkTask(taskID string, provider string, ref planning.Exte
 }
 
 // StartTask starts a task using the coordinator with proper dependency validation.
-func (s *TaskService) StartTask(ctx context.Context, taskID, owner, rateID string) error {
+func (s *TaskService) StartTask(ctx context.Context, taskID, owner string) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -264,7 +264,7 @@ func (s *TaskService) StartTask(ctx context.Context, taskID, owner, rateID strin
 			return err
 		}
 	}
-	err := s.coordinator.StartTask(ctx, taskID, owner, rateID)
+	err := s.coordinator.StartTask(ctx, taskID, owner)
 	if err != nil {
 		return s.mapCoordinatorError(err, "start")
 	}
@@ -340,44 +340,6 @@ func (s *TaskService) VerifyTask(ctx context.Context, taskID, verifier string) e
 		return s.mapCoordinatorError(err, "verify")
 	}
 	return nil
-}
-
-// AssignTask sets the owner on a task without requiring a status transition.
-func (s *TaskService) AssignTask(_ context.Context, taskID, assignee string) error {
-	plan, err := s.repo.LoadPlan()
-	if err != nil {
-		return err
-	}
-	if plan == nil {
-		return fmt.Errorf("no plan found")
-	}
-
-	found := false
-	for _, t := range plan.Tasks {
-		if t.ID == taskID {
-			found = true
-			break
-		}
-	}
-	if !found {
-		return fmt.Errorf("task not found in plan: %s", taskID)
-	}
-
-	state, err := s.repo.LoadState()
-	if err != nil {
-		return err
-	}
-
-	state.SetTaskOwner(taskID, assignee)
-
-	if err := s.repo.SaveState(state); err != nil {
-		return err
-	}
-
-	return s.audit.Log("task.assign", assignee, map[string]interface{}{
-		"task_id":  taskID,
-		"assignee": assignee,
-	})
 }
 
 // GetCoordinator returns the underlying project coordinator for advanced operations.

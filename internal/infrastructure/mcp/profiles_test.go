@@ -67,21 +67,20 @@ func TestEnabledGroups(t *testing.T) {
 		},
 		{
 			name:    "a single group still includes core",
-			profile: "debt",
-			want:    []toolGroup{groupCore, groupDebt},
-			absent:  []toolGroup{groupCost, groupOrg, groupSync},
+			profile: "audit",
+			want:    []toolGroup{groupCore, groupAudit},
+			absent:  []toolGroup{groupAnalytics},
 		},
 		{
 			name:    "core alone is the minimum surface",
 			profile: "core",
 			want:    []toolGroup{groupCore},
-			absent:  []toolGroup{groupCost, groupTeam, groupOrg, groupDebt, groupDeps, groupPlugin, groupSync, groupAnalytics, groupAudit},
+			absent:  []toolGroup{groupAnalytics, groupAudit},
 		},
 		{
 			name:    "comma separated, whitespace tolerated",
-			profile: " cost , team ",
-			want:    []toolGroup{groupCore, groupCost, groupTeam},
-			absent:  []toolGroup{groupDebt},
+			profile: " audit , analytics ",
+			want:    []toolGroup{groupCore, groupAudit, groupAnalytics},
 		},
 		{
 			// A typo must fail loudly. Silently ignoring it would start a
@@ -129,26 +128,8 @@ func TestEnabledGroups(t *testing.T) {
 	}
 }
 
-// The saving has to be real, or the feature is decoration. core must be a
-// substantial reduction and must still contain the tools the loop needs.
-func TestCoreProfileIsASubstantialReduction(t *testing.T) {
-	total := len(registeredToolNames(t))
-
-	core := 0
-	for _, g := range toolGroups {
-		if g == groupCore {
-			core++
-		}
-	}
-
-	if core >= total {
-		t.Fatalf("core (%d) is not smaller than the full surface (%d)", core, total)
-	}
-	if pct := 100 * core / total; pct > 60 {
-		t.Errorf("core is %d%% of the full surface (%d of %d); that is not a meaningful reduction",
-			pct, core, total)
-	}
-
+// The loop roady exists for must be in core.
+func TestCoreHoldsTheLoop(t *testing.T) {
 	// The loop roady exists for must survive the trim. These are the tools
 	// the report in #87 named as the ones actually reached for.
 	essential := []string{
@@ -205,15 +186,6 @@ func TestProfileChangesTheAdvertisedSurface(t *testing.T) {
 	for _, n := range core {
 		if !inAll[n] {
 			t.Errorf("core advertised %q, which the full profile does not", n)
-		}
-	}
-
-	// And the finance/admin families the report singled out must be gone.
-	for _, n := range core {
-		for _, banned := range []string{"roady_rate_", "roady_cost_", "roady_team_", "roady_debt_"} {
-			if strings.HasPrefix(n, banned) {
-				t.Errorf("core still advertises %q", n)
-			}
 		}
 	}
 

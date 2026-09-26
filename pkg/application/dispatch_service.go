@@ -108,7 +108,7 @@ func (s *DispatchService) Dispatch(ctx context.Context, taskID string, opts Disp
 			defer a.SetProvenance(previous)
 		}
 
-		if err := s.taskSvc.StartTask(ctx, taskID, opts.Agent, ""); err != nil {
+		if err := s.taskSvc.StartTask(ctx, taskID, opts.Agent); err != nil {
 			return nil, fmt.Errorf("claim task for %s: %w", opts.Agent, err)
 		}
 	}
