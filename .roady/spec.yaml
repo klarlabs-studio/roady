@@ -290,6 +290,8 @@ features:
           priority: high
           estimate: 1d
           depends_on: []
+          check:
+            run: go test ./pkg/application/ -run 'MarkdownImport|SpecService' -count=1
         - id: harness-importers
           title: Import plans from agent harness plan files
           description: 'Importers for Claude Code plan-mode files (~/.claude/plans or plansDirectory), Gemini CLI plans, Cursor .cursor/plans, Codex ExecPlans (PLANS.md) and Kiro .kiro/specs/*/tasks.md, mapping to capture. Done when: each format has a fixture test and `roady import <file>` detects the format.'

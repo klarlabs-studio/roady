@@ -385,7 +385,10 @@
           "priority": "high",
           "estimate": "1d",
           "depends_on": [],
-          "source": {}
+          "source": {},
+          "check": {
+            "run": "go test ./pkg/application/ -run 'MarkdownImport|SpecService' -count=1"
+          }
         },
         {
           "id": "harness-importers",
