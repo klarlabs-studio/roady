@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Setup tells the agent where plans go.** `roady setup` keeps a marked
+  block in `CLAUDE.md` (claude-code), `AGENTS.md` (opencode, openai) or
+  `GEMINI.md` (gemini): plans live in roady, never ROADMAP.md / TODO.md /
+  PLAN.md, and done means the check passes. Re-running updates the block in
+  place and never duplicates it. Claude Code also gets a `roady-planning`
+  skill with the capture format and the finish sequence. `--no-instructions`
+  skips both.
 - **`roady setup claude-code` installs hooks, so the plan reaches roady
   without anyone remembering to put it there.** In `.claude/settings.json`:
   SessionStart (including after compaction) injects the `roady next` brief;

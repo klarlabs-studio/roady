@@ -16,11 +16,11 @@ var setupCmd = &cobra.Command{
 	Long: `Configure Roady for use with AI coding tools.
 
 Supported targets:
-  claude-code    - Configure Claude Code with Roady commands and MCP
+  claude-code    - Configure Claude Code: MCP, hooks, CLAUDE.md block, planning skill
   claude-desktop - Configure Claude Desktop with Roady MCP server
-  opencode       - Configure OpenCode with Roady MCP server
-  openai         - Setup for OpenAI Codex (via MCP)
-  gemini         - Setup for Google Gemini (via MCP bridge)
+  opencode       - Configure OpenCode with Roady MCP server (and AGENTS.md)
+  openai         - Setup for OpenAI Codex (via MCP, and AGENTS.md)
+  gemini         - Setup for Google Gemini (via MCP bridge, and GEMINI.md)
   global         - Install commands globally and setup MCP
 
 Examples:
@@ -28,7 +28,11 @@ Examples:
   roady setup opencode
   roady setup openai
   roady setup claude-desktop
-  roady setup global`,
+  roady setup global
+
+Project targets write a marked roady block into the agent's instruction file
+(plans live in roady; never create ROADMAP.md/TODO.md/plan.md). Re-running
+updates the block in place; --no-instructions skips it.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		target := "claude-code"
 		if len(args) > 0 {
@@ -110,6 +114,16 @@ func setupClaudeCode() error {
 		return err
 	}
 	fmt.Printf("  ✓ %s\n", describeHooks(hooks))
+	if !setupNoInstructions {
+		if err := installInstructions(root, "CLAUDE.md"); err != nil {
+			return err
+		}
+		skill, err := writeRoadySkill(root)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("  ✓ %s\n", describeSkill(skill))
+	}
 
 	fmt.Println("\n✅ Claude Code setup complete!")
 	fmt.Println("\nNext steps:")
@@ -182,6 +196,9 @@ func setupGlobal() error {
 
 func setupOpenCode() error {
 	fmt.Println("🚀 Setting up Roady for OpenCode...")
+	if err := projectInstructions("AGENTS.md"); err != nil {
+		return err
+	}
 
 	fmt.Println("\n📝 Add this to your OpenCode config (~/.opencode/config.json):")
 	fmt.Println()
@@ -216,6 +233,9 @@ func setupOpenCode() error {
 
 func setupOpenAI() error {
 	fmt.Println("🚀 Setting up Roady for OpenAI Codex...")
+	if err := projectInstructions("AGENTS.md"); err != nil {
+		return err
+	}
 
 	fmt.Println()
 	fmt.Println("📝 In your Codex agent code, use the MCP server:")
@@ -252,6 +272,9 @@ server = MCPServer(command="roady", args=["mcp"])`)
 
 func setupGemini() error {
 	fmt.Println("🚀 Setting up Roady for Google Gemini...")
+	if err := projectInstructions("GEMINI.md"); err != nil {
+		return err
+	}
 
 	fmt.Println()
 	fmt.Println("📝 Add Roady to Gemini MCP configuration:")
@@ -278,7 +301,25 @@ Note: Gemini MCP support varies by platform.
 	return nil
 }
 
+// setupNoInstructions leaves CLAUDE.md / AGENTS.md / GEMINI.md and the skill
+// alone, for projects that manage their agent instructions themselves.
+var setupNoInstructions bool
+
+// projectInstructions writes the roady block into the project's instruction
+// files, unless --no-instructions.
+func projectInstructions(files ...string) error {
+	if setupNoInstructions {
+		return nil
+	}
+	root, err := getProjectRoot()
+	if err != nil {
+		return fmt.Errorf("resolve project path: %w", err)
+	}
+	return installInstructions(root, files...)
+}
+
 func init() {
+	setupCmd.Flags().BoolVar(&setupNoInstructions, "no-instructions", false, "Do not write the roady block into CLAUDE.md / AGENTS.md / GEMINI.md or install the planning skill")
 	RootCmd.AddCommand(setupCmd)
 }
 

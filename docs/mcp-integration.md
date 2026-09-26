@@ -46,7 +46,26 @@ This installs:
 - Custom commands (`/roady-task`, `/roady-status`, `/roady-review`)
 - MCP server configuration (`.mcp.json`)
 - Hooks (`.claude/settings.json`) — see [Hooks](#hooks)
-- CLAUDE.md instructions
+- A marked block in `CLAUDE.md` and the `roady-planning` skill — see
+  [Instructions](#instructions)
+
+### Instructions
+
+Tools and hooks make roady available; the instructions tell the agent to use
+it rather than the markdown plan it would otherwise write. Setup keeps a block
+between `<!-- roady:begin -->` and `<!-- roady:end -->` in the agent's
+instruction file: plans live in roady, `roady next` before work, `roady
+capture` / `roady plan import` for new work, never ROADMAP.md / TODO.md /
+PLAN.md, and done means the check passes. Re-running setup replaces the block
+in place and leaves the rest of the file alone. `opencode` and `openai` write
+it to `AGENTS.md`, `gemini` to `GEMINI.md`.
+
+For Claude Code, setup also installs `.claude/skills/roady-planning/SKILL.md`,
+which Claude loads when it plans, breaks down work or decides whether a task is
+done: the capture format with an example, plan import, and the finish
+sequence. The file is roady's and is rewritten when it changes.
+
+`roady setup <target> --no-instructions` skips both.
 
 ### Hooks
 
