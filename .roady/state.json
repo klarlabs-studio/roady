@@ -1,6 +1,6 @@
 {
   "project_id": "agent-handoff",
-  "version": 182,
+  "version": 183,
   "task_states": {
     "task-acceptance-checks": {
       "status": "pending",
@@ -29,11 +29,15 @@
       "elapsed_minutes": 1
     },
     "task-audit-tail-anchor": {
-      "status": "in_progress",
+      "status": "done",
       "path": "",
       "owner": "Claude",
+      "evidence": [
+        "Commit: 84924d29fd01dc3660fd8c7a9b5a00b67d984479"
+      ],
       "started_at": "2026-09-26T16:32:05.076770485+02:00",
-      "elapsed_minutes": 0
+      "completed_at": "2026-09-26T16:38:11.230568616+02:00",
+      "elapsed_minutes": 6
     },
     "task-backlog-writes-to-project": {
       "status": "verified",
@@ -357,5 +361,5 @@
       "elapsed_minutes": 4
     }
   },
-  "updated_at": "2026-09-26T16:32:05.076770485+02:00"
+  "updated_at": "2026-09-26T16:38:11.230569478+02:00"
 }
