@@ -1,6 +1,6 @@
 {
   "project_id": "agent-handoff",
-  "version": 199,
+  "version": 202,
   "task_states": {
     "task-acceptance-checks": {
       "status": "done",
@@ -294,11 +294,28 @@
       "elapsed_minutes": 4
     },
     "task-per-change-approval": {
-      "status": "in_progress",
+      "status": "done",
       "path": "",
       "owner": "Claude",
+      "evidence": [
+        "Commit: 56858070105902f7f3b218d0f77e356cc62fc454"
+      ],
       "started_at": "2026-09-26T17:55:16.912756483+02:00",
-      "elapsed_minutes": 0
+      "completed_at": "2026-09-26T17:57:47.288343424+02:00",
+      "elapsed_minutes": 2,
+      "checks": [
+        {
+          "kind": "run",
+          "command": "go test ./pkg/application/ -run 'ApprovalFollowsScope|KeepsApprovalWhenIntentUnchanged' -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "56858070105902f7f3b218d0f77e356cc62fc454",
+          "by": "Claude",
+          "at": "2026-09-26T17:57:47.349232282+02:00",
+          "duration": "740ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.013s\n"
+        }
+      ]
     },
     "task-pr-drift-gate": {
       "status": "verified",
@@ -459,5 +476,5 @@
       "elapsed_minutes": 4
     }
   },
-  "updated_at": "2026-09-26T17:55:16.912756483+02:00"
+  "updated_at": "2026-09-26T17:57:47.288344296+02:00"
 }
