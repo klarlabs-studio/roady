@@ -1,6 +1,6 @@
 {
   "project_id": "agent-handoff",
-  "version": 192,
+  "version": 194,
   "task_states": {
     "task-acceptance-checks": {
       "status": "done",
@@ -143,11 +143,28 @@
       "elapsed_minutes": 0
     },
     "task-evidence-gated-verify": {
-      "status": "in_progress",
+      "status": "done",
       "path": "",
       "owner": "Claude",
+      "evidence": [
+        "Commit: 645fa01b069d90d8b930bbe7b0ed37ed70e5df64"
+      ],
       "started_at": "2026-09-26T17:36:56.281789024+02:00",
-      "elapsed_minutes": 0
+      "completed_at": "2026-09-26T17:41:01.745495006+02:00",
+      "elapsed_minutes": 4,
+      "checks": [
+        {
+          "kind": "run",
+          "command": "go test ./pkg/application/ -run 'Evidence|Override|SyncLinksCommit' -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "645fa01b069d90d8b930bbe7b0ed37ed70e5df64",
+          "by": "Claude",
+          "at": "2026-09-26T17:41:01.765397468+02:00",
+          "duration": "916ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.110s\n"
+        }
+      ]
     },
     "task-extras-as-plugins": {
       "status": "pending",
@@ -421,5 +438,5 @@
       "elapsed_minutes": 4
     }
   },
-  "updated_at": "2026-09-26T17:36:56.281789024+02:00"
+  "updated_at": "2026-09-26T17:41:01.745496034+02:00"
 }
