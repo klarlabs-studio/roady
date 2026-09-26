@@ -23,6 +23,7 @@ import (
 	"github.com/felixgeelhaar/roady/pkg/domain/spec"
 	"github.com/felixgeelhaar/roady/pkg/domain/team"
 	reportrender "github.com/felixgeelhaar/roady/pkg/infrastructure/report"
+	"github.com/felixgeelhaar/roady/pkg/storage"
 	"go.klarlabs.de/mcp"
 	mcpserver "go.klarlabs.de/mcp/server"
 )
@@ -615,7 +616,7 @@ func (s *Server) registerTools() {
 		Handler(s.handlePlanReject)
 
 	s.tool("roady_audit_verify").
-		Description("Verify the integrity of the hash-chained audit log. Reports every break rather than only the first.").
+		Description("Verify the integrity of the hash-chained audit log, and that nothing committed at a baseline revision (default HEAD) has been removed. Reports every break rather than only the first.").
 		UIResource("ui://roady/state").
 		Handler(s.handleAuditVerify)
 
@@ -1154,7 +1155,7 @@ func (s *Server) handlePlanReject(ctx context.Context, args PlanMutateArgs) (any
 	return "Plan rejected. It cannot be executed until it is approved again.", nil
 }
 
-func (s *Server) handleAuditVerify(ctx context.Context, args PlanMutateArgs) (any, error) {
+func (s *Server) handleAuditVerify(ctx context.Context, args AuditVerifyArgs) (any, error) {
 	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
 	if err != nil {
 		return mcpErrCause("Failed to load project at the given path.", err), nil
@@ -1170,13 +1171,37 @@ func (s *Server) handleAuditVerify(ctx context.Context, args PlanMutateArgs) (an
 	if err != nil {
 		return mcpErr(fmt.Sprintf("Failed to verify the audit chain: %v", err)), nil
 	}
+	// The chain cannot see a truncated tail; the committed log can.
+	ref := args.Baseline
+	if ref == "" {
+		ref = application.DefaultAuditBaseline
+	}
+	eventsPath, err := svc.Workspace.Repo.ResolvePath(storage.EventsFile)
+	if err != nil {
+		return mcpErrCause("Failed to locate the audit log.", err), nil
+	}
+	baseline, err := svc.Workspace.Audit.VerifyAgainstCommitted(svc.Workspace.Repo.Root(), eventsPath, ref)
+	if err != nil {
+		return mcpErr(fmt.Sprintf("Failed to compare the audit log with %s: %v", ref, err)), nil
+	}
+	for _, v := range baseline.Violations {
+		violations = append(violations, v.Message)
+	}
 	// Reported as data rather than an error: a broken chain is a finding the
 	// caller must act on, not a failed call.
 	return map[string]any{
 		"intact":     len(violations) == 0,
 		"violations": violations,
 		"count":      len(violations),
+		"baseline":   baseline,
 	}, nil
+}
+
+// AuditVerifyArgs adds the committed baseline to the usual project selectors.
+type AuditVerifyArgs struct {
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	Baseline    string `json:"baseline,omitempty" jsonschema:"description=Git revision whose committed events.jsonl must still be fully present (default: HEAD; use the protected branch in CI)"`
 }
 
 func (s *Server) handleSpecValidate(ctx context.Context, args PlanMutateArgs) (any, error) {

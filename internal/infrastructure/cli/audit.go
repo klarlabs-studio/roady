@@ -7,6 +7,7 @@ import (
 	"github.com/felixgeelhaar/roady/internal/infrastructure/wiring"
 	"github.com/felixgeelhaar/roady/pkg/application"
 	"github.com/felixgeelhaar/roady/pkg/domain"
+	"github.com/felixgeelhaar/roady/pkg/storage"
 	"github.com/spf13/cobra"
 )
 
@@ -32,8 +33,21 @@ var auditVerifyCmd = &cobra.Command{
 			return fmt.Errorf("verification failed: %w", err)
 		}
 
+		// The chain cannot see a truncated tail, since nothing references the
+		// newest entries; a committed copy of the log can.
+		eventsPath, err := workspace.Repo.ResolvePath(storage.EventsFile)
+		if err != nil {
+			return fmt.Errorf("resolve audit log: %w", err)
+		}
+		baseline, err := service.VerifyAgainstCommitted(cwd, eventsPath, auditBaseline)
+		if err != nil {
+			return fmt.Errorf("baseline verification failed: %w", err)
+		}
+		violations = append(violations, baseline.Violations...)
+
 		if len(violations) == 0 {
 			fmt.Println("Audit trail is intact and verified.")
+			fmt.Println(baselineNote(baseline))
 			return nil
 		}
 
@@ -62,12 +76,14 @@ var auditVerifyCmd = &cobra.Command{
 			{domain.KindMissingParent, "removed (an entry that later entries reference is missing)"},
 			{domain.KindUnknownAlgo, "written with an algorithm this build cannot verify"},
 			{domain.KindLegacyUnverifiable, "predating hash_algo, unverifiable either way"},
+			{domain.KindRemovedSinceBaseline, "removed since " + baseline.Ref + " (committed, now missing)"},
 		} {
 			if n := counts[row.kind]; n > 0 {
 				fmt.Printf("  %4d  %s\n", n, row.label)
 			}
 		}
 		fmt.Println("\n" + auditVerdict(counts))
+		fmt.Println(baselineNote(baseline))
 		os.Exit(1)
 		return nil
 	},
@@ -100,7 +116,20 @@ func auditVerdict(counts map[domain.ViolationKind]int) string {
 	}
 }
 
+// baselineNote says what the comparison with committed history covered, so a
+// clean result is never read as ruling out a truncation it did not check.
+func baselineNote(b application.BaselineCheck) string {
+	if b.Checked {
+		return fmt.Sprintf("Compared with the log committed at %s: every committed entry is accounted for unless reported above.", b.Ref)
+	}
+	return fmt.Sprintf("Not compared with committed history (%s), so removal of the newest entries cannot be ruled out. Pass --baseline <ref> in a git repository.", b.Reason)
+}
+
+var auditBaseline string
+
 func init() {
+	auditVerifyCmd.Flags().StringVar(&auditBaseline, "baseline", application.DefaultAuditBaseline,
+		"Git revision whose committed events.jsonl must still be fully present (e.g. origin/main in CI; empty to skip)")
 	auditCmd.AddCommand(auditVerifyCmd)
 	RootCmd.AddCommand(auditCmd)
 }

@@ -366,7 +366,7 @@ func TestParityHandlers_ReturnResults(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("audit verify reports findings as data", func(t *testing.T) {
-		res, err := server.handleAuditVerify(ctx, PlanMutateArgs{})
+		res, err := server.handleAuditVerify(ctx, AuditVerifyArgs{})
 		if err != nil {
 			t.Fatalf("handleAuditVerify: %v", err)
 		}
@@ -442,7 +442,7 @@ func TestParityHandlers_ReturnResults(t *testing.T) {
 func TestAuditVerify_AgreesWithTheCLIVerifier(t *testing.T) {
 	server := setupCoordinatorTestServer(t)
 
-	res, err := server.handleAuditVerify(context.Background(), PlanMutateArgs{})
+	res, err := server.handleAuditVerify(context.Background(), AuditVerifyArgs{})
 	if err != nil {
 		t.Fatalf("handleAuditVerify: %v", err)
 	}

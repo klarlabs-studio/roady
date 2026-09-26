@@ -67,6 +67,13 @@ func (r *FilesystemRepository) loadEvents(dedupe bool) ([]domain.Event, error) {
 		return nil, fmt.Errorf("failed to read events file: %w", err)
 	}
 
+	return ParseEvents(data, dedupe), nil
+}
+
+// ParseEvents decodes an events.jsonl body. It is shared by the working-copy
+// loader and by verification against a committed copy of the log, so both
+// read the file the same way.
+func ParseEvents(data []byte, dedupe bool) []domain.Event {
 	// events.jsonl is append-only and merged with `merge=union` (see
 	// .gitattributes), so a merge can reproduce a line that both branches
 	// already had. Deduplicating by event ID here keeps projections —
@@ -94,5 +101,5 @@ func (r *FilesystemRepository) loadEvents(dedupe bool) ([]domain.Event, error) {
 		events = append(events, e)
 	}
 
-	return events, nil
+	return events
 }

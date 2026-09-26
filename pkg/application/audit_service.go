@@ -5,6 +5,7 @@ import (
 
 	"github.com/felixgeelhaar/roady/pkg/domain"
 	"github.com/felixgeelhaar/roady/pkg/domain/provenance"
+	"github.com/felixgeelhaar/roady/pkg/storage"
 	"github.com/google/uuid"
 )
 
@@ -97,7 +98,27 @@ func (s *AuditService) VerifyIntegrityDetailed() ([]domain.ChainViolation, error
 	if err != nil {
 		return nil, err
 	}
+	return domain.VerifyChainDetailed(chainEntries(events)), nil
+}
 
+// VerifyAgainstBaseline reports entries of a committed copy of the log that
+// are missing from the working copy — the truncation VerifyIntegrityDetailed
+// cannot see, since nothing references the newest entries. baseline is the raw
+// events.jsonl body at the committed revision named by baselineName.
+func (s *AuditService) VerifyAgainstBaseline(baseline []byte, baselineName string) ([]domain.ChainViolation, error) {
+	load := s.repo.LoadEvents
+	if raw, ok := s.repo.(rawEventLoader); ok {
+		load = raw.LoadEventsRaw
+	}
+	current, err := load()
+	if err != nil {
+		return nil, err
+	}
+	committed := storage.ParseEvents(baseline, false)
+	return domain.MissingFromBaseline(chainEntries(committed), chainEntries(current), baselineName), nil
+}
+
+func chainEntries(events []domain.Event) []domain.ChainEntry {
 	entries := make([]domain.ChainEntry, 0, len(events))
 	for i := range events {
 		e := events[i]
@@ -110,8 +131,7 @@ func (s *AuditService) VerifyIntegrityDetailed() ([]domain.ChainViolation, error
 			Matches:    e.HashMatches(),
 		})
 	}
-
-	return domain.VerifyChainDetailed(entries), nil
+	return entries
 }
 
 // GetVelocity returns the average verified tasks per day over the last 7 days.

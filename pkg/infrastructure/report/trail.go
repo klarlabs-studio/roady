@@ -40,7 +40,7 @@ func writeTrailIntegrity(b *strings.Builder, t *domainaudit.Trail) {
 	case !t.Integrity.CheckedChain:
 		b.WriteString("**Not checked** — chain verification was unavailable.\n\n")
 	case t.Integrity.Verified:
-		fmt.Fprintf(b, "**Verified.** The hash chain over %d recorded events is intact; no entry has been altered or removed since it was written.\n\n",
+		fmt.Fprintf(b, "**Verified.** The hash chain over %d recorded events is intact: no entry has been altered, and none that a later entry references has been removed. Removal of the newest entries is only detectable against committed history (`roady audit verify --baseline <ref>`).\n\n",
 			t.Integrity.EventsInLog)
 	default:
 		b.WriteString("**FAILED.** The event log does not verify:\n\n")
@@ -151,8 +151,10 @@ func writeTrailEntries(b *strings.Builder, t *domainaudit.Trail) {
 func writeTrailLimits(b *strings.Builder) {
 	b.WriteString("## What this document attests\n\n")
 	b.WriteString("This trail is assembled from Roady's hash-chained event log. When chain\n")
-	b.WriteString("integrity verifies, the entries above are a complete and unaltered record of\n")
-	b.WriteString("what was written at the time.\n\n")
+	b.WriteString("integrity verifies, the entries above are unaltered, and no entry that a later\n")
+	b.WriteString("one references is missing. The chain carries no secret, so it cannot show on its\n")
+	b.WriteString("own that the newest entries were not removed: that is established by comparing\n")
+	b.WriteString("with a committed copy of the log (`roady audit verify --baseline origin/main`).\n\n")
 	b.WriteString("**It is not proof of identity.** Actor, agent, and session values are asserted\n")
 	b.WriteString("by the caller and are never authenticated. This document attests to what was\n")
 	b.WriteString("claimed, not to who acted.\n")

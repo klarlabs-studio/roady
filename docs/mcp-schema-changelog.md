@@ -6,6 +6,17 @@
 - **Minor** (1.x.0): New optional fields (`omitempty`), new tools, fields deprecated
 - **Major** (x.0.0): Required fields added/removed, tool signatures changed
 
+## v3.6.0 — Audit baseline
+
+**Minor**: a new optional field, no existing signature changed.
+
+### Added
+
+- `roady_audit_verify` takes an optional `baseline` (a git revision, default
+  `HEAD`) and additionally reports entries of the log committed at that
+  revision that are missing now. The result gains `baseline`: the revision,
+  whether it was checked, and why not when it was not.
+
 ## v3.2.0 — Subagent dispatch
 
 **Minor**: a new tool, no existing signature changed.

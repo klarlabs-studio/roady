@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`roady audit verify` detects entries removed from the end of the log.**
+  Nothing references the newest entries, so truncating the tail left the chain
+  internally consistent and verification answered "intact". Verify now also
+  checks that every entry of the log committed at a baseline revision is still
+  present (`--baseline`, default `HEAD`; use `origin/main` in CI), reports
+  missing ones as removed, and says when no committed baseline was available
+  instead of implying it checked. `roady_audit_verify` takes the same optional
+  `baseline` and returns what it compared against. The trail and
+  docs/audit-grc.md no longer claim completeness the chain alone cannot show.
+
 - **`roady setup claude-code` registers the MCP server where Claude Code
   reads it.** It wrote `mcpServers` to `~/.claude/settings.local.json`, which
   Claude Code does not read for MCP servers, and skipped silently when that
