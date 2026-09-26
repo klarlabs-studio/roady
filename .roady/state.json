@@ -1,6 +1,6 @@
 {
   "project_id": "agent-handoff",
-  "version": 203,
+  "version": 206,
   "task_states": {
     "task-acceptance-checks": {
       "status": "done",
@@ -196,11 +196,28 @@
       "elapsed_minutes": 0
     },
     "task-guarded-fields": {
-      "status": "in_progress",
+      "status": "done",
       "path": "",
       "owner": "Claude",
+      "evidence": [
+        "Commit: 05970dcd3dceaf5f29eec25678598b98f0eaeb94"
+      ],
       "started_at": "2026-09-26T18:07:32.474265522+02:00",
-      "elapsed_minutes": 0
+      "completed_at": "2026-09-26T18:11:58.641354161+02:00",
+      "elapsed_minutes": 4,
+      "checks": [
+        {
+          "kind": "run",
+          "command": "go test ./pkg/application/ -run 'Loosen|CheckChanges|CheckChange|Locking|SpecLockNotices|RemovingStartedCheck' -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "05970dcd3dceaf5f29eec25678598b98f0eaeb94",
+          "by": "Claude",
+          "at": "2026-09-26T18:11:58.738216554+02:00",
+          "duration": "962ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.020s\n"
+        }
+      ]
     },
     "task-harness-importers": {
       "status": "pending",
@@ -478,5 +495,5 @@
       "elapsed_minutes": 4
     }
   },
-  "updated_at": "2026-09-26T18:07:32.474265522+02:00"
+  "updated_at": "2026-09-26T18:11:58.641355612+02:00"
 }

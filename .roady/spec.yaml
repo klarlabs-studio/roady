@@ -282,6 +282,8 @@ features:
           priority: high
           estimate: 1d
           depends_on: []
+          check:
+            run: go test ./pkg/application/ -run 'Loosen|CheckChanges|CheckChange|Locking|SpecLockNotices|RemovingStartedCheck' -count=1
         - id: markdown-importer
           title: Markdown import extracts requirements, not just headings
           description: 'parseMarkdownFile only turns ''## '' headings into features and never creates requirements, so a normal PRD becomes ''Implement Overview''. Treat ###-sections as features and list items as requirements, skip overview-style sections, keep doc:line. Done when: the invoice-tool PRD from the evaluation imports as 3 features and 6 requirements.'
