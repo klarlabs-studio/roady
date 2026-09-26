@@ -1,6 +1,6 @@
 {
   "project_id": "agent-handoff",
-  "version": 240,
+  "version": 241,
   "task_states": {
     "task-acceptance-checks": {
       "status": "verified",
@@ -329,8 +329,10 @@
       ]
     },
     "task-instructions-and-skill": {
-      "status": "pending",
+      "status": "in_progress",
       "path": "",
+      "owner": "Claude",
+      "started_at": "2026-09-26T22:01:49.712047697+02:00",
       "elapsed_minutes": 0
     },
     "task-leased-claims": {
@@ -670,5 +672,5 @@
       "elapsed_minutes": 4
     }
   },
-  "updated_at": "2026-09-26T21:57:39.322513821+02:00"
+  "updated_at": "2026-09-26T22:01:49.712047697+02:00"
 }

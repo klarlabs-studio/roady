@@ -62,47 +62,35 @@ func TestMCPHTTPTransport(t *testing.T) {
 
 	waitForHTTP(t, addr, 5*time.Second)
 
-	c := &wireClient{url: "http://" + addr + "/mcp"}
-	raw := c.call(t, "initialize", map[string]any{
-		"protocolVersion": "2025-06-18",
-		"clientInfo": map[string]any{
-			"name":    "roady-test",
-			"version": "0.0.0",
-		},
-		"capabilities": map[string]any{},
-	})
-	var resp jsonRPCResponse
-	if err := json.Unmarshal(raw, &resp); err != nil {
-		t.Fatalf("decode initialize: %v (%s)", err, raw)
+	// roady serves stateless Streamable HTTP (MCP 2026-07-28), which retires
+	// the initialize handshake: a conforming client discovers the server and
+	// sends Mcp-Method and the protocol version on every request. The mcp-go
+	// client's Connect is that client. A hand-written 2024-11-05 initialize is
+	// refused, correctly, and is what this test used to send.
+	tr, err := client.NewHTTPTransport("http://" + addr)
+	if err != nil {
+		t.Fatalf("http transport: %v", err)
 	}
-	if resp.Error != nil {
-		t.Fatalf("initialize error: %v", resp.Error.Message)
-	}
-	if resp.Result == nil {
-		t.Fatalf("initialize missing result")
-	}
-	var result map[string]any
-	if err := json.Unmarshal(*resp.Result, &result); err != nil {
-		t.Fatalf("unmarshal result: %v", err)
-	}
+	c := client.New(tr, client.WithTimeout(10*time.Second))
+	defer func() { _ = c.Close() }()
 
-	serverInfo := result["serverInfo"].(map[string]any)
-	if serverInfo["version"] != "test" {
-		t.Fatalf("unexpected version: %v", serverInfo["version"])
+	info, err := c.Connect(ctx)
+	if err != nil {
+		t.Fatalf("connect: %v", err)
 	}
-	capabilities := result["capabilities"].(map[string]any)
-	if _, ok := capabilities["tools"]; !ok {
+	if info.Version != "test" {
+		t.Fatalf("unexpected version: %v", info.Version)
+	}
+	if !info.Capabilities.Tools {
 		t.Fatalf("expected tools capability")
 	}
 
-	c.notify(t, "notifications/initialized")
-	raw = c.call(t, "tools/list", map[string]any{})
-	resp = jsonRPCResponse{}
-	if err := json.Unmarshal(raw, &resp); err != nil {
-		t.Fatalf("decode tools/list: %v (%s)", err, raw)
+	tools, err := c.ListTools(ctx)
+	if err != nil {
+		t.Fatalf("tools/list: %v", err)
 	}
-	if resp.Error != nil {
-		t.Fatalf("tools/list error: %v", resp.Error.Message)
+	if len(tools) == 0 {
+		t.Fatalf("tools/list returned no tools")
 	}
 }
 

@@ -3,6 +3,7 @@ package sdk
 import (
 	"context"
 	"fmt"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -142,9 +143,9 @@ func TestIntegrationInitGetSpec(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	info, err := c.Initialize(ctx)
+	info, err := c.Connect(ctx)
 	if err != nil {
-		t.Fatalf("initialize: %v", err)
+		t.Fatalf("connect: %v", err)
 	}
 	if !info.Capabilities.Tools {
 		t.Fatalf("expected tools capability")
@@ -193,5 +194,79 @@ func TestIntegrationInitGetSpec(t *testing.T) {
 	// Compatible should pass for current SDK
 	if err := c.Compatible(ctx); err != nil {
 		t.Fatalf("compatible: %v", err)
+	}
+}
+
+// The SDK against roady's own HTTP server, as a real caller runs it.
+//
+// roady's HTTP transport is mcp-go's stateless Streamable HTTP (MCP
+// 2026-07-28), which retires the initialize handshake: a client discovers the
+// server and every request carries Mcp-Method and the protocol version. The
+// SDK used to call Initialize, the legacy handshake, and nothing exercised it
+// over HTTP — the stdio test above cannot see a transport-level refusal.
+func TestIntegrationConnectOverHTTP(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test in short mode")
+	}
+
+	root := findRepoRoot(t)
+	tempDir := t.TempDir()
+	binPath := filepath.Join(tempDir, "roady")
+	build := exec.Command("go", "build", "-o", binPath, "./cmd/roady")
+	build.Dir = root
+	if out, err := build.CombinedOutput(); err != nil {
+		t.Fatalf("build roady: %v\n%s", err, out)
+	}
+
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	addr := ln.Addr().String()
+	_ = ln.Close()
+
+	srv := exec.Command(binPath, "mcp", "--transport", "http", "--addr", addr)
+	srv.Dir = tempDir
+	srv.Env = append(os.Environ(), "ROADY_AI_PROVIDER=mock", "ROADY_AI_MODEL=test")
+	if err := srv.Start(); err != nil {
+		t.Fatalf("start roady: %v", err)
+	}
+	t.Cleanup(func() { _ = srv.Process.Kill(); _ = srv.Wait() })
+
+	deadline := time.Now().Add(15 * time.Second)
+	for {
+		conn, derr := net.Dial("tcp", addr)
+		if derr == nil {
+			_ = conn.Close()
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("roady HTTP server did not come up")
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+
+	transport, err := client.NewHTTPTransport("http://" + addr)
+	if err != nil {
+		t.Fatalf("http transport: %v", err)
+	}
+	c := NewClient(transport, WithTimeout(30*time.Second))
+	defer func() { _ = c.Close() }()
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	info, err := c.Connect(ctx)
+	if err != nil {
+		t.Fatalf("connect over HTTP: %v", err)
+	}
+	if !info.Capabilities.Tools {
+		t.Fatalf("expected tools capability")
+	}
+	msg, err := c.Init(ctx, "test-sdk-http")
+	if err != nil {
+		t.Fatalf("init over HTTP: %v", err)
+	}
+	if !strings.Contains(msg, "test-sdk-http") {
+		t.Fatalf("unexpected init result: %s", msg)
 	}
 }
