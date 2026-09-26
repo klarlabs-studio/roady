@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/felixgeelhaar/roady/pkg/application"
+	"github.com/felixgeelhaar/roady/pkg/domain"
 	"github.com/felixgeelhaar/roady/pkg/domain/planning"
 )
 
@@ -156,5 +157,71 @@ func TestVerifyWithoutCheckIsUnchanged(t *testing.T) {
 	}
 	if got := repo.State.TaskStates["t1"].Status; got != planning.StatusVerified {
 		t.Fatalf("expected verified, got %s", got)
+	}
+}
+
+func evidenceService(check *planning.Check, evidence ...string) (*application.TaskService, *MockRepo, *fakeRunner) {
+	svc, repo, runner := checkedService(planning.StatusDone, check)
+	repo.Policy = &domain.PolicyConfig{VerifyRequiresEvidence: true}
+	tr := repo.State.TaskStates["t1"]
+	tr.Evidence = evidence
+	repo.State.TaskStates["t1"] = tr
+	return svc, repo, runner
+}
+
+func TestEvidencePolicyRequiresCheckAndCommit(t *testing.T) {
+	svc, repo, _ := evidenceService(nil)
+	err := svc.TransitionTask("t1", "verify", "agent", "")
+	var ev *application.EvidenceRequiredError
+	if !errors.As(err, &ev) || len(ev.Missing) != 2 {
+		t.Fatalf("expected both check and commit reported missing, got %v", err)
+	}
+	if repo.State.TaskStates["t1"].Status != planning.StatusDone {
+		t.Fatal("a refused verify must leave the task done")
+	}
+}
+
+// A missing commit is found before the check runs, so a refusal does not cost
+// a test suite.
+func TestEvidencePolicyRefusesBeforeRunningCheck(t *testing.T) {
+	svc, _, runner := evidenceService(&planning.Check{Run: "make test"})
+	var ev *application.EvidenceRequiredError
+	if err := svc.TransitionTask("t1", "verify", "agent", ""); !errors.As(err, &ev) {
+		t.Fatalf("expected a missing-commit refusal, got %v", err)
+	}
+	if len(runner.calls) != 0 {
+		t.Errorf("check ran although verification was already refused: %v", runner.calls)
+	}
+}
+
+func TestEvidencePolicyAcceptsCommitAndPassingCheck(t *testing.T) {
+	for _, commit := range []string{"Commit: 84924d29fd01dc3660fd8c7a9b5a00b67d984479", "8cc57d2"} {
+		svc, repo, _ := evidenceService(&planning.Check{Run: "make test"}, commit)
+		if err := svc.TransitionTask("t1", "verify", "agent", ""); err != nil {
+			t.Fatalf("evidence %q: %v", commit, err)
+		}
+		if repo.State.TaskStates["t1"].Status != planning.StatusVerified {
+			t.Fatalf("evidence %q: expected verified", commit)
+		}
+	}
+}
+
+func TestOverrideLiftsMissingEvidenceButNotAFailingCheck(t *testing.T) {
+	svc, repo, runner := evidenceService(&planning.Check{Run: "make test"}, "8cc57d2")
+	runner.exit = 1
+	var failed *application.CheckFailedError
+	if err := svc.VerifyWithOverride(context.Background(), "t1", "felix", "shipped anyway"); !errors.As(err, &failed) {
+		t.Fatalf("an override must not verify over a failing check, got %v", err)
+	}
+
+	svc, repo, _ = evidenceService(nil)
+	if err := svc.VerifyWithOverride(context.Background(), "t1", "felix", ""); err == nil {
+		t.Fatal("an override without a reason must be refused")
+	}
+	if err := svc.VerifyWithOverride(context.Background(), "t1", "felix", "verified by hand in staging"); err != nil {
+		t.Fatalf("override: %v", err)
+	}
+	if repo.State.TaskStates["t1"].Status != planning.StatusVerified {
+		t.Fatal("expected verified after override")
 	}
 }

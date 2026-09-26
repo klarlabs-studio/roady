@@ -89,6 +89,9 @@ func (s *TaskService) TransitionTask(taskID string, event string, actor string, 
 		})
 
 	case "verify":
+		if err := s.ensureEvidence(taskID); err != nil {
+			return err
+		}
 		check, err := s.ensureCheckPassed(ctx, taskID, actor)
 		if err != nil {
 			return err
@@ -325,6 +328,9 @@ func (s *TaskService) ReopenTask(ctx context.Context, taskID string) error {
 func (s *TaskService) VerifyTask(ctx context.Context, taskID, verifier string) error {
 	if ctx == nil {
 		ctx = context.Background()
+	}
+	if err := s.ensureEvidence(taskID); err != nil {
+		return err
 	}
 	if _, err := s.ensureCheckPassed(ctx, taskID, verifier); err != nil {
 		return err

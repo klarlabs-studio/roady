@@ -61,5 +61,40 @@ It does not trust an earlier pass: verification is a claim about the current
 state. A `manual` check needs a confirmation already recorded with
 `roady task check <id> --confirm`.
 
-A task without a check verifies as before. Requiring evidence for every task is
-a separate policy (see the `evidence-gated-verify` requirement).
+## Requiring evidence: `verify_requires_evidence`
+
+With this policy on, **verified means proven**. A task can be verified only
+when it has
+
+1. an acceptance check that passes now, and
+2. a linked commit — recorded by `roady git sync` from a `[roady:<task-id>]`
+   marker, or passed with `roady task complete <id> --evidence <sha>`.
+
+```yaml
+# .roady/policy.yaml
+verify_requires_evidence: true
+```
+
+`roady init` turns it on for new projects. Existing projects keep verifying the
+old way until they add the line, so an upgrade never refuses work that was
+already accepted.
+
+Missing evidence is reported before the check runs, so a refusal does not cost
+a test suite. `roady git sync` links a marked commit to a task that was
+completed before the commit existed, rather than skipping it.
+
+### Overrides
+
+A person can verify without the evidence, on the record:
+
+```bash
+roady task verify task-b --override "reviewed by hand; no automated test possible"
+```
+
+The audit log records `override: true` and the reason, so a trail shows the
+task was accepted on judgement rather than evidence. An override lifts only
+*missing* evidence — never a check that runs and fails, since that has just
+shown the task is not done. Overrides are CLI-only; there is no MCP equivalent.
+
+Without the policy, a task that has a check is still gated on it; a task
+without one verifies as before.

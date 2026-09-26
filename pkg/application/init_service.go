@@ -74,8 +74,9 @@ func (s *InitService) InitializeProject(name string) error {
 
 	// Create a default policy
 	defaultPolicy := &domain.PolicyConfig{
-		MaxWIP:  3,
-		AllowAI: true,
+		MaxWIP:                 3,
+		AllowAI:                true,
+		VerifyRequiresEvidence: true,
 	}
 	if err := s.repo.SavePolicy(defaultPolicy); err != nil {
 		return err

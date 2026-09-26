@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/felixgeelhaar/roady/pkg/domain"
+	"github.com/felixgeelhaar/roady/pkg/domain/planning"
 )
 
 type GitService struct {
@@ -58,6 +59,18 @@ func (s *GitService) SyncMarkers(n int) ([]string, error) {
 			if end != -1 {
 				taskID := message[start : start+end]
 
+				// A task completed before its commit existed still needs the
+				// commit as evidence: skipping it left completed work with no
+				// linked commit, which verify_requires_evidence then refused.
+				if linked, done := s.linkCommitToFinishedTask(taskID, hash); done {
+					if linked {
+						results = append(results, fmt.Sprintf("Task %s: linked %s as evidence (already %s)", taskID, hash[:8], s.statusOf(taskID)))
+					} else {
+						results = append(results, fmt.Sprintf("Task %s: %s already linked", taskID, hash[:8]))
+					}
+					continue
+				}
+
 				err := s.taskSvc.TransitionTask(taskID, "complete", "git-automation", "Commit: "+hash)
 				if err != nil {
 					results = append(results, fmt.Sprintf("Task %s: skip (%v)", taskID, err))
@@ -69,4 +82,44 @@ func (s *GitService) SyncMarkers(n int) ([]string, error) {
 	}
 
 	return results, nil
+}
+
+// linkCommitToFinishedTask records hash as evidence on a task that is already
+// done or verified. done reports whether the task was finished (so the caller
+// should not try to complete it); linked reports whether evidence was added,
+// false when this commit was already recorded.
+func (s *GitService) linkCommitToFinishedTask(taskID, hash string) (linked, done bool) {
+	state, err := s.repo.LoadState()
+	if err != nil || state == nil {
+		return false, false
+	}
+	result, ok := state.TaskStates[taskID]
+	if !ok || (result.Status != planning.StatusDone && result.Status != planning.StatusVerified) {
+		return false, false
+	}
+	evidence := "Commit: " + hash
+	for _, e := range result.Evidence {
+		if e == evidence {
+			return false, true
+		}
+	}
+	state.AddEvidence(taskID, evidence)
+	if err := s.repo.SaveState(state); err != nil {
+		return false, false
+	}
+	if s.taskSvc != nil && s.taskSvc.audit != nil {
+		_ = s.taskSvc.audit.Log("task.evidence", "git-automation", map[string]any{
+			"task_id":  taskID,
+			"evidence": evidence,
+		})
+	}
+	return true, true
+}
+
+func (s *GitService) statusOf(taskID string) string {
+	state, err := s.repo.LoadState()
+	if err != nil || state == nil {
+		return "finished"
+	}
+	return string(state.GetTaskStatus(taskID))
 }

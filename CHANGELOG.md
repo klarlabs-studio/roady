@@ -21,8 +21,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `roady_task_check` runs a check over MCP. A check is part of the spec hash,
   so loosening one reads as spec drift; specs without checks keep their hash.
   See docs/acceptance-checks.md.
+- **`verify_requires_evidence`: verified means proven.** With the policy on,
+  verify needs a passing acceptance check and a linked commit; missing
+  evidence is reported before any check runs. A person can verify without it
+  via `roady task verify <id> --override "<reason>"`, recorded in the audit
+  log — never over a failing check, and not over MCP. `roady init` turns the
+  policy on for new projects; existing projects are unaffected until they add
+  it. Roady's own `.roady/policy.yaml` turns it on.
 
 ### Fixed
+
+- **`roady git sync` links a commit to a task finished before it.** A
+  `[roady:<id>]` marker on a task already done was skipped as an invalid
+  transition, so completing a task and then committing left it with no linked
+  commit. The commit is now recorded as evidence (once) without changing the
+  task's status.
 
 - **`roady audit verify` detects entries removed from the end of the log.**
   Nothing references the newest entries, so truncating the tail left the chain

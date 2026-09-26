@@ -293,7 +293,10 @@
           "priority": "high",
           "estimate": "1d",
           "depends_on": null,
-          "source": {}
+          "source": {},
+          "check": {
+            "run": "go test ./pkg/application/ -run 'Evidence|Override|SyncLinksCommit' -count=1"
+          }
         },
         {
           "id": "drift-reruns-checks",

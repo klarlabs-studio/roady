@@ -239,6 +239,8 @@ features:
         agent cannot move a task to verified without evidence, over CLI or MCP.'
       priority: high
       estimate: 1d
+      check:
+        run: 'go test ./pkg/application/ -run ''Evidence|Override|SyncLinksCommit'' -count=1'
     - id: drift-reruns-checks
       title: Drift re-runs the checks of verified tasks
       description: '`roady drift detect --checks` re-runs acceptance checks of verified tasks; a failing

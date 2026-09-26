@@ -21,6 +21,7 @@ var taskCmd = &cobra.Command{
 func createTaskCommand(use, short, event string) *cobra.Command {
 	var evidence string
 	var rateID string
+	var override string
 	cmd := &cobra.Command{
 		Use:   use,
 		Short: short,
@@ -50,6 +51,12 @@ func createTaskCommand(use, short, event string) *cobra.Command {
 				if err != nil {
 					return MapError(fmt.Errorf("failed to start task: %w", err))
 				}
+			} else if event == "verify" && override != "" {
+				// A person verifying without the evidence the policy asks
+				// for; recorded as an override with its reason.
+				if err := service.VerifyWithOverride(cmd.Context(), taskID, actor, override); err != nil {
+					return MapError(fmt.Errorf("failed to verify task: %w", err))
+				}
 			} else {
 				err := service.TransitionTask(taskID, event, actor, evidence)
 				if err != nil {
@@ -63,6 +70,9 @@ func createTaskCommand(use, short, event string) *cobra.Command {
 	cmd.Flags().StringVarP(&evidence, "evidence", "e", "", "Evidence for the task completion (e.g. commit hash, URL)")
 	if event == "start" {
 		cmd.Flags().StringVarP(&rateID, "rate", "r", "", "Rate ID to use for billing")
+	}
+	if event == "verify" {
+		cmd.Flags().StringVar(&override, "override", "", "Verify without the evidence verify_requires_evidence asks for, recording this reason. Does not override a failing check.")
 	}
 	return cmd
 }

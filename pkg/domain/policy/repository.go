@@ -15,6 +15,12 @@ type PolicyConfig struct {
 	// guard: when true, an actor listed there must hold a role permitting
 	// the operation. Off by default so existing projects keep working.
 	EnforceTeamRoles bool `yaml:"enforce_team_roles"`
+	// VerifyRequiresEvidence makes verified mean proven: a task can only be
+	// verified with a passing acceptance check and a linked commit, unless a
+	// person overrides it on the record. Off for existing projects so an
+	// upgrade does not refuse work that was verified the old way; `roady init`
+	// turns it on for new ones.
+	VerifyRequiresEvidence bool `yaml:"verify_requires_evidence"`
 }
 
 // Repository handles persistence of policy configurations.
