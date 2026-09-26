@@ -468,7 +468,10 @@
           "priority": "medium",
           "estimate": "1d",
           "depends_on": [],
-          "source": {}
+          "source": {},
+          "check": {
+            "run": "go test ./pkg/application/ -run Brief -count=1"
+          }
         },
         {
           "id": "leased-claims",

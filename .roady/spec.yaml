@@ -344,6 +344,8 @@ features:
           priority: medium
           estimate: 1d
           depends_on: []
+          check:
+            run: go test ./pkg/application/ -run Brief -count=1
         - id: leased-claims
           title: Task claims with an expiring lease
           description: 'Starting a task claims it for an actor/session with a lease that heartbeats and expires, so crashed agents do not hold tasks and two agents cannot take the same task. Done when: a concurrency test with two agents never double-claims, and an expired claim is released.'
