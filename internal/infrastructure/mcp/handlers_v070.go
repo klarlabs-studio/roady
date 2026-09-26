@@ -10,7 +10,7 @@ import (
 // Org policy handler
 type OrgPolicyArgs struct {
 	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the project (default: current directory)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 func (s *Server) handleOrgPolicy(ctx context.Context, args OrgPolicyArgs) (any, error) {
@@ -58,8 +58,8 @@ func (s *Server) handlePluginList(ctx context.Context, args GetSpecArgs) (any, e
 
 type PluginValidateArgs struct {
 	Name        string `json:"name" jsonschema:"description=Name of the plugin to validate"`
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 func (s *Server) handlePluginValidate(ctx context.Context, args PluginValidateArgs) (any, error) {
@@ -72,8 +72,8 @@ func (s *Server) handlePluginValidate(ctx context.Context, args PluginValidateAr
 
 type PluginStatusArgs struct {
 	Name        string `json:"name,omitempty" jsonschema:"description=Name of the plugin to check (omit for all)"`
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 func (s *Server) handlePluginStatus(ctx context.Context, args PluginStatusArgs) (any, error) {

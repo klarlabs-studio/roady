@@ -66,9 +66,11 @@ type Server struct {
 	svcCacheMu sync.Mutex
 	svcKeys    []string // insertion-order keys for LRU eviction
 
-	// groups is the set of tool groups this server advertises. Populated
-	// from ROADY_MCP_TOOLS; every group when unset. See profiles.go.
+	// groups is the set of tool groups this server registers, and listed
+	// which registered tools tools/list shows (nil: all). Both come from
+	// ROADY_MCP_TOOLS; see profiles.go.
 	groups map[toolGroup]bool
+	listed func(name string) bool
 }
 
 var (
@@ -289,11 +291,12 @@ func NewServer(root string) (*Server, error) {
 	// Resolve the advertised tool surface before registering anything: a bad
 	// ROADY_MCP_TOOLS should fail the server at startup with a message naming
 	// the valid groups, not start a server that quietly lacks tools.
-	groups, err := enabledGroups(os.Getenv("ROADY_MCP_TOOLS"))
+	surface, err := resolveSurface(os.Getenv("ROADY_MCP_TOOLS"))
 	if err != nil {
 		return nil, fmt.Errorf("ROADY_MCP_TOOLS: %w", err)
 	}
-	s.groups = groups
+	s.groups = surface.groups
+	s.listed = surface.listed
 
 	s.registerTools()
 	s.registerApps()
@@ -303,112 +306,112 @@ func NewServer(root string) (*Server, error) {
 
 type InitArgs struct {
 	Name        string `json:"name" jsonschema:"description=The name of the project"`
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 type UpdatePlanArgs struct {
 	Tasks       []planning.Task `json:"tasks" jsonschema:"description=The list of tasks to define the plan"`
-	ProjectPath string          `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string          `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string          `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string          `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 // Args structs for handlers that previously used struct{}
 
 type GetSpecArgs struct {
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 type GetPlanArgs struct {
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 type GetStateArgs struct {
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 type GeneratePlanArgs struct {
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 type DetectDriftArgs struct {
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 type ApprovePlanArgs struct {
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 type ExplainSpecArgs struct {
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 type ExplainDriftArgs struct {
 	Patch       bool   `json:"patch,omitempty" jsonschema:"description=Ask for a unified diff that closes the drift instead of an explanation. Intent and staleness drift are excluded: they are decisions about what to build, not changes a diff can make."`
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 type AcceptDriftArgs struct {
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 type GetUsageArgs struct {
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 type CheckPolicyArgs struct {
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 type ForecastArgs struct {
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 type GitSyncArgs struct {
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 type SuggestPrioritiesArgs struct {
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 type ReviewSpecArgs struct {
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 type GetSnapshotArgs struct {
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 type GetReadyTasksArgs struct {
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 type GetBlockedTasksArgs struct {
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 type GetInProgressTasksArgs struct {
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 // TasksArgs supersedes the three legacy roady_get_*_tasks tools by adding a
@@ -420,8 +423,8 @@ type TasksArgs struct {
 	Limit       int    `json:"limit,omitempty" jsonschema:"description=Maximum tasks to return. Defaults to 50 and is capped at 200."`
 	Offset      int    `json:"offset,omitempty" jsonschema:"description=Number of tasks to skip, for paging through a large plan."`
 	Detail      bool   `json:"detail,omitempty" jsonschema:"description=Include each task's full description. Off by default because descriptions dominate the payload."`
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 // DispatchTaskArgs hands a ready task to a subagent.
@@ -430,8 +433,8 @@ type DispatchTaskArgs struct {
 	Agent       string `json:"agent" jsonschema:"description=Name of the subagent taking the task. Recorded as the owner and against the completion transition."`
 	Session     string `json:"session_id,omitempty" jsonschema:"description=Session ID to record the subagent's work under, so its events group separately from the dispatcher's."`
 	DryRun      bool   `json:"dry_run,omitempty" jsonschema:"description=Build the brief without claiming the task."`
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 // AuditTrailArgs selects what to build an evidence trail about. Exactly one
@@ -442,8 +445,8 @@ type AuditTrailArgs struct {
 	Agent       string `json:"agent,omitempty" jsonschema:"description=Only include events from this agent (e.g. claude-code)."`
 	Session     string `json:"session_id,omitempty" jsonschema:"description=Only include events from this session ID."`
 	Since       string `json:"since,omitempty" jsonschema:"description=Only include events since this point: 7d, 2w, or an absolute date like 2026-07-01."`
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 // CostEstimateArgs are the inputs for roady_cost_estimate. Operation defaults
@@ -451,29 +454,29 @@ type AuditTrailArgs struct {
 // overridden.
 type CostEstimateArgs struct {
 	Operation   string `json:"operation,omitempty" jsonschema:"description=AI operation to estimate. Defaults to generate_plan.,enum=generate_plan,enum=smart_decompose,enum=review_spec,enum=explain_drift,enum=query"`
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 type SmartDecomposeArgs struct {
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 type WorkspacePushArgs struct {
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 type WorkspacePullArgs struct {
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 type SyncArgs struct {
 	PluginPath  string `json:"plugin_path" jsonschema:"description=Path to the syncer plugin binary"`
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 func (s *Server) registerTools() {
@@ -558,12 +561,12 @@ func (s *Server) registerTools() {
 		Handler(s.handleCapture)
 
 	s.tool("roady_plan_import").
-		Description("Turn a plan file an agent harness wrote into roady tasks: Claude Code plan mode, Cursor, Gemini CLI (markdown), Kiro tasks.md, or a Codex ExecPlan. Each step becomes task-<plan>-<step> citing file:line, chained in order unless parallel. Checked-off steps are skipped unless include_done. Without feature_id the plan becomes a new feature. Applied as a capture: all or nothing, and re-importing an edited plan updates the same tasks. Use dry_run to preview.").
+		Description("Import a plan file (markdown plan, Kiro tasks.md, Codex ExecPlan) as tasks: each step becomes task-<plan>-<step> citing file:line, chained in order unless parallel; checked-off steps skipped unless include_done. Without feature_id the plan becomes a new feature. A capture: all or nothing; re-importing updates the same tasks.").
 		UIResource("ui://roady/plan").
 		Handler(s.handlePlanImport)
 
 	s.tool("roady_task_check").
-		Description("Run a task's acceptance check (the check on its requirement in spec.yaml) and record the result as evidence. Returns passed, exit code, commit and output tail. A failing check is a result, not an error. Manual checks must be confirmed by a person via the CLI and cannot be satisfied here. roady_task_transition with event verify runs the check itself and refuses on failure.").
+		Description("Run a task's acceptance check and record the result as evidence: passed, exit code, commit, output tail. A failing check is a result, not an error. Manual checks need a person (CLI). Transition verify re-runs the check and refuses on failure.").
 		UIResource("ui://roady/state").
 		Handler(s.handleTaskCheck)
 
@@ -1042,8 +1045,8 @@ type ReportArgs struct {
 	Since       string `json:"since,omitempty" jsonschema:"description=Only include changes since this point: 7d, 2w, or an absolute date like 2026-07-01."`
 	Name        string `json:"name,omitempty" jsonschema:"description=Project name for the report header. Defaults to the project directory name."`
 	MaxChanges  int    `json:"max_changes,omitempty" jsonschema:"description=Cap the change list. Defaults to 25."`
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 func (s *Server) handleReport(ctx context.Context, args ReportArgs) (any, error) {
@@ -1091,8 +1094,8 @@ func (s *Server) handleReport(ctx context.Context, args ReportArgs) (any, error)
 
 type SpecAnalyzeArgs struct {
 	Dir         string `json:"dir" jsonschema:"description=Directory of markdown documents to analyze, relative to the project or absolute. Example: docs/"`
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 func (s *Server) handleSpecAnalyze(ctx context.Context, args SpecAnalyzeArgs) (any, error) {
@@ -1135,8 +1138,8 @@ func (s *Server) handleSpecAnalyze(ctx context.Context, args SpecAnalyzeArgs) (a
 // --- Parity handlers: CLI-only operations an agent could not reach ---
 
 type PlanMutateArgs struct {
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 func (s *Server) handlePlanPrune(ctx context.Context, args PlanMutateArgs) (any, error) {
@@ -1219,8 +1222,8 @@ func (s *Server) handleAuditVerify(ctx context.Context, args AuditVerifyArgs) (a
 
 // AuditVerifyArgs adds the committed baseline to the usual project selectors.
 type AuditVerifyArgs struct {
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 	Baseline    string `json:"baseline,omitempty" jsonschema:"description=Git revision whose committed events.jsonl must still be fully present (default: HEAD; use the protected branch in CI)"`
 }
 
@@ -1247,8 +1250,8 @@ func (s *Server) handleSpecValidate(ctx context.Context, args PlanMutateArgs) (a
 
 type SpecImportArgs struct {
 	Path        string `json:"path" jsonschema:"description=Markdown file to import as the spec, relative to the project or absolute."`
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 func (s *Server) handleSpecImport(ctx context.Context, args SpecImportArgs) (any, error) {
@@ -1307,8 +1310,8 @@ func (s *Server) handleTimeline(ctx context.Context, args PlanMutateArgs) (any, 
 
 type DebtWindowArgs struct {
 	WindowDays  int    `json:"window_days,omitempty" jsonschema:"description=How many days of history to include. Defaults to 30."`
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 func (s *Server) handleDebtHistory(ctx context.Context, args DebtWindowArgs) (any, error) {
@@ -1330,8 +1333,8 @@ func (s *Server) handleDebtHistory(ctx context.Context, args DebtWindowArgs) (an
 type DebtScoreArgs struct {
 	Component   string `json:"component,omitempty" jsonschema:"description=Component id to score. Omit for the top debtors across the project."`
 	Limit       int    `json:"limit,omitempty" jsonschema:"description=How many top debtors to return when no component is given. Defaults to 10."`
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 func (s *Server) handleDebtScore(ctx context.Context, args DebtScoreArgs) (any, error) {
@@ -1375,8 +1378,8 @@ func (s *Server) handleSemanticDrift(ctx context.Context, args PlanMutateArgs) (
 type RecordSemanticDriftArgs struct {
 	Judgements  []drift.SemanticJudgement `json:"judgements" jsonschema:"description=One judgement per requirement: requirement_id, agrees, and an explanation when agrees is false."`
 	Questions   []drift.SemanticQuestion  `json:"questions" jsonschema:"description=The questions roady_semantic_drift returned, passed back unchanged."`
-	ProjectPath string                    `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string                    `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string                    `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string                    `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 func (s *Server) handleRecordSemanticDrift(ctx context.Context, args RecordSemanticDriftArgs) (any, error) {
@@ -1534,8 +1537,8 @@ func (s *Server) handleAcceptDrift(ctx context.Context, args AcceptDriftArgs) (a
 type AddFeatureArgs struct {
 	Title       string `json:"title" jsonschema:"description=The title of the new feature"`
 	Description string `json:"description" jsonschema:"description=A detailed description of the feature"`
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 func (s *Server) handleAddFeature(ctx context.Context, args AddFeatureArgs) (any, error) {
@@ -1587,26 +1590,26 @@ func (s *Server) handleApprovePlan(ctx context.Context, args ApprovePlanArgs) (a
 
 type QueryArgs struct {
 	Question    string `json:"question" jsonschema:"description=A natural language question about the project"`
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 type TransitionTaskArgs struct {
 	TaskID      string `json:"task_id" jsonschema:"description=The ID of the task to transition"`
 	Event       string `json:"event" jsonschema:"description=The transition event (start, complete, block, stop, unblock, reopen, verify). verify runs the task's acceptance check and is refused if it fails."`
 	Evidence    string `json:"evidence,omitempty" jsonschema:"description=Optional evidence for the transition (e.g. commit hash)"`
-	Actor       string `json:"actor,omitempty" jsonschema:"description=The actor performing the transition (defaults to ai-agent)"`
-	SessionID   string `json:"session_id,omitempty" jsonschema:"description=Identifier for the agent session performing this transition. Recorded in the audit trail so work can later be traced to a specific run."`
-	Agent       string `json:"agent,omitempty" jsonschema:"description=Name of the agent performing this transition (e.g. claude-code, codex, cursor). Recorded in the audit trail."`
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	Actor       string `json:"actor,omitempty" jsonschema:"description=Who transitions (default ai-agent)"`
+	SessionID   string `json:"session_id,omitempty" jsonschema:"description=Agent session ID; recorded in the audit trail"`
+	Agent       string `json:"agent,omitempty" jsonschema:"description=Agent name (e.g. codex); recorded in the audit trail"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 type AssignTaskArgs struct {
 	TaskID      string `json:"task_id" jsonschema:"description=The ID of the task to assign"`
 	Assignee    string `json:"assignee" jsonschema:"description=The person or agent to assign the task to"`
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 // FlexBool accepts both boolean and string ("true"/"false") JSON values.
@@ -1658,8 +1661,8 @@ type StatusArgs struct {
 	Active      FlexBool `json:"active,omitempty" jsonschema:"description=Show only in-progress tasks"`
 	Limit       FlexInt  `json:"limit,omitempty" jsonschema:"description=Limit number of tasks returned"`
 	JSON        FlexBool `json:"json,omitempty" jsonschema:"description=Return structured JSON output instead of text"`
-	ProjectPath string   `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string   `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string   `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string   `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 func (s *Server) handleAssignTask(ctx context.Context, args AssignTaskArgs) (any, error) {
@@ -2025,6 +2028,7 @@ func (s *Server) serveMiddleware() mcp.ServeOption {
 	return mcp.WithMiddleware(
 		mcp.Recover(),
 		mcp.Timeout(defaultHandlerTimeout),
+		listFilter(s.listed),
 	)
 }
 
@@ -2397,14 +2401,14 @@ func (s *Server) handleSmartDecompose(ctx context.Context, args SmartDecomposeAr
 type TeamAddArgs struct {
 	Name        string `json:"name" jsonschema:"description=The name of the team member"`
 	Role        string `json:"role" jsonschema:"description=The role: admin, member, or viewer"`
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 type TeamRemoveArgs struct {
 	Name        string `json:"name" jsonschema:"description=The name of the team member to remove"`
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 func (s *Server) handleTeamList(ctx context.Context, args GetSpecArgs) (any, error) {
@@ -2451,8 +2455,8 @@ func (s *Server) handleTeamRemove(ctx context.Context, args TeamRemoveArgs) (any
 }
 
 type RateListArgs struct {
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 func (s *Server) handleRateList(ctx context.Context, args RateListArgs) (any, error) {
@@ -2472,8 +2476,8 @@ type RateAddArgs struct {
 	Name        string  `json:"name" jsonschema:"description=Rate name"`
 	HourlyRate  float64 `json:"hourly_rate" jsonschema:"description=Hourly rate amount"`
 	IsDefault   bool    `json:"is_default" jsonschema:"description=Set as default rate"`
-	ProjectPath string  `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string  `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string  `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string  `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 func (s *Server) handleRateAdd(ctx context.Context, args RateAddArgs) (any, error) {
@@ -2501,8 +2505,8 @@ type TaskLogTimeArgs struct {
 	Minutes     int    `json:"minutes" jsonschema:"description=Minutes to log"`
 	RateID      string `json:"rate_id" jsonschema:"description=Rate ID (optional)"`
 	Description string `json:"description" jsonschema:"description=Description (optional)"`
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 func (s *Server) handleTaskLogTime(ctx context.Context, args TaskLogTimeArgs) (any, error) {
@@ -2523,8 +2527,8 @@ type CostReportArgs struct {
 	TaskID      string `json:"task_id" jsonschema:"description=Filter by task ID (optional)"`
 	Period      string `json:"period" jsonschema:"description=Filter by period (optional)"`
 	Format      string `json:"format" jsonschema:"description=Output format: text, json, csv, markdown"`
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 func (s *Server) handleCostReport(ctx context.Context, args CostReportArgs) (any, error) {
@@ -2548,8 +2552,8 @@ func (s *Server) handleCostReport(ctx context.Context, args CostReportArgs) (any
 }
 
 type CostBudgetArgs struct {
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 func (s *Server) handleCostBudget(ctx context.Context, args CostBudgetArgs) (any, error) {
@@ -2569,8 +2573,8 @@ func (s *Server) handleCostBudget(ctx context.Context, args CostBudgetArgs) (any
 
 type RateRemoveArgs struct {
 	ID          string `json:"id" jsonschema:"description=Rate ID to remove"`
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 func (s *Server) handleRateRemove(ctx context.Context, args RateRemoveArgs) (any, error) {
@@ -2589,8 +2593,8 @@ func (s *Server) handleRateRemove(ctx context.Context, args RateRemoveArgs) (any
 
 type RateSetDefaultArgs struct {
 	ID          string `json:"id" jsonschema:"description=Rate ID to set as default"`
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 func (s *Server) handleRateSetDefault(ctx context.Context, args RateSetDefaultArgs) (any, error) {
@@ -2611,8 +2615,8 @@ type RateTaxArgs struct {
 	Name        string  `json:"name" jsonschema:"description=Tax name (e.g., VAT, Sales Tax)"`
 	Percent     float64 `json:"percent" jsonschema:"description=Tax percentage (e.g., 20 for 20%%)"`
 	Included    bool    `json:"included" jsonschema:"description=Tax is included in rate"`
-	ProjectPath string  `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string  `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string  `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string  `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 func (s *Server) handleRateTax(ctx context.Context, args RateTaxArgs) (any, error) {
@@ -2648,8 +2652,8 @@ func orEmpty(s []string) []string {
 type TaskCheckArgs struct {
 	TaskID      string `json:"task_id" jsonschema:"description=The ID of the task whose check to run"`
 	Actor       string `json:"actor,omitempty" jsonschema:"description=Who is running the check (defaults to ai-agent)"`
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 func (s *Server) handleTaskCheck(ctx context.Context, args TaskCheckArgs) (any, error) {
@@ -2676,8 +2680,8 @@ type CaptureArgs struct {
 	Tasks       []application.CaptureTask    `json:"tasks,omitempty" jsonschema:"description=Tasks to add or update"`
 	DryRun      bool                         `json:"dry_run,omitempty" jsonschema:"description=Report what would change without writing"`
 	Actor       string                       `json:"actor,omitempty" jsonschema:"description=Who is capturing (defaults to ai-agent)"`
-	ProjectPath string                       `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string                       `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string                       `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string                       `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 func (s *Server) handleCapture(ctx context.Context, args CaptureArgs) (any, error) {
@@ -2708,8 +2712,8 @@ type PlanImportArgs struct {
 	IncludeDone bool   `json:"include_done,omitempty" jsonschema:"description=Import steps already checked off"`
 	DryRun      bool   `json:"dry_run,omitempty" jsonschema:"description=Report what would change without writing"`
 	Actor       string `json:"actor,omitempty" jsonschema:"description=Who is importing (defaults to ai-agent)"`
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 func (s *Server) handlePlanImport(ctx context.Context, args PlanImportArgs) (any, error) {
@@ -2755,8 +2759,8 @@ func (s *Server) handlePlanImport(ctx context.Context, args PlanImportArgs) (any
 // NextArgs selects whose brief to build.
 type NextArgs struct {
 	Owner       string `json:"owner,omitempty" jsonschema:"description=Whose task to brief on (defaults to ai-agent, the owner MCP transitions record)"`
-	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
-	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 func (s *Server) handleNext(ctx context.Context, args NextArgs) (any, error) {

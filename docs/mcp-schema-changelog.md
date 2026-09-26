@@ -6,6 +6,21 @@
 - **Minor** (1.x.0): New optional fields (`omitempty`), new tools, fields deprecated
 - **Major** (x.0.0): Required fields added/removed, tool signatures changed
 
+## v3.8.0 — Essential surface by default
+
+**Minor**: no tool removed or changed; what `tools/list` shows by default is.
+
+### Changed
+
+- With `ROADY_MCP_TOOLS` unset, `tools/list` returns seven tools —
+  `roady_next`, `roady_capture`, `roady_plan_import`, `roady_task_transition`,
+  `roady_task_check`, `roady_status`, `roady_query` — and every other tool
+  stays callable by name. `ROADY_MCP_TOOLS=all` lists everything, as before;
+  `essential,<group>` adds groups to the list.
+- Shorter descriptions for `project_path` / `project` on every tool, and for
+  `roady_plan_import`, `roady_task_check` and `roady_task_transition`'s
+  `actor`, `agent` and `session_id`.
+
 ## v3.7.0 — Plan import and task brief
 
 **Minor**: new tools, no existing signature changed.

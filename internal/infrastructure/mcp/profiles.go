@@ -143,12 +143,92 @@ var toolGroups = map[string]toolGroup{
 	"roady_audit_verify": groupAudit,
 }
 
+// essentialTools are what an agent needs to work a plan: what to do next,
+// recording intent of any size (or a plan it already wrote), moving a task
+// through its lifecycle, proving it done, and reading the project. About
+// 2.7k tokens of tools/list, against ~19k for everything.
+//
+// It is the default advertised surface. Every other tool stays registered
+// and callable — the SDK and any client that knows a tool's name keep
+// working, and every CLI operation stays reachable — it is just not listed,
+// so an agent does not pay for seventy tools in its prompt to use seven.
+var essentialTools = map[string]bool{
+	"roady_next":            true,
+	"roady_capture":         true,
+	"roady_plan_import":     true,
+	"roady_task_transition": true,
+	"roady_task_check":      true,
+	"roady_status":          true,
+	"roady_query":           true,
+}
+
+// profileEssential names the default surface in ROADY_MCP_TOOLS.
+const profileEssential = "essential"
+
+// toolSurface is what a server registers and what it lists.
+type toolSurface struct {
+	groups map[toolGroup]bool // registered groups
+	// listed decides which registered tools tools/list shows; nil lists all.
+	listed func(name string) bool
+}
+
+// resolveSurface reads ROADY_MCP_TOOLS:
+//
+//   - unset or "essential": everything registered, the essential tools listed
+//   - "essential,<group>...": the same, plus those groups listed
+//   - "all": everything registered and listed
+//   - "<group>,...": only those groups (and core) registered and listed
+func resolveSurface(profile string) (toolSurface, error) {
+	var extra []string
+	essential := strings.TrimSpace(profile) == ""
+	for _, raw := range strings.Split(profile, ",") {
+		switch name := strings.TrimSpace(raw); name {
+		case "":
+		case profileEssential:
+			essential = true
+		default:
+			extra = append(extra, name)
+		}
+	}
+	if !essential {
+		groups, err := enabledGroups(profile)
+		return toolSurface{groups: groups}, err
+	}
+	all, _ := enabledGroups("all")
+	listedGroups := map[toolGroup]bool{}
+	if len(extra) > 0 {
+		g, err := enabledGroups(strings.Join(extra, ","))
+		if err != nil {
+			return toolSurface{}, err
+		}
+		if len(extra) == 1 && extra[0] == "all" {
+			return toolSurface{groups: all}, nil
+		}
+		for name := range g {
+			// enabledGroups always adds core; list it only when asked for.
+			if name != groupCore || containsTrimmed(extra, string(groupCore)) {
+				listedGroups[name] = true
+			}
+		}
+	}
+	return toolSurface{groups: all, listed: func(name string) bool {
+		return essentialTools[name] || listedGroups[toolGroups[name]]
+	}}, nil
+}
+
+func containsTrimmed(list []string, want string) bool {
+	for _, s := range list {
+		if strings.TrimSpace(s) == want {
+			return true
+		}
+	}
+	return false
+}
+
 // enabledGroups resolves a profile string into the set of groups to register.
 //
-// The zero value — an unset ROADY_MCP_TOOLS — enables everything. Trimming the
-// surface is opt-in on purpose: a server that silently stopped advertising
-// tools an existing client already calls would turn a context saving into a
-// broken integration.
+// The zero value enables everything. (An unset ROADY_MCP_TOOLS registers
+// everything too, but lists only the essential tools: see resolveSurface.)
 //
 // Accepted: "all" (default), or a comma-separated list of group names. "core"
 // is always included, because a profile without the spec/plan/execute loop

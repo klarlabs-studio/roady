@@ -148,28 +148,33 @@ roady mcp --transport http --addr :8080
 roady mcp --transport ws --addr :8080
 ```
 
-#### Trimming the advertised surface
+#### The advertised surface
 
-All seventy tools are advertised on every session, and a client pays for each
-one in its prompt whether or not the project has a rate card or a debt ledger.
-`ROADY_MCP_TOOLS` selects which groups are registered:
+A client pays for every listed tool in its prompt. By default the server
+**lists** seven — `roady_next`, `roady_capture`, `roady_plan_import`,
+`roady_task_transition`, `roady_task_check`, `roady_status`, `roady_query`,
+about 2.5k tokens instead of ~19k — and keeps every other tool **registered
+and callable**, so the SDK and clients that call a tool by name keep working.
+`ROADY_MCP_TOOLS` changes that:
 
 ```bash
-ROADY_MCP_TOOLS=core roady mcp        # 30 tools instead of 70
-ROADY_MCP_TOOLS=core,debt roady mcp   # plus the debt ledger
+roady mcp                                 # essential tools listed, all callable
+ROADY_MCP_TOOLS=essential,debt roady mcp  # plus the debt ledger listed
+ROADY_MCP_TOOLS=all roady mcp             # everything listed (~19k tokens)
+ROADY_MCP_TOOLS=core,debt roady mcp       # only these groups exist at all
 ```
 
 Groups: `core`, `cost`, `team`, `org`, `debt`, `deps`, `plugin`, `sync`,
-`analytics`, `audit`. `core` is always included — a server without the
-spec/plan/execute loop cannot do the thing roady is for. Unset (or `all`)
-registers everything, so this is opt-in: an existing client keeps the surface
-it already calls. An unknown group name fails startup rather than quietly
-starting a smaller server.
+`analytics`, `audit`. A profile of groups registers only those (and `core`,
+always). An unknown group name fails startup rather than quietly starting a
+smaller server.
 
-The grouping lives in `internal/infrastructure/mcp/profiles.go`, and a tool
-missing from it fails the build — the same guarantee the behaviour
-annotations have. Otherwise an unclassified tool would silently disappear
+The essential set and the grouping live in
+`internal/infrastructure/mcp/profiles.go`; a tool missing from the grouping
+fails the build — otherwise an unclassified tool would silently disappear
 from every profile, which looks exactly like a tool that does not exist.
+tools/list is trimmed by a middleware (`list_filter.go`), so an unlisted tool
+is still dispatched normally.
 
 ### Plugin System
 

@@ -111,6 +111,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **The MCP server lists seven tools by default instead of seventy-four.**
+  `roady_next`, `roady_capture`, `roady_plan_import`, `roady_task_transition`,
+  `roady_task_check`, `roady_status` and `roady_query` — the whole working
+  loop — cost about 2.5k tokens of every agent's prompt instead of ~19k.
+  Every other tool is still registered and callable by name, so the SDK and
+  scripted clients are unaffected; an agent simply does not see them.
+  `ROADY_MCP_TOOLS=all` restores the full list, `essential,<group>` adds a
+  group to it, and a group list (`core,debt`) keeps its old meaning.
 - **Adding or editing tasks no longer un-approves the plan.** Any change —
   a new task, an edited estimate, a check attached to a task — returned an
   approved plan to pending, so every agent was blocked until someone
