@@ -192,6 +192,8 @@ features:
         Done when: an end-to-end MCP test fails on null structuredContent and passes after the fix.'
       priority: high
       estimate: 0.5d
+      check:
+        run: 'go test -tags mcpwire ./internal/infrastructure/mcp/ -run TestToolErrorOnTheWire -count=1'
     - id: audit-deletion-is-alteration
       title: audit verify treats a removed or duplicated entry as alteration
       description: 'A deleted middle entry is reported as ''referencing a removed parent'' followed by
@@ -200,6 +202,8 @@ features:
         of alteration.'
       priority: high
       estimate: 2h
+      check:
+        run: 'go test ./pkg/domain/ -run ''TestRemovedEntryEvidencesAlteration|TestViolationKindClassification'' -count=1 && go test ./internal/infrastructure/cli/ -run TestAuditVerdict -count=1'
     - id: audit-tail-anchor
       title: Detect truncation of the audit log tail
       description: 'Removing the last N events verifies as intact. Anchor the head hash outside events.jsonl
@@ -207,6 +211,8 @@ features:
         when: truncating the log fails audit verify.'
       priority: medium
       estimate: 1d
+      check:
+        run: 'go test ./pkg/domain/ -run MissingFromBaseline -count=1 && go test ./pkg/application/ -run ''Baseline|CommittedFile'' -count=1'
     - id: setup-registers-mcp
       title: setup claude-code registers MCP where Claude Code reads it
       description: 'setup writes mcpServers into ~/.claude/settings.local.json and skips silently if the
@@ -215,6 +221,8 @@ features:
         are listed in a new Claude Code session.'
       priority: high
       estimate: 0.5d
+      check:
+        run: 'go test ./internal/infrastructure/cli/ -run RegisterClaudeCodeMCP -count=1'
     - id: acceptance-checks
       title: Requirements and tasks carry an acceptance check
       description: 'A check is a command, a named test, or a named manual check. `roady task verify` runs
@@ -222,6 +230,8 @@ features:
         be verified by running it, and the result is in the audit trail.'
       priority: high
       estimate: 2d
+      check:
+        run: 'go test ./pkg/application/ -run ''RunCheck|ManualCheck|Verify'' -count=1 && go test ./pkg/domain/planning/ ./pkg/domain/spec/ -run ''Check|Hash'' -count=1'
     - id: evidence-gated-verify
       title: verified requires a linked commit and a passing check
       description: 'The done -> verified transition is guarded: it needs at least one linked commit and

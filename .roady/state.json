@@ -1,13 +1,30 @@
 {
   "project_id": "agent-handoff",
-  "version": 184,
+  "version": 190,
   "task_states": {
     "task-acceptance-checks": {
-      "status": "in_progress",
+      "status": "done",
       "path": "",
       "owner": "Claude",
+      "evidence": [
+        "Commit: e435865c073524988da33eda200264c707080fb5"
+      ],
       "started_at": "2026-09-26T17:29:24.126154332+02:00",
-      "elapsed_minutes": 0
+      "completed_at": "2026-09-26T17:35:49.870605442+02:00",
+      "elapsed_minutes": 6,
+      "checks": [
+        {
+          "kind": "run",
+          "command": "go test ./pkg/application/ -run 'RunCheck|ManualCheck|Verify' -count=1 \u0026\u0026 go test ./pkg/domain/planning/ ./pkg/domain/spec/ -run 'Check|Hash' -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "e435865c073524988da33eda200264c707080fb5",
+          "by": "Claude",
+          "at": "2026-09-26T17:36:37.018055004+02:00",
+          "duration": "1.225s",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.136s\nok  \tgithub.com/felixgeelhaar/roady/pkg/domain/planning\t0.003s\nok  \tgithub.com/felixgeelhaar/roady/pkg/domain/spec\t0.003s\n"
+        }
+      ]
     },
     "task-adoption-metrics": {
       "status": "pending",
@@ -28,7 +45,20 @@
       ],
       "started_at": "2026-09-26T16:23:38.27948448+02:00",
       "completed_at": "2026-09-26T16:24:52.953849285+02:00",
-      "elapsed_minutes": 1
+      "elapsed_minutes": 1,
+      "checks": [
+        {
+          "kind": "run",
+          "command": "go test ./pkg/domain/ -run 'TestRemovedEntryEvidencesAlteration|TestViolationKindClassification' -count=1 \u0026\u0026 go test ./internal/infrastructure/cli/ -run TestAuditVerdict -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "e435865c073524988da33eda200264c707080fb5",
+          "by": "Claude",
+          "at": "2026-09-26T17:36:33.489599668+02:00",
+          "duration": "1.28s",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/domain\t0.003s\nok  \tgithub.com/felixgeelhaar/roady/internal/infrastructure/cli\t0.007s\n"
+        }
+      ]
     },
     "task-audit-tail-anchor": {
       "status": "done",
@@ -39,7 +69,20 @@
       ],
       "started_at": "2026-09-26T16:32:05.076770485+02:00",
       "completed_at": "2026-09-26T16:38:11.230568616+02:00",
-      "elapsed_minutes": 6
+      "elapsed_minutes": 6,
+      "checks": [
+        {
+          "kind": "run",
+          "command": "go test ./pkg/domain/ -run MissingFromBaseline -count=1 \u0026\u0026 go test ./pkg/application/ -run 'Baseline|CommittedFile' -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "e435865c073524988da33eda200264c707080fb5",
+          "by": "Claude",
+          "at": "2026-09-26T17:36:34.796066002+02:00",
+          "duration": "1.13s",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/domain\t0.003s\nok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.097s\n"
+        }
+      ]
     },
     "task-backlog-writes-to-project": {
       "status": "verified",
@@ -275,7 +318,20 @@
       ],
       "started_at": "2026-09-26T16:30:36.849895359+02:00",
       "completed_at": "2026-09-26T16:31:53.551046068+02:00",
-      "elapsed_minutes": 1
+      "elapsed_minutes": 1,
+      "checks": [
+        {
+          "kind": "run",
+          "command": "go test ./internal/infrastructure/cli/ -run RegisterClaudeCodeMCP -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "e435865c073524988da33eda200264c707080fb5",
+          "by": "Claude",
+          "at": "2026-09-26T17:36:35.947125466+02:00",
+          "duration": "1.047s",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/internal/infrastructure/cli\t0.012s\n"
+        }
+      ]
     },
     "task-shared-execution-state": {
       "status": "pending",
@@ -363,5 +419,5 @@
       "elapsed_minutes": 4
     }
   },
-  "updated_at": "2026-09-26T17:29:24.126154332+02:00"
+  "updated_at": "2026-09-26T17:35:49.8706067+02:00"
 }
