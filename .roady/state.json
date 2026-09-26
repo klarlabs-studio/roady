@@ -1,6 +1,6 @@
 {
   "project_id": "agent-handoff",
-  "version": 250,
+  "version": 252,
   "task_states": {
     "task-acceptance-checks": {
       "status": "verified",
@@ -329,11 +329,28 @@
       ]
     },
     "task-instructions-and-skill": {
-      "status": "in_progress",
+      "status": "done",
       "path": "",
       "owner": "Claude",
+      "evidence": [
+        "Commit: 76f6b4a695cc39f64e94e5b63aed77cc3545fa5a"
+      ],
       "started_at": "2026-09-26T22:01:49.712047697+02:00",
-      "elapsed_minutes": 0
+      "completed_at": "2026-09-26T22:06:06.652453385+02:00",
+      "elapsed_minutes": 4,
+      "checks": [
+        {
+          "kind": "run",
+          "command": "go test ./internal/infrastructure/cli/ -run 'TestWriteInstructionBlock|TestWriteRoadySkill' -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "76f6b4a695cc39f64e94e5b63aed77cc3545fa5a",
+          "by": "Claude",
+          "at": "2026-09-26T22:06:06.693892551+02:00",
+          "duration": "1.001s",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/internal/infrastructure/cli\t0.020s\n"
+        }
+      ]
     },
     "task-leased-claims": {
       "status": "pending",
@@ -722,5 +739,5 @@
       "elapsed_minutes": 4
     }
   },
-  "updated_at": "2026-09-26T22:04:02.771153202+02:00"
+  "updated_at": "2026-09-26T22:06:06.65245417+02:00"
 }
