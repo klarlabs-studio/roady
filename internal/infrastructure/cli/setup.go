@@ -12,27 +12,30 @@ import (
 
 var setupCmd = &cobra.Command{
 	Use:   "setup [target]",
-	Short: "Setup Roady for various platforms (claude-code, claude-desktop, opencode, openai, gemini)",
-	Long: `Configure Roady for use with AI coding tools.
+	Short: "Set Roady up for an AI coding agent (claude-code, codex, gemini, cursor, opencode, copilot, kiro)",
+	Long: `Configure Roady for an AI coding agent in this project.
 
-Supported targets:
-  claude-code    - Configure Claude Code: MCP, hooks, CLAUDE.md block, planning skill
-  claude-desktop - Configure Claude Desktop with Roady MCP server
-  opencode       - Configure OpenCode with Roady MCP server (and AGENTS.md)
-  openai         - Setup for OpenAI Codex (via MCP, and AGENTS.md)
-  gemini         - Setup for Google Gemini (via MCP bridge, and GEMINI.md)
-  global         - Install commands globally and setup MCP
+Project targets write, where the agent supports it: the roady MCP server in
+the agent's project config, a marked instruction block (plans live in roady;
+never ROADMAP.md/TODO.md/plan.md), the roady-planning skill, and hooks that
+put the current task brief in context at session start, refuse plan files,
+and import a plan the user approved in plan mode.
 
-Examples:
-  roady setup claude-code
-  roady setup opencode
-  roady setup openai
-  roady setup claude-desktop
-  roady setup global
+  claude-code    .mcp.json, .claude/settings.json hooks, CLAUDE.md, .claude/skills
+  codex          .codex/config.toml, .codex/hooks.json, AGENTS.md, .agents/skills
+  gemini         .gemini/settings.json (MCP + hooks), GEMINI.md, .agents/skills
+  cursor         .cursor/mcp.json, .cursor/hooks.json, AGENTS.md, .agents/skills
+  opencode       opencode.json, .opencode/plugins/roady.js, AGENTS.md, .agents/skills
+  copilot        .vscode/mcp.json, .github/hooks/roady.json, AGENTS.md, .agents/skills
+  kiro           .kiro/settings/mcp.json, AGENTS.md, .kiro/skills
+  all            every target above
 
-Project targets write a marked roady block into the agent's instruction file
-(plans live in roady; never create ROADMAP.md/TODO.md/plan.md). Re-running
-updates the block in place; --no-instructions skips it.`,
+  claude-desktop prints the Claude Desktop MCP config to add
+  global         installs the Claude Code slash commands in ~/.claude/commands
+
+"openai" is accepted for codex. Every file is merged, not overwritten: other
+servers, hooks and settings are kept, and re-running changes nothing.
+--no-instructions skips the instruction block and the skill.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		target := "claude-code"
 		if len(args) > 0 {
@@ -44,17 +47,24 @@ updates the block in place; --no-instructions skips it.`,
 			return setupClaudeCode()
 		case "claude-desktop":
 			return setupClaudeDesktop()
-		case "opencode":
-			return setupOpenCode()
-		case "openai":
-			return setupOpenAI()
-		case "gemini":
-			return setupGemini()
 		case "global":
 			return setupGlobal()
-		default:
-			return fmt.Errorf("unknown target: %s (supported: claude-code, claude-desktop, opencode, openai, gemini, global)", target)
+		case "all":
+			if err := setupClaudeCode(); err != nil {
+				return err
+			}
+			for _, a := range agentSetups() {
+				fmt.Println()
+				if err := runAgentSetup(a); err != nil {
+					return err
+				}
+			}
+			return nil
 		}
+		if a, ok := findAgentSetup(target); ok {
+			return runAgentSetup(a)
+		}
+		return fmt.Errorf("unknown target: %s (supported: claude-code, codex, gemini, cursor, opencode, copilot, kiro, all, claude-desktop, global)", target)
 	},
 }
 
@@ -194,129 +204,9 @@ func setupGlobal() error {
 	return nil
 }
 
-func setupOpenCode() error {
-	fmt.Println("🚀 Setting up Roady for OpenCode...")
-	if err := projectInstructions("AGENTS.md"); err != nil {
-		return err
-	}
-
-	fmt.Println("\n📝 Add this to your OpenCode config (~/.opencode/config.json):")
-	fmt.Println()
-	fmt.Println(`{
-  "mcpServers": {
-    "roady": {
-      "command": "roady",
-      "args": ["mcp"]
-    }
-  }
-}`)
-
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return fmt.Errorf("get home directory: %w", err)
-	}
-
-	configPath := filepath.Join(homeDir, ".opencode", "config.json")
-	if _, err := os.Stat(filepath.Dir(configPath)); os.IsNotExist(err) {
-		fmt.Printf("\n  ✓ Config directory will be created at first launch\n")
-	} else {
-		fmt.Printf("\n  📁 Config path: %s\n", configPath)
-	}
-
-	fmt.Println("\n✅ OpenCode setup ready!")
-	fmt.Println("\nNext steps:")
-	fmt.Println("  1. Restart OpenCode")
-	fmt.Println("  2. Roady MCP tools will be available")
-
-	return nil
-}
-
-func setupOpenAI() error {
-	fmt.Println("🚀 Setting up Roady for OpenAI Codex...")
-	if err := projectInstructions("AGENTS.md"); err != nil {
-		return err
-	}
-
-	fmt.Println()
-	fmt.Println("📝 In your Codex agent code, use the MCP server:")
-	fmt.Println()
-	fmt.Println(`from agents import Agent
-from openai import OpenAI
-
-client = OpenAI()
-
-# Start Roady MCP server as subprocess
-import subprocess
-roady_process = subprocess.Popen(
-    ["roady", "mcp", "--transport", "stdio"],
-    stdout=subprocess.PIPE,
-    stdin=subprocess.PIPE,
-)
-
-# Use with Codex agent
-agent = Agent(
-    name="Developer",
-    mcp_servers=[roady_process],  # Roady MCP
-)`)
-	fmt.Println("\nOr use with OpenAI SDK directly:")
-	fmt.Println()
-	fmt.Println(`from openai.mcp import MCPServer
-
-server = MCPServer(command="roady", args=["mcp"])`)
-
-	fmt.Println("\n✅ OpenAI Codex setup ready!")
-	fmt.Println("\nNote: OpenAI Codex MCP support requires the latest OpenAI SDK.")
-
-	return nil
-}
-
-func setupGemini() error {
-	fmt.Println("🚀 Setting up Roady for Google Gemini...")
-	if err := projectInstructions("GEMINI.md"); err != nil {
-		return err
-	}
-
-	fmt.Println()
-	fmt.Println("📝 Add Roady to Gemini MCP configuration:")
-	fmt.Println()
-	fmt.Print(`Via Google AI Studio or gcloud:
-
-{
-  "mcpServers": {
-    "roady": {
-      "command": "roady",
-      "args": ["mcp"]
-    }
-  }
-}
-
-Note: Gemini MCP support varies by platform.
-  - Google AI Studio: Use MCP servers extension
-  - Vertex AI: Configure via Agent Builder
-`)
-
-	fmt.Println()
-	fmt.Println("✅ Gemini setup ready!")
-
-	return nil
-}
-
 // setupNoInstructions leaves CLAUDE.md / AGENTS.md / GEMINI.md and the skill
 // alone, for projects that manage their agent instructions themselves.
 var setupNoInstructions bool
-
-// projectInstructions writes the roady block into the project's instruction
-// files, unless --no-instructions.
-func projectInstructions(files ...string) error {
-	if setupNoInstructions {
-		return nil
-	}
-	root, err := getProjectRoot()
-	if err != nil {
-		return fmt.Errorf("resolve project path: %w", err)
-	}
-	return installInstructions(root, files...)
-}
 
 func init() {
 	setupCmd.Flags().BoolVar(&setupNoInstructions, "no-instructions", false, "Do not write the roady block into CLAUDE.md / AGENTS.md / GEMINI.md or install the planning skill")

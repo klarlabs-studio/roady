@@ -16,14 +16,32 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// Claude Code hooks. `roady setup claude-code` registers these in
-// .claude/settings.json; each reads the hook's JSON on stdin.
+// Agent hooks. `roady setup <agent>` registers these in the agent's hook
+// config; each reads the hook's JSON on stdin. --agent names whose payload
+// and answer format to use, since agents agree on the events but not on the
+// wire: Claude Code and Codex answer with hookSpecificOutput, Gemini CLI
+// denies with a top-level decision, Cursor and Copilot have their own keys,
+// and Kiro and the OpenCode plugin read plain text and exit codes.
 //
 // A hook must never get in the agent's way by failing: outside a roady
 // project, or when roady itself errors, each exits 0 and says nothing (or
 // says what went wrong as context), so a broken roady degrades to no roady.
 
-// hookInput is the part of Claude Code's hook payload roady reads.
+// Agents whose hook dialects roady speaks.
+const (
+	agentClaude   = "claude"
+	agentCodex    = "codex"
+	agentGemini   = "gemini"
+	agentCursor   = "cursor"
+	agentCopilot  = "copilot"
+	agentKiro     = "kiro"
+	agentOpenCode = "opencode"
+)
+
+var hookAgent string
+
+// hookInput is the part of a hook payload roady reads, normalised across
+// agents.
 type hookInput struct {
 	Cwd           string         `json:"cwd"`
 	HookEventName string         `json:"hook_event_name"`
@@ -33,9 +51,12 @@ type hookInput struct {
 	ToolResponse  any            `json:"tool_response"`
 }
 
+// hookExit ends the process with a code; a variable so tests can observe it.
+var hookExit = os.Exit
+
 var hookCmd = &cobra.Command{
 	Use:    "hook",
-	Short:  "Claude Code hook handlers (registered by `roady setup claude-code`)",
+	Short:  "Agent hook handlers (registered by `roady setup <agent>`)",
 	Hidden: true,
 }
 
@@ -52,7 +73,7 @@ including "compact", so the brief is back in context after compaction too.`,
 		}
 		brief := hookBrief(cmd, root)
 		if brief != "" {
-			_, _ = fmt.Fprint(cmd.OutOrStdout(), brief)
+			writeHookContext(cmd.OutOrStdout(), hookAgent, "SessionStart", brief)
 		}
 		return nil
 	},
@@ -60,64 +81,106 @@ including "compact", so the brief is back in context after compaction too.`,
 
 var hookPlanApprovedCmd = &cobra.Command{
 	Use:   "plan-approved",
-	Short: "PostToolUse on ExitPlanMode: import the approved plan into roady",
+	Short: "After the agent's plan is approved (ExitPlanMode, exit_plan_mode): import it into roady",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		in := readHookInput(cmd.InOrStdin())
 		root, ok := hookProjectRoot(in)
 		if !ok {
+			return nil
+		}
+		if planRejected(in) {
 			return nil
 		}
 		msg := importApprovedPlan(root, in)
 		if brief := hookBrief(cmd, root); brief != "" {
 			msg += "\n\n" + brief
 		}
-		return writeHookContext(cmd.OutOrStdout(), "PostToolUse", msg)
+		event := "PostToolUse"
+		if hookAgent == agentGemini {
+			event = "AfterTool"
+		}
+		writeHookContext(cmd.OutOrStdout(), hookAgent, event, msg)
+		return nil
 	},
 }
 
 var hookGuardWriteCmd = &cobra.Command{
 	Use:   "guard-write",
-	Short: "PreToolUse on Write/Edit: redirect roadmap, TODO and plan markdown files to roady",
+	Short: "Before a file write: redirect roadmap, TODO and plan markdown files to roady",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		in := readHookInput(cmd.InOrStdin())
 		root, ok := hookProjectRoot(in)
 		if !ok {
 			return nil
 		}
-		target := hookFilePath(in)
-		if target == "" {
+		if !isWriteTool(in.ToolName) {
 			return nil
 		}
 		var allow []string
 		if pol, err := wiring.NewWorkspace(root).Repo.LoadPolicy(); err == nil && pol != nil {
 			allow = pol.PlanFilesAllow
 		}
-		rel, blocked := isPlanFile(root, in.Cwd, target, allow)
-		if !blocked {
+		for _, target := range hookFilePaths(in) {
+			rel, blocked := isPlanFile(root, in.Cwd, target, allow)
+			if !blocked {
+				continue
+			}
+			reason := fmt.Sprintf("Plans live in roady, not in %s. Record new work with `roady capture` "+
+				"(or the roady_capture tool); to bring in a plan that is already written, `roady plan import <file>`. "+
+				"If this file is kept on purpose, add %q to plan_files_allow in .roady/policy.yaml.", rel, rel)
+			writeHookDeny(cmd.OutOrStdout(), cmd.ErrOrStderr(), hookAgent, reason)
 			return nil
 		}
-		reason := fmt.Sprintf("Plans live in roady, not in %s. Record new work with `roady capture` "+
-			"(or the roady_capture tool); to bring in a plan that is already written, `roady plan import <file>`. "+
-			"If this file is kept on purpose, add %q to plan_files_allow in .roady/policy.yaml.", rel, rel)
-		return writeHookJSON(cmd.OutOrStdout(), map[string]any{
-			"hookEventName":            "PreToolUse",
-			"permissionDecision":       "deny",
-			"permissionDecisionReason": reason,
-		})
+		return nil
 	},
 }
 
 func readHookInput(r io.Reader) hookInput {
 	var in hookInput
 	raw, err := io.ReadAll(io.LimitReader(r, 8<<20))
-	if err == nil && len(raw) > 0 {
-		_ = json.Unmarshal(raw, &in)
+	if err != nil || len(raw) == 0 {
+		return in
+	}
+	_ = json.Unmarshal(raw, &in)
+
+	// Other agents' spellings of the same fields.
+	var alt struct {
+		ToolName       string   `json:"toolName"`
+		ToolArgs       any      `json:"toolArgs"`
+		WorkspaceRoots []string `json:"workspace_roots"`
+		ToolResult     any      `json:"tool_result"`
+		Response       any      `json:"toolResult"`
+	}
+	_ = json.Unmarshal(raw, &alt)
+	if in.ToolName == "" {
+		in.ToolName = alt.ToolName
+	}
+	if in.ToolInput == nil {
+		switch args := alt.ToolArgs.(type) {
+		case map[string]any:
+			in.ToolInput = args
+		case string: // Copilot sends the arguments as a JSON string.
+			var m map[string]any
+			if json.Unmarshal([]byte(args), &m) == nil {
+				in.ToolInput = m
+			}
+		}
+	}
+	if in.Cwd == "" && len(alt.WorkspaceRoots) > 0 {
+		in.Cwd = alt.WorkspaceRoots[0]
+	}
+	if in.ToolResponse == nil {
+		in.ToolResponse = alt.ToolResult
+	}
+	if in.ToolResponse == nil {
+		in.ToolResponse = alt.Response
 	}
 	return in
 }
 
 // hookProjectRoot finds the roady project the hook runs for: the session's
-// cwd or CLAUDE_PROJECT_DIR (after --project), else the working directory. It
+// cwd or the agent's project-dir variable (after --project), else the
+// working directory. It
 // walks up to the directory holding .roady, so a session started in a
 // subdirectory still finds it.
 func hookProjectRoot(in hookInput) (string, bool) {
@@ -125,10 +188,11 @@ func hookProjectRoot(in hookInput) (string, bool) {
 	if projectPath != "" {
 		starts = append(starts, projectPath)
 	}
-	starts = append(starts, in.Cwd, os.Getenv("CLAUDE_PROJECT_DIR"))
-	// The process's own directory only when Claude Code did not say where the
+	envDir := firstNonEmpty(os.Getenv("CLAUDE_PROJECT_DIR"), os.Getenv("GEMINI_PROJECT_DIR"), os.Getenv("CURSOR_PROJECT_DIR"))
+	starts = append(starts, in.Cwd, envDir)
+	// The process's own directory only when the agent did not say where the
 	// session is: a session in another project must not act on this one.
-	if in.Cwd == "" && os.Getenv("CLAUDE_PROJECT_DIR") == "" {
+	if in.Cwd == "" && envDir == "" {
 		if wd, err := os.Getwd(); err == nil {
 			starts = append(starts, wd)
 		}
@@ -201,7 +265,7 @@ func importApprovedPlan(root string, in hookInput) string {
 			"Record its tasks with `roady capture`.", rel, err)
 	}
 	result, err := application.NewCaptureService(ws.Repo, ws.Audit).
-		Capture(imp.Doc, application.CaptureOptions{Actor: "claude-code", Origin: planning.OriginAI})
+		Capture(imp.Doc, application.CaptureOptions{Actor: hookActor(), Origin: planning.OriginAI})
 	if err != nil {
 		return fmt.Sprintf("Roady could not import the approved plan from %s: %v", rel, err)
 	}
@@ -242,8 +306,9 @@ func countPrefix(items []string, prefix string) int {
 	return n
 }
 
-// approvedPlanText finds the plan in an ExitPlanMode payload: the plan text
-// in tool_input, or a plan file named in tool_input or tool_response.
+// approvedPlanText finds the plan in a plan-approval payload: the plan text
+// in tool_input (Claude Code's ExitPlanMode), or a plan file named in
+// tool_input or tool_response (Gemini CLI's exit_plan_mode plan_path).
 func approvedPlanText(in hookInput) string {
 	if s, ok := in.ToolInput["plan"].(string); ok && strings.TrimSpace(s) != "" {
 		return s
@@ -256,9 +321,9 @@ func approvedPlanText(in hookInput) string {
 		sources = append(sources, m)
 	}
 	for _, src := range sources {
-		for _, key := range []string{"planFilePath", "plan_file_path", "filePath", "file_path"} {
+		for _, key := range []string{"planFilePath", "plan_file_path", "plan_path", "filePath", "file_path"} {
 			if p, ok := src[key].(string); ok && strings.HasSuffix(strings.ToLower(p), ".md") {
-				if raw, err := os.ReadFile(filepath.Clean(p)); err == nil { // #nosec G304 -- the plan file Claude Code named
+				if raw, err := os.ReadFile(filepath.Clean(p)); err == nil { // #nosec G304 -- the plan file the agent named
 					return string(raw)
 				}
 			}
@@ -267,13 +332,74 @@ func approvedPlanText(in hookInput) string {
 	return ""
 }
 
-func hookFilePath(in hookInput) string {
-	for _, key := range []string{"file_path", "path"} {
+// hookFilePaths lists the files a tool call would write. Agents name the
+// path differently (file_path, path, filePath, target_file, absolute_path),
+// and Codex's apply_patch carries it inside the patch text.
+func hookFilePaths(in hookInput) []string {
+	var out []string
+	for _, key := range []string{"file_path", "path", "filePath", "target_file", "absolute_path", "file"} {
 		if p, ok := in.ToolInput[key].(string); ok && p != "" {
-			return p
+			out = append(out, p)
+		}
+	}
+	for _, key := range []string{"command", "patch", "input"} {
+		if s, ok := in.ToolInput[key].(string); ok && strings.Contains(s, "*** Begin Patch") {
+			for _, m := range patchFile.FindAllStringSubmatch(s, -1) {
+				out = append(out, strings.TrimSpace(m[1]))
+			}
+		}
+	}
+	return out
+}
+
+var patchFile = regexp.MustCompile(`(?m)^\*\*\* (?:Add File|Update File|Move to): (.+)$`)
+
+// writeToolName matches the tools that write files across agents: Write,
+// Edit, MultiEdit (Claude Code), apply_patch (Codex), write_file, replace
+// (Gemini CLI), fs_write (Kiro), edit, create, write (Copilot, OpenCode).
+var writeToolName = regexp.MustCompile(`(?i)^(write|edit|multiedit|str_?replace|apply_patch|write_file|replace|fs_write|create|create_file|edit_file|notebookedit)$`)
+
+// isWriteTool reports whether the guard applies. An empty name means the
+// agent's matcher already chose the tool.
+func isWriteTool(name string) bool {
+	return name == "" || writeToolName.MatchString(strings.TrimSpace(name))
+}
+
+// planRejected reports whether a plan-exit tool result says the user did
+// not approve the plan (Gemini CLI runs AfterTool either way, with the
+// user's feedback in the result).
+func planRejected(in hookInput) bool {
+	if in.ToolResponse == nil {
+		return false
+	}
+	raw, _ := json.Marshal(in.ToolResponse)
+	s := strings.ToLower(string(raw))
+	return strings.Contains(s, "not approved") || strings.Contains(s, "rejected") || strings.Contains(s, "did not approve")
+}
+
+func hookActor() string {
+	switch hookAgent {
+	case "", agentClaude:
+		return "claude-code"
+	case agentGemini:
+		return "gemini-cli"
+	}
+	return hookAgent
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, v := range values {
+		if v != "" {
+			return v
 		}
 	}
 	return ""
+}
+
+// agentDirs are directories agents and roady keep their own files in.
+var agentDirs = map[string]bool{
+	".roady": true, ".claude": true, ".codex": true, ".gemini": true, ".cursor": true,
+	".opencode": true, ".kiro": true, ".agents": true, ".github": true,
 }
 
 var (
@@ -283,8 +409,8 @@ var (
 
 // isPlanFile reports whether writing target would start a plan outside
 // roady: a ROADMAP*/TODO*/*plan*.md file inside the project. Paths outside
-// the project, under .roady or .claude (Claude Code keeps its own plans
-// there), and paths matching allow are let through.
+// the project, under .roady or an agent's own directory (where agents keep
+// their plan-mode files), and paths matching allow are let through.
 func isPlanFile(root, cwd, target string, allow []string) (string, bool) {
 	if !filepath.IsAbs(target) {
 		base := cwd
@@ -298,7 +424,7 @@ func isPlanFile(root, cwd, target string, allow []string) (string, bool) {
 		return "", false
 	}
 	rel = filepath.ToSlash(rel)
-	if strings.HasPrefix(rel, ".roady/") || strings.HasPrefix(rel, ".claude/") {
+	if top, _, _ := strings.Cut(rel, "/"); agentDirs[top] && strings.Contains(rel, "/") {
 		return rel, false
 	}
 	name := path.Base(rel)
@@ -322,22 +448,58 @@ func isPlanFile(root, cwd, target string, allow []string) (string, bool) {
 	return rel, true
 }
 
-// writeHookContext emits additional context for the agent in the JSON shape
-// Claude Code reads from PostToolUse hooks.
-func writeHookContext(w io.Writer, event, text string) error {
-	return writeHookJSON(w, map[string]any{"hookEventName": event, "additionalContext": text})
+// writeHookContext hands text to the agent as context, in its dialect.
+func writeHookContext(w io.Writer, agent, event, text string) {
+	switch agent {
+	case agentCursor:
+		writeJSONLine(w, map[string]any{"additional_context": text})
+	case agentCopilot:
+		writeJSONLine(w, map[string]any{"additionalContext": text})
+	case agentKiro, agentOpenCode:
+		_, _ = fmt.Fprint(w, text)
+	case "", agentClaude:
+		if event == "SessionStart" {
+			_, _ = fmt.Fprint(w, text) // plain stdout is context on SessionStart
+			return
+		}
+		writeJSONLine(w, map[string]any{"hookSpecificOutput": map[string]any{"hookEventName": event, "additionalContext": text}})
+	default: // codex, gemini
+		writeJSONLine(w, map[string]any{"hookSpecificOutput": map[string]any{"hookEventName": event, "additionalContext": text}})
+	}
 }
 
-// writeHookJSON writes a hookSpecificOutput object. Errors are swallowed: a
-// hook that cannot answer lets the agent carry on.
-func writeHookJSON(w io.Writer, specific map[string]any) error {
+// writeHookDeny refuses the tool call with a reason the agent reads.
+func writeHookDeny(out, errw io.Writer, agent, reason string) {
+	switch agent {
+	case agentGemini:
+		writeJSONLine(out, map[string]any{"decision": "deny", "reason": reason})
+	case agentCursor:
+		writeJSONLine(out, map[string]any{"permission": "deny", "user_message": reason, "agent_message": reason})
+	case agentCopilot:
+		writeJSONLine(out, map[string]any{"permissionDecision": "deny", "permissionDecisionReason": reason})
+	case agentKiro, agentOpenCode:
+		// Exit 2 blocks the call; stderr is what the agent is told.
+		_, _ = fmt.Fprintln(errw, reason)
+		hookExit(2)
+	default: // claude, codex
+		writeJSONLine(out, map[string]any{"hookSpecificOutput": map[string]any{
+			"hookEventName":            "PreToolUse",
+			"permissionDecision":       "deny",
+			"permissionDecisionReason": reason,
+		}})
+	}
+}
+
+// writeJSONLine writes one JSON object. Errors are swallowed: a hook that
+// cannot answer lets the agent carry on.
+func writeJSONLine(w io.Writer, v any) {
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
-	_ = enc.Encode(map[string]any{"hookSpecificOutput": specific})
-	return nil
+	_ = enc.Encode(v)
 }
 
 func init() {
+	hookCmd.PersistentFlags().StringVar(&hookAgent, "agent", agentClaude, "Whose hook payload and answer format: claude, codex, gemini, cursor, copilot, kiro or opencode")
 	hookCmd.AddCommand(hookSessionStartCmd, hookPlanApprovedCmd, hookGuardWriteCmd)
 	RootCmd.AddCommand(hookCmd)
 }

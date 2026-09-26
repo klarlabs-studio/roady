@@ -35,77 +35,18 @@ chmod +x /usr/local/bin/roady
 
 ### One-Command Setup
 
-Roady works with Claude Code, OpenCode, Claude Desktop, OpenAI Codex, and Gemini.
+Run in your project:
 
 ```bash
-# Claude Code CLI
-roady setup claude-code
-
-# OpenCode
-roady setup opencode
-
-# Claude Desktop
-roady setup claude-desktop
-
-# OpenAI Codex
-roady setup openai
-
-# Google Gemini
-roady setup gemini
-
-# All platforms (commands only)
-roady setup global
+roady setup claude-code   # or: codex, gemini, cursor, opencode, copilot, kiro
+roady setup all           # every agent at once
+roady setup claude-desktop  # prints the Claude Desktop config to add
 ```
 
-### OpenCode Setup
-
-Add to `~/.opencode/config.json`:
-
-```json
-{
-  "mcpServers": {
-    "roady": {
-      "command": "roady",
-      "args": ["mcp"]
-    }
-  }
-}
-```
-
-### OpenAI Codex Setup
-
-```python
-from agents import Agent
-import subprocess
-
-# Start Roady MCP server
-roady_process = subprocess.Popen(
-    ["roady", "mcp", "--transport", "stdio"],
-    stdout=subprocess.PIPE,
-    stdin=subprocess.PIPE,
-)
-
-# Use with Codex agent
-agent = Agent(
-    name="Developer",
-    mcp_servers=[roady_process],
-)
-```
-
-### Google Gemini Setup
-
-Via Google AI Studio or Vertex AI Agent Builder, add Roady as an MCP server:
-
-```json
-{
-  "mcpServers": {
-    "roady": {
-      "command": "roady",
-      "args": ["mcp"]
-    }
-  }
-}
-```
+Each target registers the MCP server in the agent's project config, adds the
+roady instruction block and planning skill, and installs the hooks the agent
+supports. See [mcp-integration.md](mcp-integration.md) for what each agent
+gets.
 
 ## Manual MCP Configuration
 

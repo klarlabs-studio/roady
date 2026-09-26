@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Setup for Codex, Gemini CLI, Cursor, OpenCode, Copilot and Kiro.** `roady
+  setup <agent>` (or `all`) does for each what `setup claude-code` does,
+  as far as the agent allows: the MCP server in its project config, the
+  instruction block (`AGENTS.md` / `GEMINI.md`), the roady-planning skill in
+  `.agents/skills`, and hooks — the brief at session start (and after
+  compaction in Codex and OpenCode), the plan-file guard, and plan import on
+  Gemini's `exit_plan_mode`. `roady hook --agent <agent>` reads each agent's
+  payload (including file names inside a Codex `apply_patch`) and answers in
+  its format; OpenCode gets a plugin that calls it. `setup openai` now sets
+  up Codex instead of printing a Python snippet. See
+  docs/mcp-integration.md.
 - **`roady add`, `edit`, `split`, `move`: one task without a document.**
   Thin builders over capture — `roady add "Handle empty file" --req pdf-gen
   --after task-pdf-gen` — each validated like any capture and recorded as one

@@ -162,11 +162,9 @@ The web dashboard (`roady dashboard serve`) was removed; see
 full schema). One-command setup for every supported tool:
 
 ```bash
-roady setup claude-code
+roady setup claude-code     # or codex, gemini, cursor, opencode, copilot, kiro
+roady setup all
 roady setup claude-desktop
-roady setup opencode
-roady setup openai
-roady setup gemini
 ```
 
 Run the MCP server in any transport:

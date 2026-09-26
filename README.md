@@ -44,7 +44,7 @@ prerequisites, zero AI keys, zero signup.
 
 ```bash
 # 1. Hook your agent to Roady (one command per supported tool)
-roady setup claude-code           # or claude-desktop, opencode, openai, gemini
+roady setup claude-code           # or codex, gemini, cursor, opencode, copilot, kiro, all
 
 # 2. Initialise + import your existing docs
 roady init my-project

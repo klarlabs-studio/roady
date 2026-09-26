@@ -28,6 +28,8 @@ This project keeps its plan in roady (` + "`.roady/`" + `), not in markdown file
 - **New work, any size** (one task or a whole plan): ` + "`roady capture`" + ` with YAML or JSON
   on stdin (MCP: ` + "`roady_capture`" + `). A plan already written — plan mode, Kiro
   ` + "`tasks.md`" + `, an ExecPlan: ` + "`roady plan import <file>`" + `.
+- **A plan the user approved** (plan mode or otherwise) goes into roady before
+  work starts: ` + "`roady plan import <plan file>`" + `, or ` + "`roady capture`" + ` when it is not a file.
 - **Never** create ROADMAP.md, TODO.md, PLAN.md or similar plan files, and do not
   track project work in a built-in todo list.
 - **Lifecycle:** ` + "`roady task start <id>`" + ` → commit with ` + "`[roady:<id>]`" + ` in the
@@ -205,8 +207,10 @@ Over MCP the same document goes to `+"`roady_capture`"+`.
 
 Plan mode, Kiro's tasks.md, a Codex ExecPlan or any markdown plan:
 `+"`roady plan import <file>`"+` turns each step into a task that cites its line,
-in order. Re-importing an edited plan updates the same tasks. With the roady
-hooks installed, a plan approved in plan mode is imported automatically.
+in order. Re-importing an edited plan updates the same tasks. Where roady's
+hooks can see plan approval (Claude Code, Gemini CLI) an approved plan is
+imported automatically; elsewhere, import or capture it yourself as soon as
+the user approves it, before starting the work.
 
 ## Finishing a task
 
