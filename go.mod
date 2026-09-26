@@ -17,7 +17,7 @@ require (
 	github.com/mattn/go-isatty v0.0.22
 	github.com/spf13/cobra v1.10.2
 	go.klarlabs.de/fortify v1.8.1
-	go.klarlabs.de/mcp v1.28.1
+	go.klarlabs.de/mcp v1.28.2
 	go.klarlabs.de/statekit v1.13.2
 	golang.org/x/oauth2 v0.36.0
 	google.golang.org/grpc v1.83.2

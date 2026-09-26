@@ -118,8 +118,8 @@ github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e h1:JVG44RsyaB9T2KIHavM
 github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e/go.mod h1:RbqR21r5mrJuqunuUZ/Dhy/avygyECGrLceyNeo4LiM=
 go.klarlabs.de/fortify v1.8.1 h1:gyzJ7ESNe/Qf65DhGCT1WPWDyphgEDApb2QTx3Gd2m0=
 go.klarlabs.de/fortify v1.8.1/go.mod h1:x4Rnk8xt8ckJ8Pxe5SsXZVfGYjJIoOHx67DBl5Ncis8=
-go.klarlabs.de/mcp v1.28.1 h1:AoxU35D0C8umUWbSTC3y80pMaLb2Lv7niC+Bb1iqDzE=
-go.klarlabs.de/mcp v1.28.1/go.mod h1:bH3A9ioeIl9pumEwTqdIuNz7Gg1dwSgFBAQPKcZPccs=
+go.klarlabs.de/mcp v1.28.2 h1:C8PtCODOQ2k43GRRhRhyUsB8IDPPXTwvkSBXjHeFBKg=
+go.klarlabs.de/mcp v1.28.2/go.mod h1:bH3A9ioeIl9pumEwTqdIuNz7Gg1dwSgFBAQPKcZPccs=
 go.klarlabs.de/statekit v1.13.2 h1:jhq2lJMMRo6CeVoryL2aEUj/DV5JldNscBOio9TEvmQ=
 go.klarlabs.de/statekit v1.13.2/go.mod h1:/0OfP+tXhnjz6t2FACqv4q5BDeNcqMytx+vMniPxxWc=
 go.opentelemetry.io/auto/sdk v1.2.1 h1:jXsnJ4Lmnqd11kwkBV2LgLoFMZKizbCi5fNZ/ipaZ64=

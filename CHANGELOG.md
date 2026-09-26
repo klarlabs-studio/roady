@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **MCP tool errors reach strict clients.** Tool results without a structured
   payload no longer carry `"structuredContent": null`, which strict clients
-  rejected together with the error text (#92). Via go.klarlabs.de/mcp 1.28.1.
+  rejected together with the error text (#92). Via go.klarlabs.de/mcp 1.28.1; roady takes 1.28.2, which also fixes the client's Initialize header.
 
 ## [0.23.0] - 2026-08-10
 
