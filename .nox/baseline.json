@@ -72,13 +72,6 @@
       "created_at": "2026-03-20T21:13:53.770498Z"
     },
     {
-      "fingerprint": "991967301f355545c54700c58b12f94f3df20059ca24be3d3bc8e237b80b7190",
-      "rule_id": "AI-028",
-      "file_path": "internal/infrastructure/cli/coverage_cli_test.go",
-      "severity": "medium",
-      "created_at": "2026-03-20T21:13:53.770498Z"
-    },
-    {
       "fingerprint": "4337a1ee39bb464533e07cb73faabffd815e9db97f7d58e256e213839c78f704",
       "rule_id": "AI-036",
       "file_path": "docs/docs/index.html",
