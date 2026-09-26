@@ -73,6 +73,7 @@ var toolGroups = map[string]toolGroup{
 	"roady_task_transition": groupCore,
 	"roady_task_check":      groupCore,
 	"roady_capture":         groupCore,
+	"roady_plan_import":     groupCore,
 	"roady_next":            groupCore,
 	"roady_task_dispatch":   groupCore,
 	"roady_task_log_time":   groupCore,

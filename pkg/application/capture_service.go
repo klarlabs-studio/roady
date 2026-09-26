@@ -59,6 +59,9 @@ type CaptureTask struct {
 	FeatureID   *string         `json:"feature_id,omitempty" yaml:"feature_id,omitempty" jsonschema:"description=Feature the task belongs to"`
 	Requirement *string         `json:"requirement,omitempty" yaml:"requirement,omitempty" jsonschema:"description=Requirement the task serves; implies its feature"`
 	Check       *planning.Check `json:"check,omitempty" yaml:"check,omitempty" jsonschema:"description=Acceptance check for this task: run or manual"`
+	// Source cites where the task came from (doc:line), e.g. a step in an
+	// imported plan file.
+	Source *planning.TaskSource `json:"source,omitempty" yaml:"source,omitempty" jsonschema:"description=Where the task came from: doc and line"`
 }
 
 // CaptureRejection names an item that could not be applied and why.
@@ -412,6 +415,9 @@ func (s *CaptureService) applyTasks(tasks []CaptureTask, sp *spec.ProductSpec, p
 		if ct.Check != nil {
 			c := *ct.Check
 			task.Check = &c
+		}
+		if ct.Source != nil {
+			task.Source = *ct.Source
 		}
 		t.compare(item, before, *task)
 	}

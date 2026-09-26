@@ -110,7 +110,8 @@ var toolBehaviours = map[string]toolBehaviour{
 	// Runs a command from the project's spec and records its result.
 	"roady_task_check": {},
 	// Upserts spec and plan items; re-sending the same document is a no-op.
-	"roady_capture": {idempotent: true},
+	"roady_capture":     {idempotent: true},
+	"roady_plan_import": {idempotent: true},
 	// Claims the task by default, so not read-only; reversible via stop.
 	"roady_task_dispatch": {},
 	"roady_plan_approve":  {idempotent: true},

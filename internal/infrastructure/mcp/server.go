@@ -557,6 +557,11 @@ func (s *Server) registerTools() {
 		UIResource("ui://roady/plan").
 		Handler(s.handleCapture)
 
+	s.tool("roady_plan_import").
+		Description("Turn a plan file an agent harness wrote into roady tasks: Claude Code plan mode, Cursor, Gemini CLI (markdown), Kiro tasks.md, or a Codex ExecPlan. Each step becomes task-<plan>-<step> citing file:line, chained in order unless parallel. Checked-off steps are skipped unless include_done. Without feature_id the plan becomes a new feature. Applied as a capture: all or nothing, and re-importing an edited plan updates the same tasks. Use dry_run to preview.").
+		UIResource("ui://roady/plan").
+		Handler(s.handlePlanImport)
+
 	s.tool("roady_task_check").
 		Description("Run a task's acceptance check (the check on its requirement in spec.yaml) and record the result as evidence. Returns passed, exit code, commit and output tail. A failing check is a result, not an error. Manual checks must be confirmed by a person via the CLI and cannot be satisfied here. roady_task_transition with event verify runs the check itself and refuses on failure.").
 		UIResource("ui://roady/state").
@@ -2694,6 +2699,59 @@ func (s *Server) handleCapture(ctx context.Context, args CaptureArgs) (any, erro
 	// A rejected capture is a result the caller must act on, not a failed
 	// call: it lists every item and why, and nothing was written.
 	return result, nil
+}
+
+// PlanImportArgs names a plan file to import.
+type PlanImportArgs struct {
+	Path        string `json:"path" jsonschema:"required,description=Plan file to import (absolute, or relative to the project)"`
+	Format      string `json:"format,omitempty" jsonschema:"description=auto (default), kiro, execplan or markdown"`
+	FeatureID   string `json:"feature_id,omitempty" jsonschema:"description=Attach the tasks to this existing feature instead of creating one for the plan"`
+	Parallel    bool   `json:"parallel,omitempty" jsonschema:"description=Leave steps independent instead of chaining each to the one before"`
+	IncludeDone bool   `json:"include_done,omitempty" jsonschema:"description=Import steps already checked off"`
+	DryRun      bool   `json:"dry_run,omitempty" jsonschema:"description=Report what would change without writing"`
+	Actor       string `json:"actor,omitempty" jsonschema:"description=Who is importing (defaults to ai-agent)"`
+	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
+	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+}
+
+func (s *Server) handlePlanImport(ctx context.Context, args PlanImportArgs) (any, error) {
+	if strings.TrimSpace(args.Path) == "" {
+		return mcpErr("path is required: the plan file to import."), nil
+	}
+	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
+	if err != nil {
+		return mcpErrCause("Failed to load project at the given path.", err), nil
+	}
+	if svc.Capture == nil {
+		return mcpErr("Project services are unavailable. Ensure the path points at an initialized Roady project."), nil
+	}
+	root := s.rootFor(args.ProjectPath)
+	path := args.Path
+	if !filepath.IsAbs(path) {
+		path = filepath.Join(root, path)
+	}
+	current, _ := svc.Spec.GetSpec()
+	imp, err := application.ImportPlanFile(path, current, application.PlanImportOptions{
+		Format: args.Format, FeatureID: args.FeatureID, Parallel: args.Parallel, IncludeDone: args.IncludeDone, Root: root,
+	})
+	if err != nil {
+		return mcpErr(fmt.Sprintf("Failed to import plan: %v", err)), nil
+	}
+	actor := args.Actor
+	if actor == "" {
+		actor = "ai-agent"
+	}
+	result, err := svc.Capture.Capture(imp.Doc, application.CaptureOptions{Actor: actor, DryRun: args.DryRun, Origin: planning.OriginAI})
+	if err != nil {
+		return mcpErr(fmt.Sprintf("Failed to import plan: %v", err)), nil
+	}
+	return map[string]any{
+		"format":       imp.Format,
+		"title":        imp.Title,
+		"steps":        len(imp.Doc.Tasks),
+		"skipped_done": imp.Skipped,
+		"result":       result,
+	}, nil
 }
 
 // NextArgs selects whose brief to build.

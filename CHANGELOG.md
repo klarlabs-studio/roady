@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`roady plan import` / `roady_plan_import`: take the plan the agent already
+  wrote.** Reads Claude Code / Cursor / Gemini CLI markdown plans, Kiro
+  `tasks.md` (sub-tasks become dependencies of their parent) and Codex
+  ExecPlans (the Progress checklist), and records each step as
+  `task-<plan>-<step>` citing its file and line, chained in plan order unless
+  `--parallel`. Checked-off steps are skipped unless `--include-done`. Applied
+  as a capture, so it is all or nothing and re-importing an edited plan
+  updates the same tasks. See docs/plan-import.md.
 - **`roady next` / `roady_next`: a brief to push into the agent.** The task
   you are on — or the highest-priority ready task when none is — with why it
   exists (and its doc:line), what done means and the last check result, what

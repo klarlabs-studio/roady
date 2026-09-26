@@ -6,6 +6,18 @@
 - **Minor** (1.x.0): New optional fields (`omitempty`), new tools, fields deprecated
 - **Major** (x.0.0): Required fields added/removed, tool signatures changed
 
+## v3.7.0 — Plan import and task brief
+
+**Minor**: new tools, no existing signature changed.
+
+### Added
+
+- `roady_plan_import` — imports a plan file (`path`; optional `format`,
+  `feature_id`, `parallel`, `include_done`, `dry_run`) as a capture. Returns
+  `format`, `title`, `steps`, `skipped_done` and the capture `result`.
+- `roady_next` — returns `brief` (rendered text for context injection) and
+  `detail` (the structured brief).
+
 ## v3.6.0 — Audit baseline and acceptance checks
 
 **Minor**: new optional fields and a new tool, no existing signature changed.
