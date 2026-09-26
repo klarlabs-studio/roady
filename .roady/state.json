@@ -1,6 +1,6 @@
 {
   "project_id": "agent-handoff",
-  "version": 262,
+  "version": 267,
   "task_states": {
     "task-acceptance-checks": {
       "status": "verified",
@@ -260,8 +260,14 @@
       ]
     },
     "task-extras-as-plugins": {
-      "status": "pending",
+      "status": "done",
       "path": "",
+      "owner": "Claude",
+      "evidence": [
+        "87098a1"
+      ],
+      "started_at": "2026-09-26T23:45:06.944669462+02:00",
+      "completed_at": "2026-09-26T23:45:06.960846627+02:00",
       "elapsed_minutes": 0
     },
     "task-goals-horizons": {
@@ -596,6 +602,29 @@
       "completed_at": "2026-08-02T11:32:49.755359+02:00",
       "elapsed_minutes": 0
     },
+    "task-remove-extras": {
+      "status": "done",
+      "path": "",
+      "owner": "Claude",
+      "evidence": [
+        "Commit: 87098a127bc3762adde9c94158e8a7e419f92028"
+      ],
+      "started_at": "2026-09-26T23:15:50.60612673+02:00",
+      "completed_at": "2026-09-26T23:44:26.056465872+02:00",
+      "elapsed_minutes": 28,
+      "checks": [
+        {
+          "kind": "run",
+          "command": "go build ./... \u0026\u0026 test -z \"$(git grep -lE '\"roady_(cost|rate|team|org|debt|deps|plugin|forecast|timeline|report|usage|workspace|messaging)_?[a-z_]*\"' -- '*.go')\"",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "87098a127bc3762adde9c94158e8a7e419f92028",
+          "by": "Claude",
+          "at": "2026-09-26T23:44:59.150414232+02:00",
+          "duration": "1.597s"
+        }
+      ]
+    },
     "task-render-roadmap": {
       "status": "pending",
       "path": "",
@@ -802,5 +831,5 @@
       "elapsed_minutes": 4
     }
   },
-  "updated_at": "2026-09-26T22:43:50.108001173+02:00"
+  "updated_at": "2026-09-26T23:45:06.960847664+02:00"
 }
