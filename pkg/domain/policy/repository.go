@@ -27,6 +27,11 @@ type PolicyConfig struct {
 	// adding, splitting or editing tasks keeps it. "every_change": any change
 	// does, as before.
 	PlanApproval string `yaml:"plan_approval,omitempty"`
+	// PlanFilesAllow lists project paths (globs, "dir/**" for a subtree) the
+	// Claude Code write guard lets through even though they look like plan
+	// files (ROADMAP*.md, TODO*.md, plan.md, …). Plans belong in roady; this
+	// is for the files a project keeps on purpose.
+	PlanFilesAllow []string `yaml:"plan_files_allow,omitempty"`
 }
 
 const (

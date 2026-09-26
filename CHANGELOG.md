@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`roady setup claude-code` installs hooks, so the plan reaches roady
+  without anyone remembering to put it there.** In `.claude/settings.json`:
+  SessionStart (including after compaction) injects the `roady next` brief;
+  approving a plan in plan mode (PostToolUse on ExitPlanMode) saves it to
+  `.roady/plans/` and imports it as tasks; writing `ROADMAP*.md`, `TODO*.md`
+  or `plan*.md` in the project is refused with a pointer to `roady capture`
+  (`plan_files_allow` in policy.yaml keeps files on purpose). Other hooks in
+  the file are preserved and re-running setup changes nothing. See
+  docs/mcp-integration.md#hooks.
 - **`roady plan import` / `roady_plan_import`: take the plan the agent already
   wrote.** Reads Claude Code / Cursor / Gemini CLI markdown plans, Kiro
   `tasks.md` (sub-tasks become dependencies of their parent) and Codex

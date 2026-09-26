@@ -132,7 +132,7 @@ func ImportPlanFile(path string, current *spec.ProductSpec, opts PlanImportOptio
 		format = DetectPlanFormat(path, lines)
 	}
 
-	title := planTitle(lines, path)
+	title := PlanTitle(lines, path)
 	var steps []planStep
 	switch format {
 	case PlanFormatKiro:
@@ -165,7 +165,9 @@ func citePath(path, root string) string {
 	return filepath.ToSlash(path)
 }
 
-func planTitle(lines []string, path string) string {
+// PlanTitle names a plan: its first "# " heading without a "Plan:" prefix, or
+// the file name (the spec directory's, for Kiro's tasks.md).
+func PlanTitle(lines []string, path string) string {
 	for _, l := range lines {
 		if strings.HasPrefix(l, "# ") {
 			t := cleanInline(strings.TrimPrefix(l, "# "))
@@ -417,4 +419,31 @@ func buildPlanImport(format, title, path string, steps []planStep, current *spec
 func stepTitle(raw string) string {
 	title, _ := splitItem(mdItem{text: raw})
 	return title
+}
+
+// PlansDir is where plans that arrive as text (an approved Claude Code plan)
+// are kept, so the doc:line their tasks cite resolves in the repository.
+const PlansDir = ".roady/plans"
+
+// SavePlanText stores a plan that arrived as text under root/.roady/plans,
+// named after its title, and returns the path. Saving the same plan again
+// overwrites it, so a revised plan re-imports onto the same tasks.
+func SavePlanText(root, text string) (string, error) {
+	text = strings.TrimSpace(strings.ReplaceAll(text, "\r\n", "\n"))
+	if text == "" {
+		return "", fmt.Errorf("the plan is empty")
+	}
+	slug := shortSlug(PlanTitle(strings.Split(text, "\n"), "plan.md"))
+	if slug == "" {
+		slug = "plan"
+	}
+	dir := filepath.Join(root, filepath.FromSlash(PlansDir))
+	if err := os.MkdirAll(dir, 0o750); err != nil {
+		return "", fmt.Errorf("create %s: %w", PlansDir, err)
+	}
+	path := filepath.Join(dir, slug+".md")
+	if err := os.WriteFile(path, []byte(text+"\n"), 0o600); err != nil {
+		return "", fmt.Errorf("save plan: %w", err)
+	}
+	return path, nil
 }

@@ -105,12 +105,17 @@ func setupClaudeCode() error {
 		return err
 	}
 	fmt.Printf("  ✓ %s\n", reg.Describe())
+	hooks, err := registerClaudeCodeHooks(root)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("  ✓ %s\n", describeHooks(hooks))
 
 	fmt.Println("\n✅ Claude Code setup complete!")
 	fmt.Println("\nNext steps:")
 	fmt.Println("  1. Start Claude Code in this project and approve the roady server when asked")
 	fmt.Println("     (project servers from .mcp.json need a one-time approval; `claude mcp list` shows the status)")
-	fmt.Println("  2. Commit .mcp.json so collaborators get the same server")
+	fmt.Println("  2. Commit .mcp.json and .claude/settings.json so collaborators get the same server and hooks")
 	fmt.Println("  3. Run /roady-task to start a task")
 	fmt.Println("\nTo register roady for every project instead: claude mcp add --scope user roady -- roady mcp")
 

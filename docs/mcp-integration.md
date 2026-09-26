@@ -44,8 +44,36 @@ roady setup claude-code
 
 This installs:
 - Custom commands (`/roady-task`, `/roady-status`, `/roady-review`)
-- MCP server configuration
+- MCP server configuration (`.mcp.json`)
+- Hooks (`.claude/settings.json`) — see [Hooks](#hooks)
 - CLAUDE.md instructions
+
+### Hooks
+
+Agents rarely ask for their plan, and they write plans into whatever markdown
+file is at hand. `roady setup claude-code` registers three hooks in the
+project's `.claude/settings.json` so neither depends on the agent remembering:
+
+| Event | Matcher | Command | Does |
+|---|---|---|---|
+| `SessionStart` | (all: startup, resume, clear, compact) | `roady hook session-start` | Puts the `roady next` brief into context — at the start of a session and again after compaction |
+| `PostToolUse` | `ExitPlanMode` | `roady hook plan-approved` | Saves the plan you approved in plan mode to `.roady/plans/<title>.md` and imports it as tasks ([plan-import.md](plan-import.md)); tells the agent what landed and whether the roady plan needs `roady plan approve` |
+| `PreToolUse` | `Write\|Edit\|MultiEdit` | `roady hook guard-write` | Refuses `ROADMAP*.md`, `TODO*.md` and `plan*.md` / `*-plan.md` files in the project, pointing the agent to `roady capture` |
+
+The guard ignores files outside the project and under `.roady/` or `.claude/`
+(Claude Code keeps its own plan files there). To keep a file it would refuse,
+list it in `.roady/policy.yaml`:
+
+```yaml
+plan_files_allow:
+  - ROADMAP.md        # a file name matches anywhere
+  - docs/adr/**       # a whole directory
+```
+
+Every hook is silent outside a roady project and never fails the agent's
+action: if roady errors, the action goes ahead without it. Re-running setup
+replaces roady's own entries (commands starting `roady hook `) and leaves
+every other hook as it was. Commit `.claude/settings.json` to share them.
 
 ### Usage
 ```
