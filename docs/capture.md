@@ -75,3 +75,34 @@ plan_approval: scope         # default
 
 `roady plan generate` and `roady_plan_update` follow the same rule: the
 approval stands when the spec still matches its lock and no task was dropped.
+
+## One task at a time
+
+For a single change, four commands build the capture for you. Each is a
+capture underneath — validated the same way, all or nothing, and recorded as
+one `plan.capture` event.
+
+```bash
+roady add "Handle an empty input file" --req pdf-gen --after task-pdf-gen
+roady add "Load test it" --after task-rate-limits --before task-release -p high
+roady edit task-pdf-gen --estimate 2d --add-dep task-fonts --drop-dep task-old
+roady split task-pdf-gen "Lay out the page" "Embed fonts" "Write the file"
+roady move task-load-test --req perf-budget
+```
+
+- **add** — the task belongs to `--req` (implying its feature) or
+  `--feature`; with neither, it joins the feature of the first `--after`
+  task. `--after` tasks become its dependencies, `--before` tasks come to
+  depend on it. Its id is `task-<title>` (or `--id`); adding the same title
+  again changes nothing. `--check-run` / `--check-manual` give it a check.
+- **edit** — changes only the fields given. `--depends-on` replaces the
+  list, `--add-dep` / `--drop-dep` adjust it. Changing the check of started
+  work needs `--change-checks`.
+- **split** — each part becomes `task-<id>-<part>` in the same feature and
+  takes over what the task waited for; the task now waits for its parts, so
+  its dependents and its check stay where they were. `--sequential` chains
+  the parts.
+- **move** — re-homes a task under another requirement or feature.
+
+All four take `--dry-run` and `--json`. They only touch tasks, so under
+`plan_approval: scope` an approved plan stays approved.

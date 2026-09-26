@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`roady add`, `edit`, `split`, `move`: one task without a document.**
+  Thin builders over capture — `roady add "Handle empty file" --req pdf-gen
+  --after task-pdf-gen` — each validated like any capture and recorded as one
+  event. `add` infers the feature from `--after` and is idempotent by title;
+  `split` keeps the original task as the one its dependents wait on. See
+  docs/capture.md.
 - **Setup tells the agent where plans go.** `roady setup` keeps a marked
   block in `CLAUDE.md` (claude-code), `AGENTS.md` (opencode, openai) or
   `GEMINI.md` (gemini): plans live in roady, never ROADMAP.md / TODO.md /

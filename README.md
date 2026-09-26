@@ -57,6 +57,7 @@ roady plan approve
 #    ...or record a plan your agent already made, in one write:
 roady capture -f plan.yaml        # see docs/capture.md
 roady plan import PLANS.md        # a Claude Code / Kiro / ExecPlan plan → tasks
+roady add "Handle empty file" --after task-pdf-gen   # or edit / split / move
 
 # 4. Drive execution from inside your AI editor
 /roady-task                       # agent picks the next ready task
