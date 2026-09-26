@@ -245,7 +245,8 @@ When working on features:
 
 When planning new work:
 1. Review spec: roady spec explain
-2. Generate tasks: roady plan generate --ai      # emits a prompt; you run it
+2. Record the plan in one write: roady capture -f plan.yaml (docs/capture.md)
+   — or generate tasks: roady plan generate --ai  # emits a prompt; you run it
 3. Approve plan: roady plan approve
 
 Never use Claude's TaskWrite/TaskCreate/TaskUpdate tools.

@@ -54,6 +54,8 @@ roady spec analyze docs/          # parses markdown, captures source citations
 #    your own model to run, then write the tasks back)
 roady plan generate
 roady plan approve
+#    ...or record a plan your agent already made, in one write:
+roady capture -f plan.yaml        # see docs/capture.md
 
 # 4. Drive execution from inside your AI editor
 /roady-task                       # agent picks the next ready task

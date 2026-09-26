@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`roady capture` / `roady_capture`: one write for intent of any size.**
+  Features, requirements and tasks in one YAML or JSON document, from a single
+  task to a whole plan, replacing the spec_add → plan_generate --ai →
+  plan_update → approve round trip. Items are upserted by id and omitted
+  fields keep their value, so the same shape edits. A requirement brings its
+  task. The capture is all or nothing — spec rules, dependencies, cycles,
+  priorities and checks are validated together and every rejection is
+  reported — and re-sending the same document changes nothing. See
+  docs/capture.md.
 - **Acceptance checks: "done" can be shown, not only claimed.** A requirement
   in spec.yaml can carry a `check` — `run:` (a command; exit 0 passes) or
   `manual:` (a person confirms). `roady plan generate` copies it onto the task.

@@ -32,6 +32,7 @@ type AppServices struct {
 	Prompt     *application.PromptService     // Builds model prompts; Roady runs no inference
 	AuditTrail *application.AuditTrailService // Evidence trails for GRC review
 	Dispatch   *application.DispatchService   // Hands a ready task to a subagent
+	Capture    *application.CaptureService    // One write for intent of any size
 	Publisher  *storage.InMemoryEventPublisher
 }
 
@@ -138,6 +139,7 @@ func buildServices(workspace *Workspace) (*AppServices, error) {
 		Drift:      driftSvc,
 		Policy:     policySvc,
 		Task:       taskSvc,
+		Capture:    application.NewCaptureService(workspace.Repo, auditSvc),
 		Billing:    application.NewBillingService(workspace.Repo, auditSvc),
 		Git:        application.NewGitService(workspace.Repo, taskSvc),
 		Sync:       application.NewSyncServiceWithPlugins(workspace.Repo, workspace.Repo, taskSvc),

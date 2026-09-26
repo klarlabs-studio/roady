@@ -12,6 +12,10 @@
 
 ### Added
 
+- `roady_capture` — records features, requirements and tasks in one call,
+  upserted by id; all or nothing, idempotent, with `dry_run`. Returns
+  `created`, `updated`, `unchanged`, `rejected` (item and reason), `applied`
+  and the plan's approval afterwards.
 - `roady_task_check` — runs a task's acceptance check and returns the recorded
   result (`kind`, `command`, `passed`, `exit_code`, `commit`, `dirty`, `by`,
   `at`, `duration`, `output`). A failing check is a result, not an error.

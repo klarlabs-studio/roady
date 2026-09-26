@@ -547,6 +547,11 @@ func (s *Server) registerTools() {
 		UIResource("ui://roady/state").
 		Handler(s.handleTransitionTask)
 
+	s.tool("roady_capture").
+		Description("Record features, requirements and tasks in one call: from a single task to a whole plan. Every item is keyed by id and upserted; omitted fields keep their value, so this also edits. A requirement gets its task (task-<requirement id>) automatically. All or nothing: if any item is invalid nothing is written and each rejection is returned. Re-sending the same content changes nothing. Use dry_run to preview.").
+		UIResource("ui://roady/plan").
+		Handler(s.handleCapture)
+
 	s.tool("roady_task_check").
 		Description("Run a task's acceptance check (the check on its requirement in spec.yaml) and record the result as evidence. Returns passed, exit code, commit and output tail. A failing check is a result, not an error. Manual checks must be confirmed by a person via the CLI and cannot be satisfied here. roady_task_transition with event verify runs the check itself and refuses on failure.").
 		UIResource("ui://roady/state").
@@ -2648,5 +2653,34 @@ func (s *Server) handleTaskCheck(ctx context.Context, args TaskCheckArgs) (any, 
 	if err != nil {
 		return mcpErr(fmt.Sprintf("Failed to run the check for task '%s': %v", args.TaskID, err)), nil
 	}
+	return result, nil
+}
+
+// CaptureArgs is a capture document plus the usual project selectors.
+type CaptureArgs struct {
+	Features    []application.CaptureFeature `json:"features,omitempty" jsonschema:"description=Features to add or update; each may carry requirements"`
+	Tasks       []application.CaptureTask    `json:"tasks,omitempty" jsonschema:"description=Tasks to add or update"`
+	DryRun      bool                         `json:"dry_run,omitempty" jsonschema:"description=Report what would change without writing"`
+	Actor       string                       `json:"actor,omitempty" jsonschema:"description=Who is capturing (defaults to ai-agent)"`
+	ProjectPath string                       `json:"project_path,omitempty" jsonschema:"description=Path to the roady project directory (default: server root)"`
+	Project     string                       `json:"project,omitempty" jsonschema:"description=Sub-project name under .roady/projects/<name>/ (default: root project)"`
+}
+
+func (s *Server) handleCapture(ctx context.Context, args CaptureArgs) (any, error) {
+	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
+	if err != nil {
+		return mcpErrCause("Failed to load project at the given path.", err), nil
+	}
+	actor := args.Actor
+	if actor == "" {
+		actor = "ai-agent"
+	}
+	result, err := svc.Capture.Capture(application.CaptureDoc{Features: args.Features, Tasks: args.Tasks},
+		application.CaptureOptions{Actor: actor, DryRun: args.DryRun, Origin: planning.OriginAI})
+	if err != nil {
+		return mcpErr(fmt.Sprintf("Failed to capture: %v", err)), nil
+	}
+	// A rejected capture is a result the caller must act on, not a failed
+	// call: it lists every item and why, and nothing was written.
 	return result, nil
 }
