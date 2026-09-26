@@ -9,7 +9,7 @@
 //	c := sdk.NewClient(transport)
 //	defer c.Close()
 //
-//	info, _ := c.Initialize(ctx)
+//	info, _ := c.Connect(ctx)
 //	spec, _ := c.GetSpec(ctx)
 //	fmt.Println(spec.Title)
 package sdk

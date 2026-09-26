@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`sdk.Client.Connect`**, the MCP 2026-07-28 handshake: it calls
+  `server/discover` and falls back to `initialize` only for servers that predate
+  it. roady's HTTP server is stateless Streamable HTTP, which retires
+  `initialize`, so an SDK caller on HTTP could not connect at all with
+  `Initialize`. `Initialize` remains and is deprecated.
+
+### Fixed
+
+- **MCP tool errors reach strict clients.** Tool results without a structured
+  payload no longer carry `"structuredContent": null`, which strict clients
+  rejected together with the error text (#92). Via go.klarlabs.de/mcp 1.28.1; roady takes 1.28.2, which also fixes the client's Initialize header.
+
 ## [0.23.0] - 2026-08-10
 
 ### Changed

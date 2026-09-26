@@ -34,7 +34,19 @@ func NewClient(transport client.Transport, opts ...Option) *Client {
 	}
 }
 
-// Initialize performs the MCP initialize handshake.
+// Connect opens the MCP session the way MCP 2026-07-28 defines it: it calls
+// server/discover, and falls back to the initialize handshake only when the
+// server predates discover. roady's HTTP transport is stateless Streamable
+// HTTP, which retires initialize, so this is the call to use.
+func (c *Client) Connect(ctx context.Context) (*client.ServerInfo, error) {
+	return c.mcp.Connect(ctx)
+}
+
+// Initialize performs the legacy MCP initialize handshake.
+//
+// Deprecated: MCP 2026-07-28 retires initialize, and roady's HTTP server
+// rejects it. Use Connect, which discovers the server and falls back to
+// initialize only for servers that predate discover.
 func (c *Client) Initialize(ctx context.Context) (*client.ServerInfo, error) {
 	return c.mcp.Initialize(ctx)
 }

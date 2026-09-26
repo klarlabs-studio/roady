@@ -1,7 +1,6 @@
 package mcp
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -63,47 +62,35 @@ func TestMCPHTTPTransport(t *testing.T) {
 
 	waitForHTTP(t, addr, 5*time.Second)
 
-	resp := sendJSONRPC(t, addr, jsonRPCRequest{
-		JSONRPC: "2.0",
-		ID:      1,
-		Method:  "initialize",
-		Params: map[string]any{
-			"protocolVersion": "2024-11-05",
-			"clientInfo": map[string]any{
-				"name":    "roady-test",
-				"version": "0.0.0",
-			},
-			"capabilities": map[string]any{},
-		},
-	})
+	// roady serves stateless Streamable HTTP (MCP 2026-07-28), which retires
+	// the initialize handshake: a conforming client discovers the server and
+	// sends Mcp-Method and the protocol version on every request. The mcp-go
+	// client's Connect is that client. A hand-written 2024-11-05 initialize is
+	// refused, correctly, and is what this test used to send.
+	tr, err := client.NewHTTPTransport("http://" + addr)
+	if err != nil {
+		t.Fatalf("http transport: %v", err)
+	}
+	c := client.New(tr, client.WithTimeout(10*time.Second))
+	defer func() { _ = c.Close() }()
 
-	if resp.Error != nil {
-		t.Fatalf("initialize error: %v", resp.Error.Message)
+	info, err := c.Connect(ctx)
+	if err != nil {
+		t.Fatalf("connect: %v", err)
 	}
-	if resp.Result == nil {
-		t.Fatalf("initialize missing result")
+	if info.Version != "test" {
+		t.Fatalf("unexpected version: %v", info.Version)
 	}
-	var result map[string]any
-	if err := json.Unmarshal(*resp.Result, &result); err != nil {
-		t.Fatalf("unmarshal result: %v", err)
-	}
-
-	serverInfo := result["serverInfo"].(map[string]any)
-	if serverInfo["version"] != "test" {
-		t.Fatalf("unexpected version: %v", serverInfo["version"])
-	}
-	capabilities := result["capabilities"].(map[string]any)
-	if _, ok := capabilities["tools"]; !ok {
+	if !info.Capabilities.Tools {
 		t.Fatalf("expected tools capability")
 	}
 
-	resp = sendJSONRPC(t, addr, jsonRPCRequest{
-		JSONRPC: "2.0",
-		ID:      2,
-		Method:  "tools/list",
-	})
-	if resp.Error != nil {
-		t.Fatalf("tools/list error: %v", resp.Error.Message)
+	tools, err := c.ListTools(ctx)
+	if err != nil {
+		t.Fatalf("tools/list: %v", err)
+	}
+	if len(tools) == 0 {
+		t.Fatalf("tools/list returned no tools")
 	}
 }
 
@@ -305,27 +292,6 @@ func waitForHTTP(t *testing.T, addr string, timeout time.Duration) {
 		time.Sleep(50 * time.Millisecond)
 	}
 	t.Fatalf("server did not become healthy at %s", url)
-}
-
-func sendJSONRPC(t *testing.T, addr string, req jsonRPCRequest) jsonRPCResponse {
-	t.Helper()
-	body, err := json.Marshal(req)
-	if err != nil {
-		t.Fatalf("marshal request: %v", err)
-	}
-
-	url := fmt.Sprintf("http://%s/mcp", addr)
-	httpResp, err := http.Post(url, "application/json", bytes.NewReader(body))
-	if err != nil {
-		t.Fatalf("http post: %v", err)
-	}
-	defer httpResp.Body.Close() //nolint:errcheck // best-effort close on read body
-
-	var resp jsonRPCResponse
-	if err := json.NewDecoder(httpResp.Body).Decode(&resp); err != nil {
-		t.Fatalf("decode response: %v", err)
-	}
-	return resp
 }
 
 func findRepoRoot(t *testing.T) string {
