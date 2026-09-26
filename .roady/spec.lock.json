@@ -331,7 +331,10 @@
           "priority": "high",
           "estimate": "2d",
           "depends_on": null,
-          "source": {}
+          "source": {},
+          "check": {
+            "run": "go test ./pkg/application/ -run Capture -count=1"
+          }
         },
         {
           "id": "single-task-cli",

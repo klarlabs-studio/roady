@@ -1,6 +1,6 @@
 {
   "project_id": "agent-handoff",
-  "version": 195,
+  "version": 198,
   "task_states": {
     "task-acceptance-checks": {
       "status": "done",
@@ -96,11 +96,28 @@
       "elapsed_minutes": 0
     },
     "task-capture-upsert": {
-      "status": "in_progress",
+      "status": "done",
       "path": "",
       "owner": "Claude",
+      "evidence": [
+        "Commit: 02329b14660b729878ab1ac32277ececeec38699"
+      ],
       "started_at": "2026-09-26T17:49:46.382653465+02:00",
-      "elapsed_minutes": 0
+      "completed_at": "2026-09-26T17:54:54.00613261+02:00",
+      "elapsed_minutes": 5,
+      "checks": [
+        {
+          "kind": "run",
+          "command": "go test ./pkg/application/ -run Capture -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "02329b14660b729878ab1ac32277ececeec38699",
+          "by": "Claude",
+          "at": "2026-09-26T17:55:16.016080646+02:00",
+          "duration": "790ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.008s\n"
+        }
+      ]
     },
     "task-claude-code-hooks": {
       "status": "pending",
@@ -440,5 +457,5 @@
       "elapsed_minutes": 4
     }
   },
-  "updated_at": "2026-09-26T17:49:46.382653465+02:00"
+  "updated_at": "2026-09-26T17:54:54.006133741+02:00"
 }
