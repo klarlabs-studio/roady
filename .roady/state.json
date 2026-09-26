@@ -1,6 +1,6 @@
 {
   "project_id": "agent-handoff",
-  "version": 241,
+  "version": 250,
   "task_states": {
     "task-acceptance-checks": {
       "status": "verified",
@@ -387,11 +387,61 @@
       "elapsed_minutes": 0
     },
     "task-mcp-error-live-path": {
-      "status": "in_progress",
+      "status": "verified",
       "path": "",
       "owner": "Claude",
-      "started_at": "2026-09-26T20:16:45.896061806+02:00",
-      "elapsed_minutes": 0
+      "evidence": [
+        "4ee5c7c"
+      ],
+      "started_at": "2026-09-26T22:04:00.484408673+02:00",
+      "completed_at": "2026-09-26T22:04:00.500829878+02:00",
+      "elapsed_minutes": 0,
+      "checks": [
+        {
+          "kind": "run",
+          "command": "go test -tags mcpwire ./internal/infrastructure/mcp/ -run TestToolErrorOnTheWire -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "c7171f6707426e6f95a178286a118cba4ea085b2",
+          "by": "Claude",
+          "at": "2026-09-26T22:03:41.198720301+02:00",
+          "duration": "809ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/internal/infrastructure/mcp\t0.010s\n"
+        },
+        {
+          "kind": "run",
+          "command": "go test -tags mcpwire ./internal/infrastructure/mcp/ -run TestToolErrorOnTheWire -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "c7171f6707426e6f95a178286a118cba4ea085b2",
+          "by": "Claude",
+          "at": "2026-09-26T22:03:54.464785032+02:00",
+          "duration": "800ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/internal/infrastructure/mcp\t0.011s\n"
+        },
+        {
+          "kind": "run",
+          "command": "go test -tags mcpwire ./internal/infrastructure/mcp/ -run TestToolErrorOnTheWire -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "c7171f6707426e6f95a178286a118cba4ea085b2",
+          "by": "Claude",
+          "at": "2026-09-26T22:04:00.527705822+02:00",
+          "duration": "1.077s",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/internal/infrastructure/mcp\t0.036s\n"
+        },
+        {
+          "kind": "run",
+          "command": "go test -tags mcpwire ./internal/infrastructure/mcp/ -run TestToolErrorOnTheWire -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "c7171f6707426e6f95a178286a118cba4ea085b2",
+          "by": "Claude",
+          "at": "2026-09-26T22:04:01.638943884+02:00",
+          "duration": "1.122s",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/internal/infrastructure/mcp\t0.016s\n"
+        }
+      ]
     },
     "task-mcp-errors-reach-agent": {
       "status": "verified",
@@ -672,5 +722,5 @@
       "elapsed_minutes": 4
     }
   },
-  "updated_at": "2026-09-26T22:01:49.712047697+02:00"
+  "updated_at": "2026-09-26T22:04:02.771153202+02:00"
 }
