@@ -1,6 +1,6 @@
 {
   "project_id": "agent-handoff",
-  "version": 258,
+  "version": 261,
   "task_states": {
     "task-acceptance-checks": {
       "status": "verified",
@@ -688,9 +688,28 @@
       ]
     },
     "task-slim-mcp": {
-      "status": "pending",
+      "status": "done",
       "path": "",
-      "elapsed_minutes": 0
+      "owner": "Claude",
+      "evidence": [
+        "Commit: 467944e678f76fe56e956b4eb8132af3d564866b"
+      ],
+      "started_at": "2026-09-26T22:39:07.837234359+02:00",
+      "completed_at": "2026-09-26T22:42:38.659028974+02:00",
+      "elapsed_minutes": 3,
+      "checks": [
+        {
+          "kind": "run",
+          "command": "go test ./internal/infrastructure/mcp/ -run 'TestDefaultSurfaceOnTheWire|TestResolveSurface|TestListFilterOnlyTrimsToolsList' -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "467944e678f76fe56e956b4eb8132af3d564866b",
+          "by": "Claude",
+          "at": "2026-09-26T22:42:38.703038794+02:00",
+          "duration": "933ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/internal/infrastructure/mcp\t0.043s\n"
+        }
+      ]
     },
     "task-spec-conflict-exit": {
       "status": "pending",
@@ -782,5 +801,5 @@
       "elapsed_minutes": 4
     }
   },
-  "updated_at": "2026-09-26T22:33:56.603804963+02:00"
+  "updated_at": "2026-09-26T22:42:38.659029759+02:00"
 }
