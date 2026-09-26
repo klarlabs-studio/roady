@@ -128,15 +128,19 @@ func TestMCPStdioTransport(t *testing.T) {
 	if err != nil {
 		t.Fatalf("list tools: %v", err)
 	}
+	// The default surface lists the essential tools; roady_init is not
+	// among them but stays callable, which the call below also proves.
 	found := false
 	for _, tool := range tools {
 		if tool.Name == "roady_init" {
+			t.Errorf("roady_init is not an essential tool and should not be listed by default")
+		}
+		if tool.Name == "roady_next" {
 			found = true
-			break
 		}
 	}
 	if !found {
-		t.Fatalf("expected roady_init tool")
+		t.Fatalf("expected roady_next in the default tool list")
 	}
 
 	result, err := mcpClient.CallTool(ctx, "roady_init", map[string]any{"name": "test"})
