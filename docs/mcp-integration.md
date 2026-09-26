@@ -58,17 +58,22 @@ This installs:
 
 **Commands:** Copy from `.claude/commands/` to `~/.claude/commands/`
 
-**MCP:** Add to `~/.claude/settings.local.json`:
+**MCP:** Claude Code reads MCP servers from the project's `.mcp.json` or from
+`~/.claude.json` — not from `settings.json` or `settings.local.json`. For the
+project (shared with collaborators, approved once per machine):
 ```json
 {
   "mcpServers": {
     "roady": {
+      "type": "stdio",
       "command": "roady",
       "args": ["mcp"]
     }
   }
 }
 ```
+Or for every project: `claude mcp add --scope user roady -- roady mcp`.
+`claude mcp list` shows whether the server is registered and approved.
 
 **CLAUDE.md:** Add task management instructions
 

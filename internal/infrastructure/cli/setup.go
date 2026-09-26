@@ -69,10 +69,8 @@ func setupClaudeCode() error {
 		return fmt.Errorf("create .claude/commands: %w", err)
 	}
 
-	cmd := exec.Command("roady")
-	cmd.Dir, _ = os.Getwd()
-	if err := cmd.Run(); err != nil {
-		fmt.Println("Warning: roady command not in PATH - commands may not work")
+	if _, err := exec.LookPath("roady"); err != nil {
+		fmt.Println("Warning: roady is not on PATH - Claude Code will not be able to start the MCP server")
 	}
 
 	roadyCommands := map[string]string{
@@ -93,30 +91,28 @@ func setupClaudeCode() error {
 		}
 	}
 
-	settingsPath := filepath.Join(claudeDir, "settings.local.json")
-	mcpConfig := `{
-  "mcpServers": {
-    "roady": {
-      "command": "roady",
-      "args": ["mcp"]
-    }
-  }
-}`
-
-	if _, err := os.Stat(settingsPath); os.IsNotExist(err) {
-		if err := os.WriteFile(settingsPath, []byte(mcpConfig), 0644); err != nil {
-			return fmt.Errorf("write settings: %w", err)
-		}
-		fmt.Printf("  ✓ Created %s\n", settingsPath)
-	} else {
-		fmt.Printf("  ✓ %s already exists (MCP may already be configured)\n", settingsPath)
+	// MCP servers are read from the project's .mcp.json or from
+	// ~/.claude.json, never from a settings file. This used to write
+	// ~/.claude/settings.local.json, which Claude Code does not read for
+	// mcpServers, and skipped silently when that file existed — so the
+	// server was never registered and the command still reported success.
+	root, err := getProjectRoot()
+	if err != nil {
+		return fmt.Errorf("resolve project path: %w", err)
 	}
+	reg, err := registerClaudeCodeMCP(root)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("  ✓ %s\n", reg.Describe())
 
 	fmt.Println("\n✅ Claude Code setup complete!")
 	fmt.Println("\nNext steps:")
-	fmt.Println("  1. Restart Claude Code")
-	fmt.Println("  2. Run /roady-task to start a task")
-	fmt.Println("  3. Run /roady-status for project overview")
+	fmt.Println("  1. Start Claude Code in this project and approve the roady server when asked")
+	fmt.Println("     (project servers from .mcp.json need a one-time approval; `claude mcp list` shows the status)")
+	fmt.Println("  2. Commit .mcp.json so collaborators get the same server")
+	fmt.Println("  3. Run /roady-task to start a task")
+	fmt.Println("\nTo register roady for every project instead: claude mcp add --scope user roady -- roady mcp")
 
 	return nil
 }

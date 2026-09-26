@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`roady setup claude-code` registers the MCP server where Claude Code
+  reads it.** It wrote `mcpServers` to `~/.claude/settings.local.json`, which
+  Claude Code does not read for MCP servers, and skipped silently when that
+  file already existed — so the server was never registered while setup
+  reported success. It now merges a `roady` entry into the project's
+  `.mcp.json` (other servers and keys preserved, an invalid file refused
+  rather than overwritten, re-runs are no-ops) and says what it changed.
+  `claude mcp list` then shows the server pending its one-time approval.
+  The PATH check uses `exec.LookPath` instead of running `roady`.
+
 - **`roady audit verify` no longer reassures over a deleted entry.** Removing
   one event from the middle of events.jsonl was detected — as "referencing a
   removed parent" — and then summarised with *nothing here is evidence of
