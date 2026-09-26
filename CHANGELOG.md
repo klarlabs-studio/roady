@@ -62,6 +62,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **`go.klarlabs.de/mcp` v1.24.1 → v1.28.1, keeping HTTP clients working.**
+  Since mcp-go 1.26 `ServeHTTP` defaults to the stateless 2026-07-28 model,
+  which rejects any request without an `Mcp-Method` header — every client that
+  speaks today's session-based Streamable HTTP. `roady mcp --transport http`
+  now opts into session-based Streamable HTTP (MCP 2025-06-18) explicitly.
+  stdio is unaffected.
 - **Adding or editing tasks no longer un-approves the plan.** Any change —
   a new task, an edited estimate, a check attached to a task — returned an
   approved plan to pending, so every agent was blocked until someone
@@ -73,6 +79,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `plan_approval: every_change` restores the previous behaviour.
 
 ### Fixed
+
+- **MCP tool errors no longer carry `"structuredContent": null` (#92).** The
+  v0.22 fix was in the result type, but mcp-go's tools/call dispatch copied
+  fields into a map and wrote the null regardless, so strict clients still
+  rejected every error result along with its message. Fixed in mcp-go v1.28.1;
+  roady's test now drives a real tools/call over HTTP and reads the bytes a
+  client receives.
 
 - **`roady spec lock` noticed only structural changes.** It compared IDs and
   counts, so after a requirement's description or check changed it answered

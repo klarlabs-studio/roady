@@ -2039,8 +2039,14 @@ func (s *Server) ServeStdio(ctx context.Context) error {
 }
 
 func (s *Server) ServeHTTP(ctx context.Context, addr string) error {
+	// Session-based Streamable HTTP (MCP 2025-06-18). Since mcp-go 1.26 the
+	// default is the stateless 2026-07-28 model, which rejects any request
+	// without an Mcp-Method header — i.e. every client that speaks today's
+	// session-based protocol. roady serves HTTP to such clients, so it opts
+	// into the stateful model explicitly rather than inheriting a default that
+	// would break them on upgrade.
 	return mcp.ServeHTTPWithMiddleware(ctx, s.mcpServer, addr,
-		[]mcp.HTTPOption{mcp.WithDefaultCORS()},
+		[]mcp.HTTPOption{mcp.WithDefaultCORS(), mcp.WithStreamableStateful()},
 		s.serveMiddleware(),
 	)
 }

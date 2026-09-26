@@ -1,13 +1,3 @@
-//go:build mcpwire
-
-// This test is behind the mcpwire build tag until go.klarlabs.de/mcp is bumped
-// to a release containing the dispatch fix (branch
-// fix/omit-nil-structured-content on felixgeelhaar/mcp-go). Against the pinned
-// v1.24.1 it fails, correctly. Remove the tag with the bump; the roady task
-// task-mcp-error-live-path stays blocked until then.
-//
-//	go test -tags mcpwire ./internal/infrastructure/mcp/ -run TestToolErrorOnTheWire
-
 package mcp
 
 import (

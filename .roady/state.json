@@ -1,6 +1,6 @@
 {
   "project_id": "agent-handoff",
-  "version": 228,
+  "version": 230,
   "task_states": {
     "task-acceptance-checks": {
       "status": "verified",
@@ -347,10 +347,10 @@
       "elapsed_minutes": 0
     },
     "task-mcp-error-live-path": {
-      "status": "blocked",
+      "status": "in_progress",
       "path": "",
       "owner": "Claude",
-      "started_at": "2026-09-26T16:25:01.182551128+02:00",
+      "started_at": "2026-09-26T20:16:45.896061806+02:00",
       "elapsed_minutes": 0
     },
     "task-mcp-errors-reach-agent": {
@@ -613,5 +613,5 @@
       "elapsed_minutes": 4
     }
   },
-  "updated_at": "2026-09-26T18:37:24.027366295+02:00"
+  "updated_at": "2026-09-26T20:16:45.896061806+02:00"
 }
