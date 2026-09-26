@@ -30,6 +30,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `roady_task_check` runs a check over MCP. A check is part of the spec hash,
   so loosening one reads as spec drift; specs without checks keep their hash.
   See docs/acceptance-checks.md.
+- **Loosening a check after work started is refused.** Removing or changing
+  the acceptance check of a task that is in progress, blocked, done or
+  verified is refused on every path that could make it stick: task edits
+  (capture, plan_update), requirement edits (capture, plan generate), and
+  re-locking a hand-edited spec.yaml (spec lock, drift accept, spec add) —
+  the last being how a loosened check would stop showing as drift. Adding a
+  check, or changing one before work starts, is free. `--change-checks` on the
+  CLI permits it on the record: done or verified work reopens and each change
+  is logged as `task.check_changed`. Not available over MCP or in watch mode.
 - **`verify_requires_evidence`: verified means proven.** With the policy on,
   verify needs a passing acceptance check and a linked commit; missing
   evidence is reported before any check runs. A person can verify without it
@@ -51,6 +60,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `plan_approval: every_change` restores the previous behaviour.
 
 ### Fixed
+
+- **`roady spec lock` noticed only structural changes.** It compared IDs and
+  counts, so after a requirement's description or check changed it answered
+  "already in sync" while `drift detect`, which compares hashes, kept
+  reporting the mismatch that re-locking was meant to clear. It now uses the
+  same hash as drift.
 
 - **`roady git sync` links a commit to a task finished before it.** A
   `[roady:<id>]` marker on a task already done was skipped as an invalid

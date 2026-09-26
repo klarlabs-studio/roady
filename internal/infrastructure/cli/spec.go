@@ -181,6 +181,8 @@ var specReviewCmd = &cobra.Command{
 	},
 }
 
+var specLockChangeChecks bool
+
 var specLockCmd = &cobra.Command{
 	Use:   "lock",
 	Short: "Re-capture the drift baseline from the current spec",
@@ -199,9 +201,16 @@ Re-running is a no-op when everything already agrees.`,
 		if err != nil {
 			return fmt.Errorf("resolve project path: %w", err)
 		}
-		repo := wiring.NewWorkspace(cwd).Repo
+		ws := wiring.NewWorkspace(cwd)
+		repo := ws.Repo
 
-		result, err := application.NewSpecService(repo).WriteLock()
+		actor := resolveCurrentOwner(gitConfigUserName)
+		if actor == "" {
+			actor = "unknown-human"
+		}
+		result, err := application.NewSpecService(repo).WriteLockWith(application.LockOptions{
+			AllowCheckChange: specLockChangeChecks, Actor: actor, Audit: ws.Audit,
+		})
 		if err != nil {
 			return MapError(err)
 		}
@@ -221,6 +230,7 @@ Re-running is a no-op when everything already agrees.`,
 }
 
 func init() {
+	specLockCmd.Flags().BoolVar(&specLockChangeChecks, "change-checks", false, "Allow removing or changing the acceptance check of work already started (reopens done tasks; recorded as an override)")
 	specCmd.AddCommand(specLockCmd)
 	specCmd.AddCommand(specAddCmd)
 	specAnalyzeCmd.Flags().BoolVar(&reconcileSpec, "reconcile", false, "Removed: Roady no longer runs inference. Use 'roady spec explain' and write the result back with 'roady spec add'")

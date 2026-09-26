@@ -1,6 +1,6 @@
 {
   "project_id": "agent-handoff",
-  "version": 202,
+  "version": 203,
   "task_states": {
     "task-acceptance-checks": {
       "status": "done",
@@ -196,8 +196,10 @@
       "elapsed_minutes": 0
     },
     "task-guarded-fields": {
-      "status": "pending",
+      "status": "in_progress",
       "path": "",
+      "owner": "Claude",
+      "started_at": "2026-09-26T18:07:32.474265522+02:00",
       "elapsed_minutes": 0
     },
     "task-harness-importers": {
@@ -476,5 +478,5 @@
       "elapsed_minutes": 4
     }
   },
-  "updated_at": "2026-09-26T17:57:47.288344296+02:00"
+  "updated_at": "2026-09-26T18:07:32.474265522+02:00"
 }

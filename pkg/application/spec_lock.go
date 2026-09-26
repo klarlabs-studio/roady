@@ -3,6 +3,7 @@ package application
 import (
 	"fmt"
 
+	"github.com/felixgeelhaar/roady/pkg/domain"
 	"github.com/felixgeelhaar/roady/pkg/domain/spec"
 )
 
@@ -91,6 +92,22 @@ func (s *SpecService) LockStatus() (*LockState, error) {
 // until it silently does not, since the lock is what every later drift check
 // compares against.
 func (s *SpecService) WriteLock() (*LockResult, error) {
+	return s.WriteLockWith(LockOptions{})
+}
+
+// LockOptions controls a lock write.
+type LockOptions struct {
+	// AllowCheckChange lets the lock bless a removed or changed check on work
+	// already started. CLI only (--change-checks); never from MCP.
+	AllowCheckChange bool
+	Actor            string
+	Audit            domain.AuditLogger
+}
+
+// WriteLockWith is WriteLock with the check guard's options. Locking is how a
+// check loosened by hand in spec.yaml would stop showing as drift, so the
+// guard applies here as it does to plan writes.
+func (s *SpecService) WriteLockWith(opts LockOptions) (*LockResult, error) {
 	productSpec, err := s.repo.LoadSpec()
 	if err != nil {
 		return nil, fmt.Errorf("load spec: %w", err)
@@ -105,10 +122,22 @@ func (s *SpecService) WriteLock() (*LockResult, error) {
 	// no-op rather than a spurious change in the diff.
 	locked, lErr := s.repo.LoadSpecLock()
 	if lErr != nil || locked == nil || !specsMatch(locked, productSpec) {
+		guard := NewCheckGuard(s.repo, opts.Audit)
+		guarded := guard.Inspect(productSpec, nil)
+		if err := guard.Authorize(guarded, opts.AllowCheckChange); err != nil {
+			return nil, err
+		}
 		if err := s.repo.SaveSpecLock(productSpec); err != nil {
 			return nil, fmt.Errorf("write spec lock: %w", err)
 		}
 		result.LockUpdated = true
+		actor := opts.Actor
+		if actor == "" {
+			actor = "cli"
+		}
+		if err := guard.Record(guarded, actor); err != nil {
+			return nil, err
+		}
 	}
 
 	execState, sErr := s.repo.LoadState()
@@ -123,11 +152,18 @@ func (s *SpecService) WriteLock() (*LockResult, error) {
 	return result, nil
 }
 
-// specsMatch reports whether the lock already captures this spec. Identity and
-// shape are compared rather than the whole document, since the lock exists to
-// answer "has the spec moved", not to be byte-identical.
+// specsMatch reports whether the lock already captures this spec: same
+// identity, same shape, and the same hash drift detection compares. It is not
+// a byte comparison, since the lock exists to answer "has the spec moved".
 func specsMatch(locked, current *spec.ProductSpec) bool {
 	if locked.ID != current.ID || locked.Title != current.Title || locked.Version != current.Version {
+		return false
+	}
+	// Drift compares by hash, so the lock is stale whenever the hashes differ.
+	// Comparing only IDs and counts made `spec lock` answer "already in sync"
+	// after a requirement's description or check changed, while drift kept
+	// reporting the mismatch — and re-running spec lock could never clear it.
+	if locked.Hash() != current.Hash() {
 		return false
 	}
 	if len(locked.Features) != len(current.Features) {

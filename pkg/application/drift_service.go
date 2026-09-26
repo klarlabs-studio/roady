@@ -121,6 +121,14 @@ func (s *DriftService) DetectDrift(ctx context.Context) (*drift.Report, error) {
 
 // AcceptDrift locks the current spec snapshot and records the acceptance event.
 func (s *DriftService) AcceptDrift() error {
+	return s.AcceptDriftWith(false, "cli")
+}
+
+// AcceptDriftWith accepts drift by re-locking the spec. Accepting is exactly
+// how a check loosened by hand in spec.yaml would stop being reported, so a
+// removed or changed check on started work needs allowCheckChange (the CLI's
+// --change-checks; never MCP or watch mode).
+func (s *DriftService) AcceptDriftWith(allowCheckChange bool, actor string) error {
 	spec, err := s.repo.LoadSpec()
 	if err != nil {
 		return fmt.Errorf("load spec: %w", err)
@@ -129,8 +137,16 @@ func (s *DriftService) AcceptDrift() error {
 		return fmt.Errorf("no spec found to accept drift")
 	}
 
+	guard := NewCheckGuard(s.repo, s.audit)
+	guarded := guard.Inspect(spec, nil)
+	if err := guard.Authorize(guarded, allowCheckChange); err != nil {
+		return err
+	}
 	if err := s.repo.SaveSpecLock(spec); err != nil {
 		return fmt.Errorf("save spec lock: %w", err)
+	}
+	if err := guard.Record(guarded, actor); err != nil {
+		return err
 	}
 
 	if s.audit == nil {

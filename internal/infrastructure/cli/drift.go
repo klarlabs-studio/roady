@@ -119,6 +119,8 @@ var driftDetectCmd = &cobra.Command{
 	},
 }
 
+var driftAcceptChangeChecks bool
+
 var driftAcceptCmd = &cobra.Command{
 	Use:   "accept",
 	Short: "Accept current drift by locking the spec snapshot",
@@ -128,7 +130,11 @@ var driftAcceptCmd = &cobra.Command{
 			return err
 		}
 
-		if err := services.Drift.AcceptDrift(); err != nil {
+		actor := resolveCurrentOwner(gitConfigUserName)
+		if actor == "" {
+			actor = "unknown-human"
+		}
+		if err := services.Drift.AcceptDriftWith(driftAcceptChangeChecks, actor); err != nil {
 			return MapError(fmt.Errorf("failed to accept drift: %w", err))
 		}
 
@@ -144,6 +150,7 @@ func init() {
 	driftExplainCmd.Flags().BoolVar(&driftWantPatch, "patch", false, "Ask for a unified diff that closes the drift, instead of an explanation")
 	addPromptJSONFlag(driftExplainCmd)
 	driftCmd.AddCommand(driftExplainCmd)
+	driftAcceptCmd.Flags().BoolVar(&driftAcceptChangeChecks, "change-checks", false, "Allow removing or changing the acceptance check of work already started (reopens done tasks; recorded as an override)")
 	driftCmd.AddCommand(driftAcceptCmd)
 	RootCmd.AddCommand(driftCmd)
 }

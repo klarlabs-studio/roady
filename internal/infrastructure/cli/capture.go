@@ -18,6 +18,7 @@ var (
 	captureFile   string
 	captureDryRun bool
 	captureJSON   bool
+	captureChecks bool
 )
 
 var captureCmd = &cobra.Command{
@@ -79,7 +80,7 @@ Reads from --file, or stdin when no file is given:
 		if actor == "" {
 			actor = "unknown-human"
 		}
-		result, err := svc.Capture(doc, application.CaptureOptions{Actor: actor, DryRun: captureDryRun, Origin: planning.OriginHuman})
+		result, err := svc.Capture(doc, application.CaptureOptions{Actor: actor, DryRun: captureDryRun, Origin: planning.OriginHuman, AllowCheckChange: captureChecks})
 		if err != nil {
 			return MapError(fmt.Errorf("capture failed: %w", err))
 		}
@@ -153,5 +154,6 @@ func init() {
 	captureCmd.Flags().StringVarP(&captureFile, "file", "f", "", "Read the capture document from a file instead of stdin")
 	captureCmd.Flags().BoolVar(&captureDryRun, "dry-run", false, "Report what would change without writing")
 	captureCmd.Flags().BoolVar(&captureJSON, "json", false, "Print the result as JSON")
+	captureCmd.Flags().BoolVar(&captureChecks, "change-checks", false, "Allow removing or changing the acceptance check of work already started (reopens done tasks; recorded as an override)")
 	RootCmd.AddCommand(captureCmd)
 }

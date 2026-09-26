@@ -103,6 +103,9 @@ type CaptureOptions struct {
 	// Origin is recorded on tasks the capture creates directly: human from
 	// the CLI, ai from MCP.
 	Origin planning.TaskOrigin
+	// AllowCheckChange permits removing or changing the check of work
+	// already started. CLI only (--change-checks); never set from MCP.
+	AllowCheckChange bool
 }
 
 // Capture applies doc atomically: either every item is applied or none is.
@@ -127,6 +130,11 @@ func (s *CaptureService) Capture(doc CaptureDoc, opts CaptureOptions) (*CaptureR
 	derived := s.applyFeatures(doc.Features, nextSpec, nextPlan, tracker, result)
 	s.applyTasks(doc.Tasks, nextSpec, nextPlan, derived, opts.Origin, tracker, result)
 	validateCapture(nextSpec, nextPlan, result)
+	guard := NewCheckGuard(s.repo, s.audit)
+	guarded := guard.Inspect(nextSpec, nextPlan)
+	if err := guard.Authorize(guarded, opts.AllowCheckChange); err != nil {
+		result.Rejected = append(result.Rejected, CaptureRejection{Item: "checks", Reason: err.Error()})
+	}
 
 	result.Created, result.Updated, result.Unchanged = tracker.summary()
 	result.PlanID = nextPlan.ID
@@ -170,6 +178,9 @@ func (s *CaptureService) Capture(doc CaptureDoc, opts CaptureOptions) (*CaptureR
 		return nil, fmt.Errorf("save spec lock: %w", err)
 	}
 	result.Applied = true
+	if err := guard.Record(guarded, actor); err != nil {
+		return result, err
+	}
 
 	if s.audit != nil {
 		if err := s.audit.Log("plan.capture", actor, map[string]any{

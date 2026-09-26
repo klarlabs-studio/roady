@@ -266,6 +266,13 @@ func (s *SpecService) AddFeature(title, description string) (*AddFeatureResult, 
 
 	current.Features = append(current.Features, newFeat)
 
+	// Adding a feature re-locks the whole spec, which would also bless any
+	// check loosened by hand in spec.yaml since the last lock.
+	guard := NewCheckGuard(s.repo, nil)
+	if err := guard.Authorize(guard.Inspect(current, nil), false); err != nil {
+		return nil, err
+	}
+
 	if err := s.repo.SaveSpec(current); err != nil {
 		return nil, err
 	}

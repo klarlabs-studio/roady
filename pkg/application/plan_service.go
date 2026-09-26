@@ -17,6 +17,9 @@ type PlanService struct {
 	audit       domain.AuditLogger
 	reconciler  *planning.PlanReconciler
 	coordinator *project.Coordinator
+	// allowCheckChange permits removing or changing the check of started
+	// work; see CheckGuard.
+	allowCheckChange bool
 }
 
 func NewPlanService(repo domain.WorkspaceRepository, audit domain.AuditLogger) *PlanService {
@@ -153,6 +156,11 @@ func (s *PlanService) ReconcilePlan(proposedTasks []planning.Task) (*planning.Pl
 	if s.approvalSurvives(existingPlan, newPlan, spec) {
 		newPlan.ApprovalStatus = planning.ApprovalApproved
 	}
+	guard := NewCheckGuard(s.repo, s.audit)
+	guarded := guard.Inspect(spec, newPlan)
+	if err := guard.Authorize(guarded, s.allowCheckChange); err != nil {
+		return nil, nil, err
+	}
 
 	if err := s.repo.SavePlan(newPlan); err != nil {
 		return nil, nil, fmt.Errorf("failed to save plan: %w", err)
@@ -161,9 +169,16 @@ func (s *PlanService) ReconcilePlan(proposedTasks []planning.Task) (*planning.Pl
 	if err := s.repo.SaveSpecLock(spec); err != nil {
 		return nil, nil, fmt.Errorf("save spec lock: %w", err)
 	}
+	if err := guard.Record(guarded, "cli"); err != nil {
+		return nil, nil, err
+	}
 
 	return newPlan, warnings, nil
 }
+
+// AllowCheckChanges lets the next plan writes remove or change the check of
+// work already started. Set by the CLI's --change-checks; never from MCP.
+func (s *PlanService) AllowCheckChanges(allow bool) { s.allowCheckChange = allow }
 
 func (s *PlanService) GetPlan() (*planning.Plan, error) {
 

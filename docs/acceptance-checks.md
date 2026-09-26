@@ -98,3 +98,33 @@ shown the task is not done. Overrides are CLI-only; there is no MCP equivalent.
 
 Without the policy, a task that has a check is still gated on it; a task
 without one verifies as before.
+
+## Changing a check after work started
+
+Once a task is in progress, blocked, done or verified, removing or changing
+its check is refused — whichever way it is attempted:
+
+- editing the task's check (`roady capture`, `roady_plan_update`),
+- editing the requirement's check (`roady capture`, `roady plan generate`),
+- editing `spec.yaml` by hand and then re-locking it (`roady spec lock`,
+  `roady drift accept`, `roady spec add`), which is how a loosened check
+  would otherwise stop being reported as drift.
+
+Adding a check is always allowed; it only tightens. So is any change to a task
+that has not started — that is still planning. Roady cannot tell whether a new
+command is stricter than the old one, so every modification counts.
+
+A person can make the change on the record:
+
+```bash
+roady drift accept --change-checks       # likewise: capture, spec lock, plan generate
+```
+
+Done or verified tasks whose check changed are reopened, and each change is
+logged as `task.check_changed` with the old and new check. There is no MCP
+equivalent, and `roady watch` never auto-accepts such a change.
+
+**What this does not do.** Roady does not authenticate people: an agent
+running the CLI in a shell can pass `--change-checks` too. The guarantee is
+that loosening a check is never silent — it takes an explicit flag, reopens
+the work, and leaves an entry in the audit trail that a reviewer will see.
