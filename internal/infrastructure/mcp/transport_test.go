@@ -1,7 +1,6 @@
 package mcp
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -63,20 +62,19 @@ func TestMCPHTTPTransport(t *testing.T) {
 
 	waitForHTTP(t, addr, 5*time.Second)
 
-	resp := sendJSONRPC(t, addr, jsonRPCRequest{
-		JSONRPC: "2.0",
-		ID:      1,
-		Method:  "initialize",
-		Params: map[string]any{
-			"protocolVersion": "2024-11-05",
-			"clientInfo": map[string]any{
-				"name":    "roady-test",
-				"version": "0.0.0",
-			},
-			"capabilities": map[string]any{},
+	c := &wireClient{url: "http://" + addr + "/mcp"}
+	raw := c.call(t, "initialize", map[string]any{
+		"protocolVersion": "2025-06-18",
+		"clientInfo": map[string]any{
+			"name":    "roady-test",
+			"version": "0.0.0",
 		},
+		"capabilities": map[string]any{},
 	})
-
+	var resp jsonRPCResponse
+	if err := json.Unmarshal(raw, &resp); err != nil {
+		t.Fatalf("decode initialize: %v (%s)", err, raw)
+	}
 	if resp.Error != nil {
 		t.Fatalf("initialize error: %v", resp.Error.Message)
 	}
@@ -97,11 +95,12 @@ func TestMCPHTTPTransport(t *testing.T) {
 		t.Fatalf("expected tools capability")
 	}
 
-	resp = sendJSONRPC(t, addr, jsonRPCRequest{
-		JSONRPC: "2.0",
-		ID:      2,
-		Method:  "tools/list",
-	})
+	c.notify(t, "notifications/initialized")
+	raw = c.call(t, "tools/list", map[string]any{})
+	resp = jsonRPCResponse{}
+	if err := json.Unmarshal(raw, &resp); err != nil {
+		t.Fatalf("decode tools/list: %v (%s)", err, raw)
+	}
 	if resp.Error != nil {
 		t.Fatalf("tools/list error: %v", resp.Error.Message)
 	}
@@ -305,27 +304,6 @@ func waitForHTTP(t *testing.T, addr string, timeout time.Duration) {
 		time.Sleep(50 * time.Millisecond)
 	}
 	t.Fatalf("server did not become healthy at %s", url)
-}
-
-func sendJSONRPC(t *testing.T, addr string, req jsonRPCRequest) jsonRPCResponse {
-	t.Helper()
-	body, err := json.Marshal(req)
-	if err != nil {
-		t.Fatalf("marshal request: %v", err)
-	}
-
-	url := fmt.Sprintf("http://%s/mcp", addr)
-	httpResp, err := http.Post(url, "application/json", bytes.NewReader(body))
-	if err != nil {
-		t.Fatalf("http post: %v", err)
-	}
-	defer httpResp.Body.Close() //nolint:errcheck // best-effort close on read body
-
-	var resp jsonRPCResponse
-	if err := json.NewDecoder(httpResp.Body).Decode(&resp); err != nil {
-		t.Fatalf("decode response: %v", err)
-	}
-	return resp
 }
 
 func findRepoRoot(t *testing.T) string {
