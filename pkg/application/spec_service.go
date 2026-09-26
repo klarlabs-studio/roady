@@ -1,7 +1,6 @@
 package application
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -74,13 +73,25 @@ func (s *SpecService) AnalyzeDirectory(root string) (*spec.ProductSpec, error) {
 						if !strings.Contains(existingFeat.Description, newFeat.Description) {
 							mergedSpec.Features[i].Description += "\n\n---\n\n" + newFeat.Description
 						}
-						// Merge Requirements
-						mergedSpec.Features[i].Requirements = append(mergedSpec.Features[i].Requirements, newFeat.Requirements...)
+						// Merge requirements by id: the same requirement in
+						// two documents is one requirement, not two.
+						for _, r := range newFeat.Requirements {
+							if requirementIndex(mergedSpec.Features[i], r.ID) >= 0 {
+								continue
+							}
+							r.ID = uniqueRequirementID(mergedSpec, r.ID)
+							mergedSpec.Features[i].Requirements = append(mergedSpec.Features[i].Requirements, r)
+						}
 						found = true
 						break
 					}
 				}
 				if !found {
+					// Requirement ids are unique across the spec; one file
+					// cannot see another's, so collisions are settled here.
+					for k := range newFeat.Requirements {
+						newFeat.Requirements[k].ID = uniqueRequirementID(mergedSpec, newFeat.Requirements[k].ID)
+					}
 					mergedSpec.Features = append(mergedSpec.Features, newFeat)
 				}
 			}
@@ -152,69 +163,6 @@ func (s *SpecService) preserveExistingFeatureIDs(merged *spec.ProductSpec) {
 		taken[previous] = true
 		merged.Features[i].ID = previous
 	}
-}
-
-func (s *SpecService) parseMarkdownFile(path string) (*spec.ProductSpec, error) {
-	cleanPath := filepath.Clean(path)
-	file, err := os.Open(cleanPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open file: %w", err)
-	}
-	defer file.Close() //nolint:errcheck // best-effort close on read path
-
-	scanner := bufio.NewScanner(file)
-
-	productSpec := &spec.ProductSpec{
-		ID:          "imported-spec",
-		Version:     "0.1.0",
-		Constraints: []spec.Constraint{},
-		Features:    []spec.Feature{},
-	}
-
-	var currentFeature *spec.Feature
-	var descriptionBuilder strings.Builder
-	lineNum := 0
-
-	for scanner.Scan() {
-		lineNum++
-		line := strings.TrimSpace(scanner.Text())
-
-		switch {
-		case strings.HasPrefix(line, "# "):
-			productSpec.Title = strings.TrimSpace(strings.TrimPrefix(line, "# "))
-		case strings.HasPrefix(line, "## "):
-			if currentFeature != nil {
-				currentFeature.Description = strings.TrimSpace(descriptionBuilder.String())
-				productSpec.Features = append(productSpec.Features, *currentFeature)
-				descriptionBuilder.Reset()
-			}
-
-			title := strings.TrimSpace(strings.TrimPrefix(line, "## "))
-			id := spec.Slugify(title)
-			currentFeature = &spec.Feature{
-				ID:     id,
-				Title:  title,
-				Source: spec.Source{Doc: cleanPath, Line: lineNum},
-			}
-		default:
-			if currentFeature != nil {
-				descriptionBuilder.WriteString(line + "\n")
-			} else if productSpec.Description == "" && line != "" {
-				productSpec.Description = line
-			}
-		}
-	}
-
-	if currentFeature != nil {
-		currentFeature.Description = strings.TrimSpace(descriptionBuilder.String())
-		productSpec.Features = append(productSpec.Features, *currentFeature)
-	}
-
-	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("error reading file: %w", err)
-	}
-
-	return productSpec, nil
 }
 
 func (s *SpecService) GetSpec() (*spec.ProductSpec, error) {
@@ -343,4 +291,22 @@ func (s *SpecService) syncToMarkdown(f spec.Feature) (path string, err error) {
 		return path, err
 	}
 	return path, nil
+}
+
+// uniqueRequirementID returns id, suffixed if another feature in sp already
+// uses it.
+func uniqueRequirementID(sp *spec.ProductSpec, id string) string {
+	taken := func(candidate string) bool {
+		for _, f := range sp.Features {
+			if requirementIndex(f, candidate) >= 0 {
+				return true
+			}
+		}
+		return false
+	}
+	out := id
+	for n := 2; taken(out); n++ {
+		out = fmt.Sprintf("%s-%d", id, n)
+	}
+	return out
 }

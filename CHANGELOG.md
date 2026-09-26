@@ -30,6 +30,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `roady_task_check` runs a check over MCP. A check is part of the spec hash,
   so loosening one reads as spec drift; specs without checks keep their hash.
   See docs/acceptance-checks.md.
+- **`roady spec analyze` reads a normal PRD.** It took every `##` heading as
+  a feature and never produced a requirement, so a PRD with "## Overview" and
+  "## Features" / "### …" sections became two features, Overview and
+  Features, planned as "Implement Overview" and "Implement Features". Headings
+  are now read as a tree: sections without sub-sections (or with their own
+  bullets) are features, container sections like "## Features" are not, and
+  top-level bullets are requirements, with nested bullets as their
+  description. "Acceptance criteria" / "Requirements" / "User stories"
+  sub-sections feed their feature; Overview-like sections become the
+  description or are skipped; "Non-functional requirements" become
+  constraints; numbering is stripped from titles; priorities follow
+  must/should/could wording; ids are unique across the spec and every item
+  keeps its doc:line. Merging several documents de-duplicates requirements.
 - **Loosening a check after work started is refused.** Removing or changing
   the acceptance check of a task that is in progress, blocked, done or
   verified is refused on every path that could make it stick: task edits

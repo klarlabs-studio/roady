@@ -1,6 +1,6 @@
 {
   "project_id": "agent-handoff",
-  "version": 206,
+  "version": 207,
   "task_states": {
     "task-acceptance-checks": {
       "status": "done",
@@ -235,8 +235,10 @@
       "elapsed_minutes": 0
     },
     "task-markdown-importer": {
-      "status": "pending",
+      "status": "in_progress",
       "path": "",
+      "owner": "Claude",
+      "started_at": "2026-09-26T18:21:28.740768764+02:00",
       "elapsed_minutes": 0
     },
     "task-mcp-error-encoding": {
@@ -495,5 +497,5 @@
       "elapsed_minutes": 4
     }
   },
-  "updated_at": "2026-09-26T18:11:58.641355612+02:00"
+  "updated_at": "2026-09-26T18:21:28.740768764+02:00"
 }
