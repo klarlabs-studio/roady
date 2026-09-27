@@ -2,6 +2,7 @@ package drift
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/felixgeelhaar/roady/pkg/domain/planning"
 	"github.com/felixgeelhaar/roady/pkg/domain/policy"
@@ -75,6 +76,8 @@ func (d *DriftDetector) DetectPlanDrift(s *spec.ProductSpec, plan *planning.Plan
 
 	// Detect orphan tasks
 	if plan != nil {
+		aliases := spec.NewFeatureAliases(s.Features)
+		var titleLinked []string
 		for _, t := range plan.Tasks {
 			// A task with no feature was added on purpose outside the spec —
 			// a quick fix, a chore. That is worth knowing, not pruning.
@@ -94,6 +97,15 @@ func (d *DriftDetector) DetectPlanDrift(s *spec.ProductSpec, plan *planning.Plan
 				})
 				continue
 			}
+			// A feature named by its title rather than its id is a link to
+			// repair, not a feature the spec lost: reporting it as an orphan
+			// sent finished work to history under features that exist.
+			if !specRequirementIDs[t.ID] && !specFeatureIDs[t.FeatureID] {
+				if _, ok := aliases.Resolve(t.FeatureID); ok {
+					titleLinked = append(titleLinked, t.ID)
+					continue
+				}
+			}
 			// A task is an orphan only if it doesn't match a Requirement AND doesn't match a Feature
 			if !specRequirementIDs[t.ID] && !specFeatureIDs[t.FeatureID] {
 				issues = append(issues, Issue{
@@ -107,9 +119,34 @@ func (d *DriftDetector) DetectPlanDrift(s *spec.ProductSpec, plan *planning.Plan
 				})
 			}
 		}
+		if len(titleLinked) > 0 {
+			issues = append(issues, titleLinkIssue(titleLinked))
+		}
 	}
 
 	return issues
+}
+
+// titleLinkIssue reports tasks whose feature_id holds a feature's title or a
+// slug of it: older plan writes stored what an agent sent, and later writes
+// repair it, but a stored plan stays as it was until `roady doctor --fix`.
+func titleLinkIssue(ids []string) Issue {
+	sample := ids
+	if len(sample) > 5 {
+		sample = sample[:5]
+	}
+	named := strings.Join(sample, ", ")
+	if more := len(ids) - len(sample); more > 0 {
+		named += fmt.Sprintf(", … %d more", more)
+	}
+	return Issue{
+		ID:       "title-linked-tasks",
+		Type:     DriftTypePlan,
+		Category: CategoryLink,
+		Severity: SeverityMedium,
+		Message:  fmt.Sprintf("%d tasks name their feature by its title instead of its id, so nothing traces them to the spec: %s", len(ids), named),
+		Hint:     "Run `roady doctor --fix` to point them at the feature ids. It changes no intent and keeps the plan's approval.",
+	}
 }
 
 // DetectCodeDrift checks for mismatches between the plan/state and actual code.

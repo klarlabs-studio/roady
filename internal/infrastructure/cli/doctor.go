@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/felixgeelhaar/roady/internal/infrastructure/wiring"
@@ -42,8 +43,20 @@ var doctorCmd = &cobra.Command{
 		})
 
 		check("Spec File", func() error {
-			_, err := repo.LoadSpec()
-			return err
+			sp, err := repo.LoadSpec()
+			if err != nil {
+				return err
+			}
+			// The same judgement as `roady spec validate`: a spec it rejects
+			// is not healthy because it parses.
+			if errs := sp.Validate(); len(errs) > 0 {
+				msgs := make([]string, len(errs))
+				for i, e := range errs {
+					msgs[i] = e.Error()
+				}
+				return fmt.Errorf("%s (fix .roady/spec.yaml; `roady spec validate` lists the same)", strings.Join(msgs, "; "))
+			}
+			return nil
 		})
 
 		check("Policy File", func() error {
@@ -106,7 +119,23 @@ var doctorCmd = &cobra.Command{
 			return nil
 		})
 
+		if doctorFix {
+			fixes, err := application.NewPlanService(repo, workspace.Audit).RepairFeatureLinks()
+			if err != nil {
+				return MapError(fmt.Errorf("repair feature links: %w", err))
+			}
+			if len(fixes) > 0 {
+				fmt.Printf("🔧 Pointed %d task(s) at their feature ids instead of titles: %s\n", len(fixes), sampleIDs(sortedKeys(fixes), 5))
+			}
+		}
+
 		if plan, err := repo.LoadPlan(); err == nil && plan != nil {
+			if sp, err := repo.LoadSpec(); err == nil {
+				if fixes := application.TitleLinkedTasks(sp, plan); len(fixes) > 0 {
+					fmt.Printf("⚠️  %d task(s) name their feature by its title instead of its id, so drift cannot trace them: %s\n   Run `roady doctor --fix` to repair the links; it changes no intent and keeps the plan's approval.\n",
+						len(fixes), sampleIDs(sortedKeys(fixes), 5))
+				}
+			}
 			if ids := application.StatusTitledTasks(plan); len(ids) > 0 {
 				fmt.Printf("⚠️  %d task(s) are titled with a status word, so what they are was overwritten: %s\n   Retitle each with `roady edit <id> --title \"...\"`; record progress with `roady task complete`.\n",
 					len(ids), sampleIDs(ids, 5))
@@ -122,8 +151,21 @@ var doctorCmd = &cobra.Command{
 	},
 }
 
+var doctorFix bool
+
 func init() {
+	doctorCmd.Flags().BoolVar(&doctorFix, "fix", false, "Repair what can be repaired without changing intent: tasks that name their feature by title")
 	RootCmd.AddCommand(doctorCmd)
+}
+
+// sortedKeys returns m's keys in order.
+func sortedKeys(m map[string]string) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
 }
 
 // sampleIDs names the first n ids and counts the rest.

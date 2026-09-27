@@ -107,7 +107,8 @@ Over MCP: `roady_status` with `stats: true`.
 
 - `roady completion bash|zsh|fish|powershell`
 - `roady config wizard` — interactive `policy.yaml` setup
-- `roady doctor` — health check of the project files and audit chain
+- `roady doctor` — health check of the project files and audit chain; `--fix`
+  repairs what changes no intent (tasks that name their feature by title)
 - `roady state rebuild` — recover state from the event log
 
 ## MCP
