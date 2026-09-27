@@ -29,6 +29,10 @@ v0.25.0 against a project that had stopped using roady for markdown notes.
 
 ### Changed
 
+- `roady git sync` completes a task named in a commit even if nobody
+  started it: it starts it first, under the usual dependency, approval and
+  claim checks, and says why when it cannot. It used to skip the commit
+  ("invalid transition from pending").
 - A done or verified task whose feature the spec no longer has is history:
   drift reports it at `info` instead of `medium`, and `roady plan prune`
   keeps it. Open orphans are unchanged.
