@@ -46,9 +46,12 @@ jobs:
           HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
 
   release-smoke-test:
-    # Pulls the just-published Linux/amd64 archive, extracts it, runs
-    # `roady --version` and `roady demo` against it. Catches broken
-    # release artifacts before users do.
+    # Pulls the just-published Linux/amd64 archive, extracts it, and runs
+    # the first commands a new user runs: --version, init, plan generate,
+    # status. Catches broken release artifacts before users do.
+    #
+    # This ran `roady demo` until v0.25.0 removed that command, which
+    # failed the job after the release had published correctly.
     runs-on: ubuntu-latest
     needs: goreleaser
     if: startsWith(github.ref, 'refs/tags/')
@@ -73,10 +76,10 @@ jobs:
           mkdir -p smoke
           tar -xzf roady-release.tar.gz -C smoke
           ./smoke/roady --version
-          # roady demo writes to ./roady-demo by default; isolate it.
           mkdir -p smoke-run && cd smoke-run
-          ../smoke/roady demo
-          test -f roady-demo/.roady/spec.yaml
-          test -f roady-demo/.roady/plan.json
-          ../smoke/roady -C roady-demo status
+          ../smoke/roady init --non-interactive
+          ../smoke/roady plan generate
+          test -f .roady/spec.yaml
+          test -f .roady/plan.json
+          ../smoke/roady status
           echo "Smoke test passed."
