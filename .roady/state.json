@@ -1,6 +1,6 @@
 {
   "project_id": "agent-handoff",
-  "version": 301,
+  "version": 304,
   "task_states": {
     "task-acceptance-checks": {
       "status": "verified",
@@ -1053,9 +1053,28 @@
       ]
     },
     "task-unplanned-tasks": {
-      "status": "pending",
+      "status": "done",
       "path": "",
-      "elapsed_minutes": 0
+      "owner": "Claude",
+      "evidence": [
+        "Commit: cb6887957694ef887c4bf60523dd632d2a0ffc1e"
+      ],
+      "started_at": "2026-09-27T14:37:38.862159068+02:00",
+      "completed_at": "2026-09-27T14:40:40.250443123+02:00",
+      "elapsed_minutes": 3,
+      "checks": [
+        {
+          "kind": "run",
+          "command": "go test ./internal/infrastructure/cli/ -run TestUnplannedTask -count=1 \u0026\u0026 go test ./pkg/domain/drift/ -run TestUnplannedIsNotAnOrphan -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "cb6887957694ef887c4bf60523dd632d2a0ffc1e",
+          "by": "Claude",
+          "at": "2026-09-27T14:40:40.295617358+02:00",
+          "duration": "948ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/internal/infrastructure/cli\t0.016s\nok  \tgithub.com/felixgeelhaar/roady/pkg/domain/drift\t0.002s\n"
+        }
+      ]
     },
     "task-xdep-ready": {
       "status": "verified",
@@ -1113,5 +1132,5 @@
       "elapsed_minutes": 4
     }
   },
-  "updated_at": "2026-09-27T14:30:09.495409572+02:00"
+  "updated_at": "2026-09-27T14:40:40.250443945+02:00"
 }

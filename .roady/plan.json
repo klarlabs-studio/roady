@@ -373,7 +373,10 @@
       ],
       "feature_id": "capture",
       "origin": "heuristic",
-      "source": {}
+      "source": {},
+      "check": {
+        "run": "go test ./internal/infrastructure/cli/ -run TestUnplannedTask -count=1 \u0026\u0026 go test ./pkg/domain/drift/ -run TestUnplannedIsNotAnOrphan -count=1"
+      }
     },
     {
       "id": "task-guarded-fields",
@@ -688,5 +691,5 @@
   ],
   "approval_status": "approved",
   "created_at": "2026-01-31T18:00:00+01:00",
-  "updated_at": "2026-09-27T14:30:09.515969236+02:00"
+  "updated_at": "2026-09-27T14:40:40.273443143+02:00"
 }
