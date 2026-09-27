@@ -73,10 +73,4 @@ func TestCmdFailures_Internal(t *testing.T) {
 	defer func() { _ = os.Unsetenv("ROADY_SKIP_MCP_START") }()
 	RootCmd.SetArgs([]string{"mcp"})
 	_ = RootCmd.Execute()
-
-	// 9. Dashboard skip
-	_ = os.Setenv("ROADY_SKIP_DASHBOARD_RUN", "true")
-	defer func() { _ = os.Unsetenv("ROADY_SKIP_DASHBOARD_RUN") }()
-	RootCmd.SetArgs([]string{"dashboard"})
-	_ = RootCmd.Execute()
 }

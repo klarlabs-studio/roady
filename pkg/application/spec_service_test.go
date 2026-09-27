@@ -213,12 +213,9 @@ func TestSpecService_AddFeature(t *testing.T) {
 	if len(updated.Spec.Features) != 2 {
 		t.Fatalf("expected 2 features, got %d", len(updated.Spec.Features))
 	}
-	content, err := os.ReadFile(filepath.Join(tempDir, "docs", "backlog.md"))
-	if err != nil {
-		t.Fatalf("read backlog: %v", err)
-	}
-	if !strings.Contains(string(content), "Feature 2") {
-		t.Fatalf("expected backlog to include feature, got %q", string(content))
+	// Intent lives in roady; adding a feature writes no markdown backlog.
+	if _, err := os.Stat(filepath.Join(tempDir, "docs", "backlog.md")); !os.IsNotExist(err) {
+		t.Fatalf("AddFeature wrote docs/backlog.md")
 	}
 }
 
@@ -273,62 +270,5 @@ func TestSpecService_AnalyzePreservesExistingFeatureIDs(t *testing.T) {
 	// A feature Roady has not seen before gets a clean id.
 	if got := byTitle["Brand New Feature (v2)"]; got != "brand-new-feature-v2" {
 		t.Errorf("new feature id = %q, want %q", got, "brand-new-feature-v2")
-	}
-}
-
-// The MCP server runs from wherever it was started, which is routinely a
-// different repository from the one named by project_path. Resolving the
-// backlog document relatively wrote one project's feature text into another
-// project's working tree — and reported success. See issue #71.
-func TestSpecService_AddFeatureWritesBacklogToProjectNotWorkingDir(t *testing.T) {
-	project := t.TempDir()
-	elsewhere := t.TempDir()
-
-	// Stand where the server would be standing: an unrelated repository.
-	original, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(original) })
-	if err := os.Chdir(elsewhere); err != nil {
-		t.Fatal(err)
-	}
-
-	repo := storage.NewFilesystemRepository(project)
-	if err := repo.Initialize(); err != nil {
-		t.Fatal(err)
-	}
-	if err := repo.SaveSpec(&spec.ProductSpec{ID: "s", Version: "0.1.0"}); err != nil {
-		t.Fatal(err)
-	}
-
-	result, err := application.NewSpecService(repo).AddFeature("Payment Retries", "Retry failed charges.")
-	if err != nil {
-		t.Fatalf("AddFeature: %v", err)
-	}
-
-	if len(result.Warnings) > 0 {
-		t.Fatalf("unexpected warnings: %v", result.Warnings)
-	}
-	if !result.Synced() {
-		t.Fatal("AddFeature reported no backlog sync")
-	}
-
-	// The backlog belongs to the project...
-	inProject := filepath.Join(project, "docs", "backlog.md")
-	body, err := os.ReadFile(inProject) //nolint:gosec // test-controlled path
-	if err != nil {
-		t.Fatalf("backlog missing from the project: %v", err)
-	}
-	if !strings.Contains(string(body), "Payment Retries") {
-		t.Errorf("backlog does not mention the feature: %q", body)
-	}
-	if result.BacklogPath != inProject {
-		t.Errorf("BacklogPath = %q, want %q", result.BacklogPath, inProject)
-	}
-
-	// ...and nothing was created in the directory we happened to stand in.
-	if _, err := os.Stat(filepath.Join(elsewhere, "docs")); !os.IsNotExist(err) {
-		t.Errorf("AddFeature created docs/ in the working directory %s", elsewhere)
 	}
 }

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/felixgeelhaar/roady/pkg/domain/dependency"
 	"github.com/felixgeelhaar/roady/pkg/domain/project"
 )
 
@@ -70,12 +69,6 @@ func TestMapError(t *testing.T) {
 			name:     "ErrNoState",
 			err:      project.ErrNoState,
 			wantHint: "Run 'roady init' to initialize",
-			wantCLI:  true,
-		},
-		{
-			name:     "ErrCyclicDependency",
-			err:      dependency.ErrCyclicDependency,
-			wantHint: "Review depends_on fields in plan.json",
 			wantCLI:  true,
 		},
 		{

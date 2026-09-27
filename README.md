@@ -29,22 +29,21 @@ your agent.
 ```bash
 brew trust klarlabs-studio/tap        # first time only
 brew install --cask klarlabs-studio/tap/roady     # or: go install github.com/felixgeelhaar/roady/cmd/roady@latest
-roady demo                               # scaffolds a sample project + shows drift
+cd your-project && roady init my-project && roady setup claude-code
 ```
 
 Homebrew refuses to load a cask from a third-party tap it has not been told
 to trust, so the first install of anything from this tap needs
 `brew trust klarlabs-studio/tap` once — per machine, not per tool.
 
-The demo creates a `roady-demo/` directory with a deliberately drifted
-spec/plan, runs `roady drift detect`, and prints the next steps. Zero
-prerequisites, zero AI keys, zero signup.
+`roady setup` registers roady with your agent (MCP server, hooks,
+instructions, skill). Zero AI keys, zero signup: roady runs no inference.
 
 ## The actual workflow
 
 ```bash
 # 1. Hook your agent to Roady (one command per supported tool)
-roady setup claude-code           # or claude-desktop, opencode, openai, gemini
+roady setup claude-code           # or codex, gemini, cursor, opencode, copilot, kiro, all
 
 # 2. Initialise + import your existing docs
 roady init my-project
@@ -54,11 +53,16 @@ roady spec analyze docs/          # parses markdown, captures source citations
 #    your own model to run, then write the tasks back)
 roady plan generate
 roady plan approve
+#    ...or record a plan your agent already made, in one write:
+roady capture -f plan.yaml        # see docs/capture.md
+roady plan import PLANS.md        # a Claude Code / Kiro / ExecPlan plan → tasks
+roady add "Handle empty file" --after task-pdf-gen   # or edit / split / move
 
 # 4. Drive execution from inside your AI editor
-/roady-task                       # agent picks the next ready task
+roady next                        # the task, why it exists, what done means
 # ...agent implements, commits with [roady:task-id] marker...
 roady git sync                    # state moves forward automatically
+roady task check <task-id>        # done means the acceptance check passes
 
 # 5. Ask the question that matters
 roady drift detect                # has reality diverged from intent?
@@ -68,52 +72,34 @@ Status, drift, and progress all show in `roady status` — including a
 `from doc:line` citation for every task so the AI's choices stay
 auditable.
 
-## Keeping people informed — without a UI
-
-Two jobs a tracker normally does with an app, Roady does with generated
-artifacts and push notifications.
-
-**Coordination — who is on what:**
+## Who is on what
 
 ```bash
-roady task assign <task-id> alice
 roady task mine                   # your tasks (ROADY_USER, git user.name, or USER)
-roady task assigned alice         # someone else's
-roady task unassigned             # work nobody owns
+roady task unassigned             # work nobody has started
 ```
 
-Add guardrails in `.roady/policy.yaml`:
+`max_wip_per_owner` in `.roady/policy.yaml` caps in-progress work per person
+or agent, not just per project. Starting a task claims it: two agents
+starting the same task at once cannot both get it, and a claim nobody renews
+(`roady next` and the agent hooks keep it alive while you work) lapses after `claim_lease`
+(default `2h`) and frees the task, so a crashed agent does not hold it.
+
+**Prove "done" instead of claiming it:**
 
 ```yaml
-max_wip_per_owner: 2       # cap in-progress work per person, not just per project
-enforce_team_roles: true   # a viewer in team.yaml can no longer move tasks
+# .roady/spec.yaml — on a requirement
+check:
+  run: go test ./internal/invoice -run TestNumberingIsGapFree
 ```
-
-**Stakeholder reporting — a document, not a dashboard:**
 
 ```bash
-roady report                                # Markdown to stdout
-roady report --since 7d                     # just this week's changes
-roady report --format html -o status.html   # ~5KB, no scripts, no requests
-roady report --format json | jq .risks      # machine-readable
+roady task check task-seq-numbers    # run it, record pass/fail as evidence
+roady task verify task-seq-numbers   # re-runs the check; refuses if it fails
 ```
 
-The report carries progress, a forecast with its confidence interval, a risk
-register built from drift plus sticky debt, who is on what, and what changed.
-Commit it, email it, attach it to a PR, or publish it to a static host —
-nothing to install and nothing to log into. A completion estimate is withheld
-until there is enough velocity data to justify one.
-
-**Push it on a schedule:**
-
-```bash
-roady notify add team-chat slack https://hooks.slack.com/services/...
-roady notify digest --since 7d --dry-run    # preview
-roady notify digest --since 7d              # send
-```
-
-One chat-sized summary instead of a message per task transition. Run it from
-cron or CI.
+A check can also be `manual:` — then only a person's `--confirm` satisfies it.
+See [`docs/acceptance-checks.md`](docs/acceptance-checks.md).
 
 **Gate CI on drift:**
 
@@ -155,7 +141,7 @@ roady plan generate --ai --json          # the request as JSON for an agent
 ```
 
 Requests that produce data Roady stores name the tool that accepts it
-(`decompose_spec` → `roady_plan_update`). No API key is needed for anything.
+(`decompose_spec` → `roady capture`). No API key is needed for anything.
 See [`docs/prompts.md`](docs/prompts.md).
 
 ## Nested sub-projects
@@ -199,13 +185,12 @@ Claude.md, spec-kit, Backlog.md, Linear, GitHub Projects.
 
 ## Everything else
 
-The headline workflow is intentionally short. Roady supports billing
-rates, debt scoring, dependency graphs, cross-project org views,
-plugin syncers, fsnotify watch mode, an interactive TUI (`roady
-dashboard`), inline MCP App UIs rendered by your agent, webhook +
-Slack notifications, and more — see
-[`docs/advanced.md`](docs/advanced.md) for the full catalogue grouped by
-audience (solo dev / small team / org).
+The headline workflow is intentionally short. Drift explanation, semantic
+drift, spec review, subagent dispatch, audit trails for review, nested
+sub-projects and more are in [`docs/advanced.md`](docs/advanced.md).
+Roady deliberately has no billing, team roster, tracker sync, chat
+notifications or dashboards: it is the plan an agent works from, and the
+proof it did.
 
 ## Roadmap
 
@@ -223,7 +208,7 @@ for the one-time GitHub repo settings the release pipeline depends on
 
 ---
 
-*Built with `cobra`, `bubbletea`, `mcp-go`, `fortify`. Domain-driven Go
+*Built with `cobra`, `mcp-go`, `statekit`, `fortify`. Domain-driven Go
 with `pkg/domain` / `pkg/application` / `internal/infrastructure`.
 Architecture notes in the DDD docs ([`docs/ddd-insights.md`](docs/ddd-insights.md),
 [`docs/ddd-refactor-spec.md`](docs/ddd-refactor-spec.md)).*

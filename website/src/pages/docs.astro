@@ -27,11 +27,9 @@ import Footer from '../components/Footer.astro';
           <a href="#spec-commands" class="text-violet-400 hover:text-violet-300 transition-colors">Spec Commands</a>
           <a href="#plan-commands" class="text-violet-400 hover:text-violet-300 transition-colors">Plan Commands</a>
           <a href="#task-commands" class="text-violet-400 hover:text-violet-300 transition-colors">Task Commands</a>
-          <a href="#drift-commands" class="text-violet-400 hover:text-violet-300 transition-colors">Drift & Debt</a>
-          <a href="#billing-commands" class="text-violet-400 hover:text-violet-300 transition-colors">Billing & Cost</a>
-          <a href="#status-commands" class="text-violet-400 hover:text-violet-300 transition-colors">Status & Analytics</a>
-          <a href="#integration-commands" class="text-violet-400 hover:text-violet-300 transition-colors">Integrations</a>
-          <a href="#plugin-config" class="text-violet-400 hover:text-violet-300 transition-colors">Plugin Config</a>
+          <a href="#drift-commands" class="text-violet-400 hover:text-violet-300 transition-colors">Drift</a>
+          <a href="#status-commands" class="text-violet-400 hover:text-violet-300 transition-colors">Status & Audit</a>
+          <a href="#integration-commands" class="text-violet-400 hover:text-violet-300 transition-colors">Git & MCP</a>
           <a href="#advanced-commands" class="text-violet-400 hover:text-violet-300 transition-colors">Advanced</a>
         </div>
       </nav>
@@ -60,6 +58,22 @@ import Footer from '../components/Footer.astro';
             <div class="mt-4 bg-black/40 rounded-lg p-4">
               <p class="text-xs text-gray-500 mb-2"># Example</p>
               <code class="text-sm text-emerald-300">roady init my-project --interactive</code>
+            </div>
+          </div>
+
+          <div class="glass rounded-xl p-6">
+            <h3 class="text-lg font-semibold text-white mb-2">roady setup</h3>
+            <p class="text-gray-400 mb-4">Wire the MCP server, instructions, and session hooks for an agent: claude-code, claude-desktop, codex, gemini, cursor, opencode, copilot, or kiro.</p>
+            <div class="bg-black/40 rounded-lg p-4">
+              <code class="text-sm text-gray-300 block">roady setup claude-code</code>
+            </div>
+          </div>
+
+          <div class="glass rounded-xl p-6">
+            <h3 class="text-lg font-semibold text-white mb-2">roady next</h3>
+            <p class="text-gray-400 mb-4">Brief on the task you are on, or the one to start next. Agent hooks run it at session start.</p>
+            <div class="bg-black/40 rounded-lg p-4">
+              <code class="text-sm text-gray-300 block">roady next</code>
             </div>
           </div>
 
@@ -173,6 +187,22 @@ import Footer from '../components/Footer.astro';
           </div>
 
           <div class="glass rounded-xl p-6">
+            <h3 class="text-lg font-semibold text-white mb-2">roady capture</h3>
+            <p class="text-gray-400 mb-4">Record features, requirements, and tasks in one write (YAML or JSON). See docs/capture.md.</p>
+            <div class="bg-black/40 rounded-lg p-4">
+              <code class="text-sm text-gray-300 block">roady capture -f plan.yaml</code>
+            </div>
+          </div>
+
+          <div class="glass rounded-xl p-6">
+            <h3 class="text-lg font-semibold text-white mb-2">roady plan import</h3>
+            <p class="text-gray-400 mb-4">Turn a harness's plan file (Claude Code, Kiro, Codex ExecPlan, markdown) into tasks.</p>
+            <div class="bg-black/40 rounded-lg p-4">
+              <code class="text-sm text-gray-300 block">roady plan import ~/.claude/plans/my-plan.md --dry-run</code>
+            </div>
+          </div>
+
+          <div class="glass rounded-xl p-6">
             <h3 class="text-lg font-semibold text-white mb-2">roady plan approve</h3>
             <p class="text-gray-400 mb-4">Approve the current plan for execution. Required before tasks can be started.</p>
             <div class="bg-black/40 rounded-lg p-4">
@@ -265,6 +295,14 @@ import Footer from '../components/Footer.astro';
           </div>
 
           <div class="glass rounded-xl p-6">
+            <h3 class="text-lg font-semibold text-white mb-2">roady task check</h3>
+            <p class="text-gray-400 mb-4">Run a task's acceptance check and record the result as evidence. <code class="mono text-violet-400">roady task verify</code> refuses while the check fails.</p>
+            <div class="bg-black/40 rounded-lg p-4">
+              <code class="text-sm text-gray-300 block">roady task check [task-id]</code>
+            </div>
+          </div>
+
+          <div class="glass rounded-xl p-6">
             <h3 class="text-lg font-semibold text-white mb-2">roady task verify</h3>
             <p class="text-gray-400 mb-4">Mark a completed task as verified with evidence.</p>
             <div class="bg-black/40 rounded-lg p-4">
@@ -282,11 +320,11 @@ import Footer from '../components/Footer.astro';
         </div>
       </section>
 
-      <!-- Drift & Debt Commands -->
+      <!-- Drift Commands -->
       <section id="drift-commands" class="mb-16">
         <h2 class="text-2xl font-bold text-white mb-6 flex items-center">
           <i data-lucide="git-compare" class="w-6 h-6 mr-3 text-amber-400"></i>
-          Drift & Debt Commands
+          Drift Commands
         </h2>
         <p class="text-gray-400 mb-6">Detect and manage drift between specs, plans, and execution.</p>
 
@@ -334,199 +372,16 @@ import Footer from '../components/Footer.astro';
             </div>
           </div>
 
-          <div class="glass rounded-xl p-6">
-            <h3 class="text-lg font-semibold text-white mb-2">roady debt report</h3>
-            <p class="text-gray-400 mb-4">Generate comprehensive debt report showing recurring drift patterns.</p>
-            <div class="bg-black/40 rounded-lg p-4">
-              <code class="text-sm text-gray-300">roady debt report</code>
-            </div>
-          </div>
-
-          <div class="glass rounded-xl p-6">
-            <h3 class="text-lg font-semibold text-white mb-2">roady debt sticky</h3>
-            <p class="text-gray-400 mb-4">Show sticky debt items (unresolved for more than 7 days).</p>
-            <div class="bg-black/40 rounded-lg p-4">
-              <code class="text-sm text-gray-300">roady debt sticky</code>
-            </div>
-          </div>
-
-          <div class="glass rounded-xl p-6">
-            <h3 class="text-lg font-semibold text-white mb-2">roady debt trend</h3>
-            <p class="text-gray-400 mb-4">Analyze drift trend over time.</p>
-            <div class="bg-black/40 rounded-lg p-4">
-              <code class="text-sm text-gray-300">roady debt trend</code>
-            </div>
-          </div>
-
-          <div class="glass rounded-xl p-6">
-            <h3 class="text-lg font-semibold text-white mb-2">roady debt summary</h3>
-            <p class="text-gray-400 mb-4">Quick debt health overview showing health level, top debtor, and sticky count.</p>
-            <div class="bg-black/40 rounded-lg p-4">
-              <code class="text-sm text-gray-300">roady debt summary</code>
-            </div>
-          </div>
-
-          <div class="glass rounded-xl p-6">
-            <h3 class="text-lg font-semibold text-white mb-2">roady debt score</h3>
-            <p class="text-gray-400 mb-4">Component-level debt score with category breakdown.</p>
-            <div class="bg-black/40 rounded-lg p-4">
-              <code class="text-sm text-gray-300">roady debt score [component-id]</code>
-            </div>
-          </div>
-
-          <div class="glass rounded-xl p-6">
-            <h3 class="text-lg font-semibold text-white mb-2">roady debt history</h3>
-            <p class="text-gray-400 mb-4">Historical debt tracking over a configurable time window.</p>
-            <div class="bg-black/40 rounded-lg p-4 mb-4">
-              <code class="text-sm text-gray-300">roady debt history [flags]</code>
-            </div>
-            <h4 class="text-sm font-semibold text-gray-300 mb-2">Flags</h4>
-            <table class="w-full text-sm">
-              <tr class="border-b border-white/10">
-                <td class="py-2 text-violet-300 mono">--days</td>
-                <td class="py-2 text-gray-400">Number of days to look back (default 30)</td>
-              </tr>
-            </table>
-          </div>
         </div>
       </section>
 
-      <!-- Billing & Cost Commands -->
-      <section id="billing-commands" class="mb-16">
-        <h2 class="text-2xl font-bold text-white mb-6 flex items-center">
-          <i data-lucide="receipt" class="w-6 h-6 mr-3 text-emerald-400"></i>
-          Billing & Cost Commands
-        </h2>
-        <p class="text-gray-400 mb-6">Define billing rates, log time, and generate cost reports with variance analysis.</p>
-
-        <div class="space-y-6">
-          <div class="glass rounded-xl p-6">
-            <h3 class="text-lg font-semibold text-white mb-2">roady rate add</h3>
-            <p class="text-gray-400 mb-4">Add a new billing rate with optional currency, tax, and default flag.</p>
-            <div class="bg-black/40 rounded-lg p-4 mb-4">
-              <code class="text-sm text-gray-300">roady rate add [flags]</code>
-            </div>
-            <h4 class="text-sm font-semibold text-gray-300 mb-2">Flags</h4>
-            <table class="w-full text-sm">
-              <tr class="border-b border-white/10">
-                <td class="py-2 text-violet-300 mono">--id</td>
-                <td class="py-2 text-gray-400">Unique rate identifier</td>
-              </tr>
-              <tr class="border-b border-white/10">
-                <td class="py-2 text-violet-300 mono">--name</td>
-                <td class="py-2 text-gray-400">Human-readable rate name</td>
-              </tr>
-              <tr class="border-b border-white/10">
-                <td class="py-2 text-violet-300 mono">--rate</td>
-                <td class="py-2 text-gray-400">Hourly rate amount</td>
-              </tr>
-              <tr class="border-b border-white/10">
-                <td class="py-2 text-violet-300 mono">--default</td>
-                <td class="py-2 text-gray-400">Set as the default rate</td>
-              </tr>
-            </table>
-            <div class="mt-4 bg-black/40 rounded-lg p-4">
-              <p class="text-xs text-gray-500 mb-2"># Example</p>
-              <code class="text-sm text-emerald-300">roady rate add --id dev --name "Developer" --rate 120 --default</code>
-            </div>
-          </div>
-
-          <div class="glass rounded-xl p-6">
-            <h3 class="text-lg font-semibold text-white mb-2">roady rate list</h3>
-            <p class="text-gray-400 mb-4">List all configured rates with currency and tax information.</p>
-            <div class="bg-black/40 rounded-lg p-4">
-              <code class="text-sm text-gray-300">roady rate list</code>
-            </div>
-          </div>
-
-          <div class="glass rounded-xl p-6">
-            <h3 class="text-lg font-semibold text-white mb-2">roady rate rm</h3>
-            <p class="text-gray-400 mb-4">Remove a billing rate by ID.</p>
-            <div class="bg-black/40 rounded-lg p-4">
-              <code class="text-sm text-gray-300">roady rate rm [rate-id]</code>
-            </div>
-          </div>
-
-          <div class="glass rounded-xl p-6">
-            <h3 class="text-lg font-semibold text-white mb-2">roady rate default</h3>
-            <p class="text-gray-400 mb-4">Set a rate as the default for new time entries.</p>
-            <div class="bg-black/40 rounded-lg p-4">
-              <code class="text-sm text-gray-300">roady rate default [rate-id]</code>
-            </div>
-          </div>
-
-          <div class="glass rounded-xl p-6">
-            <h3 class="text-lg font-semibold text-white mb-2">roady rate tax set</h3>
-            <p class="text-gray-400 mb-4">Configure tax rules for billing rates.</p>
-            <div class="bg-black/40 rounded-lg p-4 mb-4">
-              <code class="text-sm text-gray-300">roady rate tax set [flags]</code>
-            </div>
-            <h4 class="text-sm font-semibold text-gray-300 mb-2">Flags</h4>
-            <table class="w-full text-sm">
-              <tr class="border-b border-white/10">
-                <td class="py-2 text-violet-300 mono">--name</td>
-                <td class="py-2 text-gray-400">Tax name (e.g., VAT, GST)</td>
-              </tr>
-              <tr class="border-b border-white/10">
-                <td class="py-2 text-violet-300 mono">--percent</td>
-                <td class="py-2 text-gray-400">Tax percentage</td>
-              </tr>
-              <tr class="border-b border-white/10">
-                <td class="py-2 text-violet-300 mono">--included</td>
-                <td class="py-2 text-gray-400">Whether tax is included in the rate</td>
-              </tr>
-            </table>
-          </div>
-
-          <div class="glass rounded-xl p-6">
-            <h3 class="text-lg font-semibold text-white mb-2">roady cost report</h3>
-            <p class="text-gray-400 mb-4">Generate a cost report with estimated-vs-actual variance analysis.</p>
-            <div class="bg-black/40 rounded-lg p-4 mb-4">
-              <code class="text-sm text-gray-300">roady cost report [flags]</code>
-            </div>
-            <h4 class="text-sm font-semibold text-gray-300 mb-2">Flags</h4>
-            <table class="w-full text-sm">
-              <tr class="border-b border-white/10">
-                <td class="py-2 text-violet-300 mono">--task</td>
-                <td class="py-2 text-gray-400">Filter by task ID</td>
-              </tr>
-              <tr class="border-b border-white/10">
-                <td class="py-2 text-violet-300 mono">--period</td>
-                <td class="py-2 text-gray-400">Time period filter (e.g., 7d, 30d, 90d)</td>
-              </tr>
-              <tr class="border-b border-white/10">
-                <td class="py-2 text-violet-300 mono">--format</td>
-                <td class="py-2 text-gray-400">Output format: text, csv, json, markdown</td>
-              </tr>
-              <tr class="border-b border-white/10">
-                <td class="py-2 text-violet-300 mono">--output</td>
-                <td class="py-2 text-gray-400">Write report to file</td>
-              </tr>
-            </table>
-            <div class="mt-4 bg-black/40 rounded-lg p-4">
-              <p class="text-xs text-gray-500 mb-2"># Examples</p>
-              <code class="text-sm text-emerald-300 block">roady cost report</code>
-              <code class="text-sm text-emerald-300 block mt-1">roady cost report --period 30d --format markdown</code>
-            </div>
-          </div>
-
-          <div class="glass rounded-xl p-6">
-            <h3 class="text-lg font-semibold text-white mb-2">roady cost budget</h3>
-            <p class="text-gray-400 mb-4">Show budget status with consumption tracking and variance against policy limits.</p>
-            <div class="bg-black/40 rounded-lg p-4">
-              <code class="text-sm text-gray-300">roady cost budget</code>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Status & Analytics Commands -->
+      <!-- Status & Audit Commands -->
       <section id="status-commands" class="mb-16">
         <h2 class="text-2xl font-bold text-white mb-6 flex items-center">
           <i data-lucide="bar-chart-3" class="w-6 h-6 mr-3 text-cyan-400"></i>
-          Status & Analytics
+          Status & Audit
         </h2>
-        <p class="text-gray-400 mb-6">View project status, forecasts, and analytics.</p>
+        <p class="text-gray-400 mb-6">View project status, rebuild state, and inspect the audit trail.</p>
 
         <div class="space-y-6">
           <div class="glass rounded-xl p-6">
@@ -575,80 +430,6 @@ import Footer from '../components/Footer.astro';
           </div>
 
           <div class="glass rounded-xl p-6">
-            <h3 class="text-lg font-semibold text-white mb-2">roady status forecast</h3>
-            <p class="text-gray-400 mb-4">Predict project completion based on current velocity.</p>
-            <div class="bg-black/40 rounded-lg p-4 mb-4">
-              <code class="text-sm text-gray-300">roady status forecast [flags]</code>
-            </div>
-            <h4 class="text-sm font-semibold text-gray-300 mb-2">Flags</h4>
-            <table class="w-full text-sm">
-              <tr class="border-b border-white/10">
-                <td class="py-2 text-violet-300 mono">--detailed</td>
-                <td class="py-2 text-gray-400">Show confidence intervals and all velocity windows</td>
-              </tr>
-              <tr class="border-b border-white/10">
-                <td class="py-2 text-violet-300 mono">--burndown</td>
-                <td class="py-2 text-gray-400">Show burndown chart data</td>
-              </tr>
-              <tr class="border-b border-white/10">
-                <td class="py-2 text-violet-300 mono">--trend</td>
-                <td class="py-2 text-gray-400">Show velocity trend analysis</td>
-              </tr>
-              <tr class="border-b border-white/10">
-                <td class="py-2 text-violet-300 mono">--json</td>
-                <td class="py-2 text-gray-400">Output in JSON format</td>
-              </tr>
-            </table>
-          </div>
-
-          <div class="glass rounded-xl p-6">
-            <h3 class="text-lg font-semibold text-white mb-2">roady status usage</h3>
-            <p class="text-gray-400 mb-4">Show project usage and AI token statistics.</p>
-            <div class="bg-black/40 rounded-lg p-4">
-              <code class="text-sm text-gray-300">roady status usage</code>
-            </div>
-          </div>
-
-          <div class="glass rounded-xl p-6">
-            <h3 class="text-lg font-semibold text-white mb-2">roady status timeline</h3>
-            <p class="text-gray-400 mb-4">Show a chronological view of project activity.</p>
-            <div class="bg-black/40 rounded-lg p-4">
-              <code class="text-sm text-gray-300">roady status timeline</code>
-            </div>
-          </div>
-
-          <div class="glass rounded-xl p-6">
-            <h3 class="text-lg font-semibold text-white mb-2">roady dashboard</h3>
-            <p class="text-gray-400 mb-4">Open the interactive TUI dashboard for visual project overview.</p>
-            <div class="bg-black/40 rounded-lg p-4">
-              <code class="text-sm text-gray-300">roady dashboard</code>
-            </div>
-          </div>
-
-          <div class="glass rounded-xl p-6">
-            <h3 class="text-lg font-semibold text-white mb-2">roady report</h3>
-            <p class="text-gray-400 mb-4">Generate a progress report for people who do not run the CLI &mdash; progress, forecast, risks, ownership, and what changed.</p>
-            <div class="bg-black/40 rounded-lg p-4 mb-4">
-              <code class="text-sm text-gray-300">roady report [flags]</code>
-            </div>
-            <h4 class="text-sm font-semibold text-gray-300 mb-2">Flags</h4>
-            <table class="w-full text-sm">
-              <tr class="border-b border-white/10">
-                <td class="py-2 text-violet-300 mono">-f, --format</td>
-                <td class="py-2 text-gray-400">markdown (default), html, or json</td>
-              </tr>
-              <tr class="border-b border-white/10">
-                <td class="py-2 text-violet-300 mono">-o, --output</td>
-                <td class="py-2 text-gray-400">Write to a file instead of stdout</td>
-              </tr>
-              <tr class="border-b border-white/10">
-                <td class="py-2 text-violet-300 mono">--since</td>
-                <td class="py-2 text-gray-400">Only changes since this point (7d, 2w, 2026-07-01)</td>
-              </tr>
-            </table>
-          </div>
-
-          <div class="glass rounded-xl p-6">
             <h3 class="text-lg font-semibold text-white mb-2">roady state rebuild</h3>
             <p class="text-gray-400 mb-4">Reconstruct <code class="mono text-violet-400">state.json</code> by replaying the event log. <code class="mono text-violet-400">events.jsonl</code> union-merges cleanly, but <code class="mono text-violet-400">state.json</code> is a whole-file document and will still conflict; it is derived data, so keep either side and replay.</p>
             <div class="bg-black/40 rounded-lg p-4 mb-4">
@@ -679,29 +460,15 @@ import Footer from '../components/Footer.astro';
         </div>
       </section>
 
-      <!-- Integration Commands -->
+      <!-- Git & MCP Commands -->
       <section id="integration-commands" class="mb-16">
         <h2 class="text-2xl font-bold text-white mb-6 flex items-center">
           <i data-lucide="plug" class="w-6 h-6 mr-3 text-indigo-400"></i>
-          Integration Commands
+          Git & MCP Commands
         </h2>
-        <p class="text-gray-400 mb-6">Sync with external tools and integrate with your workflow.</p>
+        <p class="text-gray-400 mb-6">Advance task state from commits and connect AI agents.</p>
 
         <div class="space-y-6">
-          <div class="glass rounded-xl p-6">
-            <h3 class="text-lg font-semibold text-white mb-2">roady sync</h3>
-            <p class="text-gray-400 mb-4">Sync the plan with an external system via a plugin.</p>
-            <div class="bg-black/40 rounded-lg p-4 mb-4">
-              <code class="text-sm text-gray-300">roady sync [plugin-path]</code>
-            </div>
-            <div class="mt-4 bg-black/40 rounded-lg p-4">
-              <p class="text-xs text-gray-500 mb-2"># Examples</p>
-              <code class="text-sm text-emerald-300 block">roady sync roady-plugin-linear</code>
-              <code class="text-sm text-emerald-300 block mt-1">roady sync roady-plugin-jira</code>
-              <code class="text-sm text-emerald-300 block mt-1">roady sync roady-plugin-github</code>
-            </div>
-          </div>
-
           <div class="glass rounded-xl p-6">
             <h3 class="text-lg font-semibold text-white mb-2">roady git sync</h3>
             <p class="text-gray-400 mb-4">Scan recent git commits for task completion markers <code class="text-violet-300">[roady:task-id]</code>.</p>
@@ -711,41 +478,6 @@ import Footer from '../components/Footer.astro';
             <div class="mt-4 bg-black/40 rounded-lg p-4">
               <p class="text-xs text-gray-500 mb-2"># Commit with task marker</p>
               <code class="text-sm text-emerald-300">git commit -m "Implement auth [roady:task-1]"</code>
-            </div>
-          </div>
-
-          <div class="glass rounded-xl p-6">
-            <h3 class="text-lg font-semibold text-white mb-2">roady webhook serve</h3>
-            <p class="text-gray-400 mb-4">Start the webhook HTTP server to receive events from external systems.</p>
-            <div class="bg-black/40 rounded-lg p-4 mb-4">
-              <code class="text-sm text-gray-300">roady webhook serve [flags]</code>
-            </div>
-            <h4 class="text-sm font-semibold text-gray-300 mb-2">Flags</h4>
-            <table class="w-full text-sm">
-              <tr class="border-b border-white/10">
-                <td class="py-2 text-violet-300 mono">-p, --port</td>
-                <td class="py-2 text-gray-400">Port to listen on (default 8080)</td>
-              </tr>
-              <tr class="border-b border-white/10">
-                <td class="py-2 text-violet-300 mono">--github-secret</td>
-                <td class="py-2 text-gray-400">GitHub webhook secret</td>
-              </tr>
-              <tr class="border-b border-white/10">
-                <td class="py-2 text-violet-300 mono">--jira-secret</td>
-                <td class="py-2 text-gray-400">Jira webhook secret</td>
-              </tr>
-              <tr class="border-b border-white/10">
-                <td class="py-2 text-violet-300 mono">--linear-secret</td>
-                <td class="py-2 text-gray-400">Linear webhook secret</td>
-              </tr>
-            </table>
-            <div class="mt-4">
-              <p class="text-sm text-gray-400 mb-2">Webhook endpoints:</p>
-              <ul class="text-sm text-gray-500 space-y-1">
-                <li><code class="text-violet-300">POST /webhooks/github</code></li>
-                <li><code class="text-violet-300">POST /webhooks/jira</code></li>
-                <li><code class="text-violet-300">POST /webhooks/linear</code></li>
-              </ul>
             </div>
           </div>
 
@@ -774,333 +506,6 @@ import Footer from '../components/Footer.astro';
             </div>
           </div>
 
-          <div class="glass rounded-xl p-6">
-            <h3 class="text-lg font-semibold text-white mb-2">roady deps</h3>
-            <p class="text-gray-400 mb-4">Manage cross-repository dependencies.</p>
-            <div class="bg-black/40 rounded-lg p-4">
-              <p class="text-xs text-gray-500 mb-2"># Subcommands</p>
-              <code class="text-sm text-emerald-300 block">roady deps list</code>
-              <code class="text-sm text-emerald-300 block mt-1">roady deps add --repo ../auth-service --type runtime</code>
-              <code class="text-sm text-emerald-300 block mt-1">roady deps scan</code>
-              <code class="text-sm text-emerald-300 block mt-1">roady deps graph</code>
-              <code class="text-sm text-emerald-300 block mt-1">roady deps remove [dep-id]</code>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Plugin Configuration -->
-      <section id="plugin-config" class="mb-16">
-        <h2 class="text-2xl font-bold text-white mb-6 flex items-center">
-          <i data-lucide="key" class="w-6 h-6 mr-3 text-amber-400"></i>
-          Plugin Configuration
-        </h2>
-        <p class="text-gray-400 mb-6">Configure sync plugins using the interactive TUI wizard (recommended), <code class="text-violet-300">.roady/plugins.yaml</code>, or environment variables.</p>
-
-        <div class="space-y-6">
-          <!-- Interactive TUI (Recommended) -->
-          <div class="glass rounded-xl p-6 border-emerald-500/30">
-            <div class="flex items-center mb-4">
-              <div class="w-10 h-10 bg-emerald-500/20 rounded-lg flex items-center justify-center mr-3">
-                <i data-lucide="terminal-square" class="w-5 h-5 text-emerald-400"></i>
-              </div>
-              <div>
-                <h3 class="text-lg font-semibold text-white">Interactive TUI Wizard (Recommended)</h3>
-                <span class="text-xs text-emerald-400">Guided setup with auto-install</span>
-              </div>
-            </div>
-            <p class="text-gray-400 text-sm mb-4">The easiest way to configure plugins. The wizard guides you through plugin selection, automatic installation, and credential entry.</p>
-
-            <div class="bg-black/40 rounded-lg p-4 mb-4">
-              <p class="text-xs text-gray-500 mb-2"># Add a new plugin interactively</p>
-              <code class="text-sm text-emerald-300 block">roady sync add</code>
-              <p class="text-xs text-gray-500 mb-2 mt-3"># Edit an existing configuration</p>
-              <code class="text-sm text-emerald-300 block">roady sync edit my-jira</code>
-              <p class="text-xs text-gray-500 mb-2 mt-3"># Remove a configuration</p>
-              <code class="text-sm text-emerald-300 block">roady sync remove my-jira</code>
-              <p class="text-xs text-gray-500 mb-2 mt-3"># Install a plugin without configuring</p>
-              <code class="text-sm text-emerald-300 block">roady sync install jira</code>
-            </div>
-
-            <div class="p-3 bg-violet-500/10 border border-violet-500/20 rounded-lg">
-              <p class="text-violet-300 text-xs"><strong>Auto-Install:</strong> When you select an uninstalled plugin, roady automatically installs it via <code>go install</code>. No manual setup required!</p>
-            </div>
-          </div>
-
-          <!-- Configuration File Approach (Recommended) -->
-          <div class="glass rounded-xl p-6 border-emerald-500/30">
-            <div class="flex items-center mb-4">
-              <div class="w-10 h-10 bg-emerald-500/20 rounded-lg flex items-center justify-center mr-3">
-                <i data-lucide="file-cog" class="w-5 h-5 text-emerald-400"></i>
-              </div>
-              <div>
-                <h3 class="text-lg font-semibold text-white">Configuration File (Recommended)</h3>
-                <span class="text-xs text-emerald-400">Secure, version-controllable, multi-environment</span>
-              </div>
-            </div>
-            <p class="text-gray-400 text-sm mb-4">Define named plugin configurations in <code class="text-violet-300">.roady/plugins.yaml</code>. This approach keeps credentials out of your shell history and allows multiple configurations for different environments.</p>
-
-            <div class="bg-black/40 rounded-lg p-4 mb-4">
-              <p class="text-xs text-gray-500 mb-2"># .roady/plugins.yaml</p>
-              <pre class="text-sm text-emerald-300"><code>plugins:
-  # Production Jira configuration
-  jira-prod:
-    binary: ./roady-plugin-jira
-    config:
-      domain: https://mycompany.atlassian.net
-      project_key: ROAD
-      email: team@company.com
-      api_token: your-api-token-here
-
-  # Development Linear configuration
-  linear-dev:
-    binary: ./roady-plugin-linear
-    config:
-      api_key: lin_api_xxxxx
-      team_id: TEAM-UUID
-
-  # GitHub Issues
-  github:
-    binary: ./roady-plugin-github
-    config:
-      token: ghp_xxxxx
-      repo: myorg/myproject</code></pre>
-            </div>
-
-            <h4 class="text-sm font-semibold text-gray-300 mb-2">Using Named Configurations</h4>
-            <div class="bg-black/40 rounded-lg p-4 mb-4">
-              <p class="text-xs text-gray-500 mb-2"># Sync using a named configuration</p>
-              <code class="text-sm text-emerald-300 block">roady sync --name jira-prod</code>
-              <code class="text-sm text-emerald-300 block">roady sync -n linear-dev</code>
-              <code class="text-sm text-emerald-300 block mt-2"># List configured plugins</code>
-              <code class="text-sm text-emerald-300 block">roady sync list</code>
-              <code class="text-sm text-emerald-300 block mt-2"># Show a plugin configuration</code>
-              <code class="text-sm text-emerald-300 block">roady sync show jira-prod</code>
-            </div>
-
-            <div class="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-              <p class="text-amber-300 text-xs"><strong>Security Tip:</strong> Add <code>.roady/plugins.yaml</code> to <code>.gitignore</code> to avoid committing credentials. Consider using environment variable references or a secrets manager for production.</p>
-            </div>
-          </div>
-
-          <!-- Per-Plugin Configuration Reference -->
-          <div class="glass rounded-xl p-6">
-            <h3 class="text-lg font-semibold text-white mb-4">Plugin Configuration Reference</h3>
-            <p class="text-gray-400 text-sm mb-4">Each plugin accepts specific configuration keys. Use these in your <code class="text-violet-300">plugins.yaml</code> or as environment variables (fallback).</p>
-
-            <!-- Jira Config -->
-            <div class="mb-6 pb-6 border-b border-white/10">
-              <div class="flex items-center mb-3">
-                <div class="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center mr-3">
-                  <svg class="w-4 h-4 text-blue-400" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M11.53 2c0 2.4 1.97 4.35 4.35 4.35h1.78v1.7c0 2.4 1.94 4.34 4.34 4.35V2.84a.84.84 0 0 0-.84-.84h-9.63zm-5.75 5.75c0 2.4 1.97 4.35 4.35 4.35h1.78v1.7c0 2.4 1.94 4.34 4.34 4.35V8.6a.84.84 0 0 0-.84-.85H5.78zm-5.75 5.75c0 2.4 1.97 4.35 4.35 4.35h1.78v1.7c0 2.4 1.94 4.34 4.34 4.35v-9.56a.84.84 0 0 0-.84-.84H.03z"/>
-                  </svg>
-                </div>
-                <h4 class="text-white font-semibold">Jira</h4>
-              </div>
-              <table class="w-full text-sm">
-                <tr class="border-b border-white/10">
-                  <td class="py-2 text-violet-300 mono">domain</td>
-                  <td class="py-2 text-gray-500 mono">JIRA_DOMAIN</td>
-                  <td class="py-2 text-gray-400">Jira instance URL (e.g., <code class="text-emerald-300">company.atlassian.net</code>)</td>
-                </tr>
-                <tr class="border-b border-white/10">
-                  <td class="py-2 text-violet-300 mono">project_key</td>
-                  <td class="py-2 text-gray-500 mono">JIRA_PROJECT_KEY</td>
-                  <td class="py-2 text-gray-400">Project key (e.g., <code class="text-emerald-300">PROJ</code>)</td>
-                </tr>
-                <tr class="border-b border-white/10">
-                  <td class="py-2 text-violet-300 mono">email</td>
-                  <td class="py-2 text-gray-500 mono">JIRA_EMAIL</td>
-                  <td class="py-2 text-gray-400">Atlassian account email</td>
-                </tr>
-                <tr class="border-b border-white/10">
-                  <td class="py-2 text-violet-300 mono">api_token</td>
-                  <td class="py-2 text-gray-500 mono">JIRA_API_TOKEN</td>
-                  <td class="py-2 text-gray-400">API token (<a href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank" class="text-violet-400 hover:text-violet-300">create here</a>)</td>
-                </tr>
-              </table>
-            </div>
-
-            <!-- Linear Config -->
-            <div class="mb-6 pb-6 border-b border-white/10">
-              <div class="flex items-center mb-3">
-                <div class="w-8 h-8 bg-indigo-500/20 rounded-lg flex items-center justify-center mr-3">
-                  <svg class="w-4 h-4 text-indigo-400" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M3 7.5L12 2l9 5.5v9L12 22l-9-5.5v-9zm9 11.25l6.75-4.125V9.375L12 13.5l-6.75-4.125v5.25L12 18.75z"/>
-                  </svg>
-                </div>
-                <h4 class="text-white font-semibold">Linear</h4>
-              </div>
-              <table class="w-full text-sm">
-                <tr class="border-b border-white/10">
-                  <td class="py-2 text-violet-300 mono">api_key</td>
-                  <td class="py-2 text-gray-500 mono">LINEAR_API_KEY</td>
-                  <td class="py-2 text-gray-400">API key (<a href="https://linear.app/settings/api" target="_blank" class="text-violet-400 hover:text-violet-300">Linear Settings → API</a>)</td>
-                </tr>
-                <tr class="border-b border-white/10">
-                  <td class="py-2 text-violet-300 mono">team_id</td>
-                  <td class="py-2 text-gray-500 mono">LINEAR_TEAM_ID</td>
-                  <td class="py-2 text-gray-400">Team ID (from team settings URL)</td>
-                </tr>
-              </table>
-            </div>
-
-            <!-- GitHub Config -->
-            <div class="mb-6 pb-6 border-b border-white/10">
-              <div class="flex items-center mb-3">
-                <div class="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center mr-3">
-                  <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
-                  </svg>
-                </div>
-                <h4 class="text-white font-semibold">GitHub Issues</h4>
-              </div>
-              <table class="w-full text-sm">
-                <tr class="border-b border-white/10">
-                  <td class="py-2 text-violet-300 mono">token</td>
-                  <td class="py-2 text-gray-500 mono">GITHUB_TOKEN</td>
-                  <td class="py-2 text-gray-400">Personal access token with <code class="text-emerald-300">repo</code> scope (<a href="https://github.com/settings/tokens" target="_blank" class="text-violet-400 hover:text-violet-300">create here</a>)</td>
-                </tr>
-                <tr class="border-b border-white/10">
-                  <td class="py-2 text-violet-300 mono">repo</td>
-                  <td class="py-2 text-gray-500 mono">GITHUB_REPO</td>
-                  <td class="py-2 text-gray-400">Repository (<code class="text-emerald-300">owner/repo</code>)</td>
-                </tr>
-              </table>
-            </div>
-
-            <!-- Notion Config -->
-            <div class="mb-6 pb-6 border-b border-white/10">
-              <div class="flex items-center mb-3">
-                <div class="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center mr-3">
-                  <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M4.459 4.208c.746.606 1.026.56 2.428.466l13.215-.793c.28 0 .047-.28-.046-.326L17.86 1.968c-.42-.326-.98-.7-2.055-.607L3.01 2.295c-.466.046-.56.28-.374.466zm.793 3.08v13.904c0 .747.373 1.027 1.214.98l14.523-.84c.841-.046.935-.56.935-1.167V6.354c0-.606-.233-.933-.748-.886l-15.177.887c-.56.047-.747.327-.747.933zm14.337.745c.093.42 0 .84-.42.888l-.7.14v10.264c-.608.327-1.168.514-1.635.514-.748 0-.935-.234-1.495-.933l-4.577-7.186v6.952l1.448.327s0 .84-1.168.84l-3.22.186c-.094-.186 0-.653.327-.746l.84-.233V9.854L7.822 9.76c-.094-.42.14-1.026.793-1.073l3.456-.233 4.764 7.279v-6.44l-1.215-.14c-.093-.514.28-.886.747-.933zM2.877 1.076l13.355-.933c1.635-.14 2.055-.047 3.082.7l4.25 2.986c.7.513.933.653.933 1.213v16.378c0 1.026-.373 1.634-1.68 1.726l-15.458.934c-.98.047-1.448-.093-1.962-.747l-3.129-4.06c-.56-.747-.793-1.306-.793-1.96V2.89c0-.84.374-1.54 1.402-1.813z"/>
-                  </svg>
-                </div>
-                <h4 class="text-white font-semibold">Notion</h4>
-              </div>
-              <table class="w-full text-sm">
-                <tr class="border-b border-white/10">
-                  <td class="py-2 text-violet-300 mono">token</td>
-                  <td class="py-2 text-gray-500 mono">NOTION_TOKEN</td>
-                  <td class="py-2 text-gray-400">Integration token (<a href="https://www.notion.so/my-integrations" target="_blank" class="text-violet-400 hover:text-violet-300">Notion Integrations</a>)</td>
-                </tr>
-                <tr class="border-b border-white/10">
-                  <td class="py-2 text-violet-300 mono">database_id</td>
-                  <td class="py-2 text-gray-500 mono">NOTION_DATABASE_ID</td>
-                  <td class="py-2 text-gray-400">Database ID from URL</td>
-                </tr>
-              </table>
-              <p class="text-amber-300 text-xs mt-2"><strong>Note:</strong> Database needs "Name" (title), "Roady ID" (text), and "Status" (status) properties.</p>
-            </div>
-
-            <!-- Trello Config -->
-            <div class="mb-6 pb-6 border-b border-white/10">
-              <div class="flex items-center mb-3">
-                <div class="w-8 h-8 bg-sky-500/20 rounded-lg flex items-center justify-center mr-3">
-                  <svg class="w-4 h-4 text-sky-400" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M21 0H3C1.343 0 0 1.343 0 3v18c0 1.656 1.343 3 3 3h18c1.656 0 3-1.344 3-3V3c0-1.657-1.344-3-3-3zM10.44 18.18c0 .795-.645 1.44-1.44 1.44H4.56c-.795 0-1.44-.645-1.44-1.44V4.56c0-.795.645-1.44 1.44-1.44H9c.795 0 1.44.645 1.44 1.44v13.62zm10.44-6c0 .794-.645 1.44-1.44 1.44h-4.44c-.795 0-1.44-.646-1.44-1.44V4.56c0-.795.645-1.44 1.44-1.44h4.44c.795 0 1.44.645 1.44 1.44v7.62z"/>
-                  </svg>
-                </div>
-                <h4 class="text-white font-semibold">Trello</h4>
-              </div>
-              <table class="w-full text-sm">
-                <tr class="border-b border-white/10">
-                  <td class="py-2 text-violet-300 mono">api_key</td>
-                  <td class="py-2 text-gray-500 mono">TRELLO_API_KEY</td>
-                  <td class="py-2 text-gray-400">API key (<a href="https://trello.com/app-key" target="_blank" class="text-violet-400 hover:text-violet-300">Trello Power-Ups</a>)</td>
-                </tr>
-                <tr class="border-b border-white/10">
-                  <td class="py-2 text-violet-300 mono">token</td>
-                  <td class="py-2 text-gray-500 mono">TRELLO_TOKEN</td>
-                  <td class="py-2 text-gray-400">Authorization token</td>
-                </tr>
-                <tr class="border-b border-white/10">
-                  <td class="py-2 text-violet-300 mono">board_id</td>
-                  <td class="py-2 text-gray-500 mono">TRELLO_BOARD_ID</td>
-                  <td class="py-2 text-gray-400">Board ID from URL</td>
-                </tr>
-                <tr class="border-b border-white/10">
-                  <td class="py-2 text-violet-300 mono">todo_list_id</td>
-                  <td class="py-2 text-gray-500 mono">TRELLO_TODO_LIST_ID</td>
-                  <td class="py-2 text-gray-400">Optional: List for new tasks</td>
-                </tr>
-                <tr class="border-b border-white/10">
-                  <td class="py-2 text-violet-300 mono">done_list_id</td>
-                  <td class="py-2 text-gray-500 mono">TRELLO_DONE_LIST_ID</td>
-                  <td class="py-2 text-gray-400">Optional: List for completed tasks</td>
-                </tr>
-              </table>
-            </div>
-
-            <!-- Asana Config -->
-            <div>
-              <div class="flex items-center mb-3">
-                <div class="w-8 h-8 bg-rose-500/20 rounded-lg flex items-center justify-center mr-3">
-                  <svg class="w-4 h-4 text-rose-400" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M18.78 12.653c-2.587 0-4.685 2.098-4.685 4.686 0 2.587 2.098 4.685 4.685 4.685 2.588 0 4.686-2.098 4.686-4.685 0-2.588-2.098-4.686-4.686-4.686zm-13.56 0c-2.587 0-4.686 2.098-4.686 4.686 0 2.587 2.099 4.685 4.686 4.685 2.588 0 4.686-2.098 4.686-4.685 0-2.588-2.098-4.686-4.686-4.686zm11.466-4.676c0 2.588-2.098 4.686-4.686 4.686-2.587 0-4.685-2.098-4.685-4.686C7.315 5.39 9.413 3.29 12 3.29c2.588 0 4.686 2.099 4.686 4.687z"/>
-                  </svg>
-                </div>
-                <h4 class="text-white font-semibold">Asana</h4>
-              </div>
-              <table class="w-full text-sm">
-                <tr class="border-b border-white/10">
-                  <td class="py-2 text-violet-300 mono">token</td>
-                  <td class="py-2 text-gray-500 mono">ASANA_TOKEN</td>
-                  <td class="py-2 text-gray-400">Personal access token (<a href="https://app.asana.com/0/developer-console" target="_blank" class="text-violet-400 hover:text-violet-300">Developer Console</a>)</td>
-                </tr>
-                <tr class="border-b border-white/10">
-                  <td class="py-2 text-violet-300 mono">project_id</td>
-                  <td class="py-2 text-gray-500 mono">ASANA_PROJECT_ID</td>
-                  <td class="py-2 text-gray-400">Project GID from URL</td>
-                </tr>
-              </table>
-            </div>
-          </div>
-
-          <!-- Legacy Environment Variable Approach -->
-          <div class="glass rounded-xl p-6 opacity-75">
-            <div class="flex items-center mb-4">
-              <div class="w-10 h-10 bg-gray-500/20 rounded-lg flex items-center justify-center mr-3">
-                <i data-lucide="terminal" class="w-5 h-5 text-gray-400"></i>
-              </div>
-              <div>
-                <h3 class="text-lg font-semibold text-white">Environment Variables (Legacy)</h3>
-                <span class="text-xs text-gray-500">For quick testing or CI/CD environments</span>
-              </div>
-            </div>
-            <p class="text-gray-400 text-sm mb-4">You can still use environment variables directly without a config file. The plugin will check the config file first, then fall back to environment variables.</p>
-            <div class="bg-black/40 rounded-lg p-4">
-              <p class="text-xs text-gray-500 mb-2"># Direct plugin path (uses env vars)</p>
-              <code class="text-sm text-gray-300 block">export JIRA_DOMAIN="company.atlassian.net"</code>
-              <code class="text-sm text-gray-300 block">export JIRA_PROJECT_KEY="PROJ"</code>
-              <code class="text-sm text-gray-300 block">export JIRA_EMAIL="you@company.com"</code>
-              <code class="text-sm text-gray-300 block">export JIRA_API_TOKEN="your-token"</code>
-              <code class="text-sm text-emerald-300 block mt-2">roady sync ./roady-plugin-jira</code>
-            </div>
-          </div>
-
-          <!-- Building Plugins -->
-          <div class="glass rounded-xl p-6 border-violet-500/30">
-            <div class="flex items-center mb-4">
-              <div class="w-10 h-10 bg-violet-500/20 rounded-lg flex items-center justify-center mr-3">
-                <i data-lucide="code-2" class="w-5 h-5 text-violet-400"></i>
-              </div>
-              <h3 class="text-lg font-semibold text-white">Building Plugins</h3>
-            </div>
-            <p class="text-gray-400 text-sm mb-4">Build official plugins from source or create your own custom plugins.</p>
-            <div class="bg-black/40 rounded-lg p-4 mb-4">
-              <p class="text-xs text-gray-500 mb-2"># Build all official plugins</p>
-              <code class="text-sm text-emerald-300 block">go build -o roady-plugin-jira ./cmd/roady-plugin-jira</code>
-              <code class="text-sm text-emerald-300 block">go build -o roady-plugin-linear ./cmd/roady-plugin-linear</code>
-              <code class="text-sm text-emerald-300 block">go build -o roady-plugin-github ./cmd/roady-plugin-github</code>
-              <code class="text-sm text-emerald-300 block">go build -o roady-plugin-notion ./cmd/roady-plugin-notion</code>
-              <code class="text-sm text-emerald-300 block">go build -o roady-plugin-trello ./cmd/roady-plugin-trello</code>
-              <code class="text-sm text-emerald-300 block">go build -o roady-plugin-asana ./cmd/roady-plugin-asana</code>
-            </div>
-            <p class="text-gray-400 text-sm">Plugins use HashiCorp's go-plugin over gRPC. Implement the <code class="text-violet-300">Syncer</code> interface to create custom integrations.</p>
-          </div>
         </div>
       </section>
 
@@ -1110,25 +515,9 @@ import Footer from '../components/Footer.astro';
           <i data-lucide="settings-2" class="w-6 h-6 mr-3 text-rose-400"></i>
           Advanced Commands
         </h2>
-        <p class="text-gray-400 mb-6">Multi-project management, policies, and advanced configuration.</p>
+        <p class="text-gray-400 mb-6">Policies and audit integrity.</p>
 
         <div class="space-y-6">
-          <div class="glass rounded-xl p-6">
-            <h3 class="text-lg font-semibold text-white mb-2">roady org status</h3>
-            <p class="text-gray-400 mb-4">Show status overview of all Roady projects in a directory.</p>
-            <div class="bg-black/40 rounded-lg p-4">
-              <code class="text-sm text-gray-300">roady org status [root-dir]</code>
-            </div>
-          </div>
-
-          <div class="glass rounded-xl p-6">
-            <h3 class="text-lg font-semibold text-white mb-2">roady discover</h3>
-            <p class="text-gray-400 mb-4">Discover all Roady projects in a directory tree.</p>
-            <div class="bg-black/40 rounded-lg p-4">
-              <code class="text-sm text-gray-300">roady discover [root-dir]</code>
-            </div>
-          </div>
-
           <div class="glass rounded-xl p-6">
             <h3 class="text-lg font-semibold text-white mb-2">roady policy check</h3>
             <p class="text-gray-400 mb-4">Check if the current plan complies with policies (WIP limits, dependencies).</p>
@@ -1145,20 +534,6 @@ import Footer from '../components/Footer.astro';
             </div>
           </div>
 
-          <div class="glass rounded-xl p-6">
-            <h3 class="text-lg font-semibold text-white mb-2">roady watch</h3>
-            <p class="text-gray-400 mb-4">Watch a directory for documentation changes and automatically detect drift.</p>
-            <div class="bg-black/40 rounded-lg p-4 mb-4">
-              <code class="text-sm text-gray-300">roady watch [dir] [flags]</code>
-            </div>
-            <h4 class="text-sm font-semibold text-gray-300 mb-2">Flags</h4>
-            <table class="w-full text-sm">
-              <tr class="border-b border-white/10">
-                <td class="py-2 text-violet-300 mono">--auto-sync</td>
-                <td class="py-2 text-gray-400">Automatically regenerate plan on documentation changes</td>
-              </tr>
-            </table>
-          </div>
         </div>
       </section>
 
@@ -1187,21 +562,9 @@ import Footer from '../components/Footer.astro';
                 <td class="py-3 text-violet-300 mono">ROADY_AGENT</td>
                 <td class="py-3 text-gray-400">Agent name recorded in the audit trail (auto-detected for Claude Code, Cursor, Codex, Gemini CLI)</td>
               </tr>
-              <tr class="border-b border-white/10">
-                <td class="py-3 text-violet-300 mono">ROADY_USER</td>
-                <td class="py-3 text-gray-400">Task owner for assignment and per-owner WIP limits</td>
-              </tr>
-              <tr class="border-b border-white/10">
-                <td class="py-3 text-violet-300 mono">GITHUB_WEBHOOK_SECRET</td>
-                <td class="py-3 text-gray-400">GitHub webhook secret for validation</td>
-              </tr>
-              <tr class="border-b border-white/10">
-                <td class="py-3 text-violet-300 mono">JIRA_WEBHOOK_SECRET</td>
-                <td class="py-3 text-gray-400">Jira webhook secret</td>
-              </tr>
               <tr>
-                <td class="py-3 text-violet-300 mono">LINEAR_WEBHOOK_SECRET</td>
-                <td class="py-3 text-gray-400">Linear webhook secret</td>
+                <td class="py-3 text-violet-300 mono">ROADY_USER</td>
+                <td class="py-3 text-gray-400">Task owner (<code class="mono text-violet-400">roady task mine</code>) and per-owner WIP limits</td>
               </tr>
             </tbody>
           </table>
@@ -1243,27 +606,11 @@ import Footer from '../components/Footer.astro';
               </tr>
               <tr class="border-b border-white/10">
                 <td class="py-3 text-violet-300 mono">policy.yaml</td>
-                <td class="py-3 text-gray-400">Governance (max_wip, allow_ai, token_limit)</td>
-              </tr>
-              <tr class="border-b border-white/10">
-                <td class="py-3 text-violet-300 mono">events.jsonl</td>
-                <td class="py-3 text-gray-400">Immutable audit trail (hash-chained)</td>
-              </tr>
-              <tr class="border-b border-white/10">
-                <td class="py-3 text-violet-300 mono">usage.json</td>
-                <td class="py-3 text-gray-400">AI token consumption telemetry</td>
-              </tr>
-              <tr class="border-b border-white/10">
-                <td class="py-3 text-violet-300 mono">plugins.yaml</td>
-                <td class="py-3 text-gray-400">Named plugin configurations (credentials, binaries)</td>
-              </tr>
-              <tr class="border-b border-white/10">
-                <td class="py-3 text-violet-300 mono">rates.yaml</td>
-                <td class="py-3 text-gray-400">Billing rates, currency, and tax configuration</td>
+                <td class="py-3 text-gray-400">Governance (max_wip, allow_ai)</td>
               </tr>
               <tr>
-                <td class="py-3 text-violet-300 mono">time_entries.yaml</td>
-                <td class="py-3 text-gray-400">Logged time entries for cost tracking</td>
+                <td class="py-3 text-violet-300 mono">events.jsonl</td>
+                <td class="py-3 text-gray-400">Immutable audit trail (hash-chained)</td>
               </tr>
             </tbody>
           </table>

@@ -4,17 +4,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Roady is a planning-first system of record for software work. It acts as a durable memory layer between **intent** (specs), **plans** (task DAGs), and **execution** (state tracking). Designed for individuals, teams, and AI agents via MCP (Model Context Protocol).
+Roady is a planning-first system of record for software work. It acts as a durable memory layer between **intent** (specs), **plans** (task DAGs), and **execution** (state tracking). Built for AI coding agents (via MCP and CLI) and the people who direct them.
+The product is three things: **capture** intent at any size, **keep** the
+agent on it across sessions and compaction, and **prove** work done with
+acceptance checks and a hash-chained audit log. Anything that does not serve
+those was removed (billing, teams/org, tracker sync, messaging, debt,
+forecasting, dashboards); do not reintroduce it.
 
 ## Build & Test Commands
 
 ```bash
 # Build main binary
 go build -o roady ./cmd/roady
-
-# Build every plugin binary (asana, github, jira, linear, mock, notion, trello).
-# Enumerated rather than listed, so this does not go stale as plugins are added.
-for p in cmd/roady-plugin-*; do go build -o "$(basename "$p")" "./$p"; done
 
 # Run all tests
 go test ./...
@@ -42,40 +43,36 @@ pkg/domain/           # Pure domain logic (no external dependencies)
 ├── spec/            # ProductSpec, Feature, Requirement entities
 ├── planning/        # Plan, Task, ExecutionState, DAG validation
 ├── drift/           # Issue, Report, drift detection types
-├── policy/          # Policy rules (WIP limits, dependencies)
-└── plugin/          # Syncer interface for external integrations
+├── policy/          # Policy rules (WIP limits, evidence, approval mode)
+├── audit/ events/ provenance/  # Hash-chained log, projections, who-did-what
+└── project/ dispatch/ prompt/  # Coordinator, subagent dispatch, prompt building
 
 pkg/application/      # Use-case services orchestrating domain logic
-├── init_service.go
-├── spec_service.go
-├── plan_service.go
-├── drift_service.go
-├── policy_service.go
-├── task_service.go
-├── audit_service.go
-├── prompt_service.go
-├── report_service.go
-├── audit_trail_service.go
-├── git_service.go
-└── sync_service.go
+├── capture_service.go   # one write for intent of any size (capture, add/edit/split/move)
+├── plan_import.go       # harness plan files -> tasks
+├── brief.go             # roady next
+├── check_service.go     # acceptance checks; evidence_gate.go, check_guard.go
+├── plan_service.go / task_service.go / spec_service.go / drift_service.go
+├── policy_service.go / git_service.go / dispatch_service.go
+└── audit_service.go / audit_trail_service.go / prompt_service.go
+```
 
+```
 internal/infrastructure/  # Adapters and framework integrations
-├── cli/             # Cobra CLI commands (root, init, spec, plan, drift, etc.)
+├── cli/             # Cobra CLI commands, agent hooks (hook.go) and setup
 ├── mcp/             # MCP server implementation
 └── wiring/          # Service composition and dependency injection
 
 pkg/storage/         # Filesystem repository (YAML/JSON in .roady/)
-pkg/plugin/          # HashiCorp go-plugin loader for external syncers
+pkg/sdk/             # Go client for the MCP server
 ```
 
 ### Key Dependencies
 
 - **cobra**: CLI framework
-- **bubbletea/lipgloss**: TUI dashboard
 - **go.klarlabs.de/mcp**: MCP server protocol
 - **statekit**: FSM for task state transitions
 - **fortify**: Resilience (retry, timeout) for AI calls
-- **go-plugin**: HashiCorp plugin system for external syncers
 
 `go.mod` is authoritative; this list names what each is for, not what version
 is pinned.
@@ -83,10 +80,14 @@ is pinned.
 ### Data Storage (.roady/)
 
 All artifacts are git-friendly files:
-- `spec.yaml` - Product specification (features, requirements)
+- `spec.yaml` - Product specification (goals, features, requirements). Goals
+  are the roadmap (`roady goal`). ROADMAP.md is rendered from them by
+  `roady goal render`; never edit it by hand (drift reports it)
 - `spec.lock.json` - Pinned spec snapshot for drift detection
 - `plan.json` - Task DAG with approval status
-- `state.json` - Execution state (task statuses, paths)
+- `state.json` - Execution state (task statuses, claims). In a git repo the
+  real file is shared by all worktrees at `.git/roady/<project>/state.json`
+  (docs/rfcs/0002); the checkout copy is a mirror
 - `policy.yaml` - Governance (max_wip, allow_ai, token_limit)
 - `events.jsonl` - Immutable audit trail (hash-chained)
 
@@ -121,21 +122,8 @@ Guards enforce:
 
 ### MCP Tools
 
-The MCP server lives in `internal/infrastructure/mcp/`. It currently exposes
-about seventy tools, grouped roughly as:
-
-- **spec / plan / state** — `roady_spec_get`, `roady_plan_get`, `roady_state_get`,
-  `roady_plan_generate`, `roady_plan_approve`, `roady_spec_add`
-- **drift** — `roady_drift_detect`, `roady_drift_accept`, `roady_drift_explain`
-- **tasks** — `roady_task_transition`, `roady_tasks`, `roady_task_assign`
-- **governance & audit** — `roady_policy_check`, `roady_audit_trail`, `roady_audit_verify`
-- **cost, debt, deps, org, team, rates** — families prefixed `roady_cost_`,
-  `roady_debt_`, `roady_deps_`, `roady_org_`, `roady_team_`, `roady_rate_`
-
-This deliberately does not enumerate them. An earlier version listed sixteen
-by name; the server had grown to seventy and every one of the sixteen was still
-correct, so the list was not wrong — just quietly four-fifths incomplete, which
-reads the same as complete. For the current set, ask the code:
+The MCP server lives in `internal/infrastructure/mcp/`. For the current set
+of tools, ask the code rather than a list that goes stale:
 
 ```bash
 grep -rhoE '"roady_[a-z_]+"' internal/infrastructure/mcp/*.go | tr -d '"' | sort -u
@@ -148,36 +136,25 @@ roady mcp --transport http --addr :8080
 roady mcp --transport ws --addr :8080
 ```
 
-#### Trimming the advertised surface
+#### Parity: one tool per CLI noun
 
-All seventy tools are advertised on every session, and a client pays for each
-one in its prompt whether or not the project has a rate card or a debt ledger.
-`ROADY_MCP_TOOLS` selects which groups are registered:
+Every CLI command that works on a project has an MCP tool: one per noun
+(`roady_task`, `roady_plan`, `roady_spec`, `roady_drift`, `roady_audit`,
+`roady_state`, `roady_policy`, `roady_git`, `roady_goal`) with the CLI verbs as its
+`action`, plus `roady_next`, `roady_status`, `roady_query`, `roady_capture`
+and `roady_init`. `NounActions` in `mcp/nouns.go` is the single table.
+`TestEveryCLICommandHasAnMCPTool` (cli package) walks the command tree and
+fails when a command has no tool or action — add the action when you add a
+command. Host commands (`setup`, `hook`, `mcp`, `completion`, `config`,
+`doctor`) stay CLI-only.
 
-```bash
-ROADY_MCP_TOOLS=core roady mcp        # 30 tools instead of 70
-ROADY_MCP_TOOLS=core,debt roady mcp   # plus the debt ledger
-```
-
-Groups: `core`, `cost`, `team`, `org`, `debt`, `deps`, `plugin`, `sync`,
-`analytics`, `audit`. `core` is always included — a server without the
-spec/plan/execute loop cannot do the thing roady is for. Unset (or `all`)
-registers everything, so this is opt-in: an existing client keeps the surface
-it already calls. An unknown group name fails startup rather than quietly
-starting a smaller server.
-
-The grouping lives in `internal/infrastructure/mcp/profiles.go`, and a tool
-missing from it fails the build — the same guarantee the behaviour
-annotations have. Otherwise an unclassified tool would silently disappear
-from every profile, which looks exactly like a tool that does not exist.
-
-### Plugin System
-
-Plugins use HashiCorp go-plugin over RPC:
-- Interface: `pkg/domain/plugin/Syncer`
-- Loader: `pkg/plugin/loader.go`
-- Implementations: `cmd/roady-plugin-*` — asana, github, jira, linear, mock,
-  notion, trello
+Decisions — plan approve/reject/prune, drift accept, spec
+analyze/import/lock, state rebuild (`GatedActions`) — go through
+`Server.gated`: the server asks the user in their client (MCP elicitation)
+and runs the operation only on an explicit yes, recording
+`approval.confirmed` in the audit log. Declined, cancelled or unsupported
+means nothing changes and the result names the CLI command. An agent may ask;
+only the user decides. `TestGatedActionsNeedTheUser` pins it.
 
 ## Common Workflows
 
@@ -235,15 +212,19 @@ When running Claude Code in this project, use Roady for all task management inst
 ## Task Management
 
 When working on features:
-1. Check current plan: roady status
+1. Check current plan: roady status — or just `roady next` for a brief of
+   the task you are on (or should start next)
 2. Get next task: roady task ready
 3. Start task: roady task start <task-id>
 4. Complete task: roady task complete <task-id>
-5. Check drift: roady drift detect
+5. Run its acceptance check: roady task check <task-id>
+   (verify re-runs it and refuses on failure; see docs/acceptance-checks.md)
+6. Check drift: roady drift detect
 
 When planning new work:
 1. Review spec: roady spec explain
-2. Generate tasks: roady plan generate --ai      # emits a prompt; you run it
+2. Record the plan in one write: roady capture -f plan.yaml (docs/capture.md)
+   — or generate tasks: roady plan generate --ai  # emits a prompt; you run it
 3. Approve plan: roady plan approve
 
 Never use Claude's TaskWrite/TaskCreate/TaskUpdate tools.
@@ -259,11 +240,9 @@ See `.claude/commands/` for pre-configured Claude Code commands:
 
 ### MCP Server
 
-For projects with Roady MCP configured, these tools are available:
-- `roady_plan_get` - Fetch current plan with ready tasks
-- `roady_task_transition` - Start/complete tasks
-- `roady_drift_detect` - Check implementation vs plan
-- `roady_snapshot_get` - Get full project state
+For projects with Roady MCP configured, the agent works through `roady_next`,
+`roady_capture` and `roady_task` (`start`, `check`, `complete`); see
+`docs/mcp-guide.md` for all fourteen tools.
 
 Roady's MCP server works with Claude Code, OpenCode, Claude Desktop, OpenAI Codex, and Google Gemini. Use `roady setup <platform>` to configure.
 

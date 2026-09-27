@@ -89,9 +89,15 @@ type Task struct {
 	Priority    TaskPriority `json:"priority" yaml:"priority"`
 	Estimate    string       `json:"estimate" yaml:"estimate"`     // e.g., "4h", "1d"
 	DependsOn   []string     `json:"depends_on" yaml:"depends_on"` // IDs of tasks this task depends on
-	FeatureID   string       `json:"feature_id" yaml:"feature_id"` // Link to the feature in the spec
-	Origin      TaskOrigin   `json:"origin,omitempty" yaml:"origin,omitempty"`
-	Source      TaskSource   `json:"source,omitempty" yaml:"source,omitempty"`
+	FeatureID   string       `json:"feature_id" yaml:"feature_id"` // Link to the feature in the spec; empty for unplanned work
+	// Goal attaches unplanned work (no feature) to a roadmap goal. Tasks
+	// with a feature take their goal from it.
+	Goal   string     `json:"goal,omitempty" yaml:"goal,omitempty"`
+	Origin TaskOrigin `json:"origin,omitempty" yaml:"origin,omitempty"`
+	Source TaskSource `json:"source,omitempty" yaml:"source,omitempty"`
+	// Check is how completion is shown, copied from the requirement when the
+	// plan is generated. Nil means the task has no check yet.
+	Check *Check `json:"check,omitempty" yaml:"check,omitempty"`
 }
 
 // Hash returns a deterministic hash of the plan structure.

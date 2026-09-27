@@ -20,7 +20,8 @@ var taskCmd = &cobra.Command{
 
 func createTaskCommand(use, short, event string) *cobra.Command {
 	var evidence string
-	var rateID string
+	var override string
+	var blockReason string
 	cmd := &cobra.Command{
 		Use:   use,
 		Short: short,
@@ -45,14 +46,23 @@ func createTaskCommand(use, short, event string) *cobra.Command {
 				actor = "unknown-human"
 			}
 
-			if event == "start" {
-				err := service.StartTask(cmd.Context(), taskID, actor, rateID)
-				if err != nil {
+			switch {
+			case event == "start":
+				if err := service.StartTask(cmd.Context(), taskID, actor); err != nil {
 					return MapError(fmt.Errorf("failed to start task: %w", err))
 				}
-			} else {
-				err := service.TransitionTask(taskID, event, actor, evidence)
-				if err != nil {
+			case event == "block":
+				if err := service.BlockWithReason(taskID, blockReason, evidence, actor); err != nil {
+					return MapError(fmt.Errorf("failed to block task: %w", err))
+				}
+			case event == "verify" && override != "":
+				// A person verifying without the evidence the policy asks
+				// for; recorded as an override with its reason.
+				if err := service.VerifyWithOverride(cmd.Context(), taskID, actor, override); err != nil {
+					return MapError(fmt.Errorf("failed to verify task: %w", err))
+				}
+			default:
+				if err := service.TransitionTask(taskID, event, actor, evidence); err != nil {
 					return MapError(fmt.Errorf("failed to transition task: %w", err))
 				}
 			}
@@ -61,13 +71,82 @@ func createTaskCommand(use, short, event string) *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVarP(&evidence, "evidence", "e", "", "Evidence for the task completion (e.g. commit hash, URL)")
-	if event == "start" {
-		cmd.Flags().StringVarP(&rateID, "rate", "r", "", "Rate ID to use for billing")
+	if event == "block" {
+		cmd.Flags().StringVar(&blockReason, "reason", "", "spec-conflict or cannot-complete when the task cannot be done as specified: a person decides, and drift reports it until then. Say what is wrong with -e")
+		cmd.Long = `Block a task. An ordinary block means waiting on something.
+
+When a task cannot be done as specified, block it with a reason instead of
+forcing it done — bending a check or a test to pass is worse than saying so:
+
+  roady task block task-x --reason spec-conflict -e "R2 requires sync writes, R5 forbids them"
+  roady task block task-x --reason cannot-complete -e "needs production credentials"
+
+A person resolves it: changes the requirement, re-scopes the task, or
+unblocks it. Until then it shows in status and drift.`
+	}
+	if event == "verify" {
+		cmd.Flags().StringVar(&override, "override", "", "Verify without the evidence verify_requires_evidence asks for, recording this reason. Does not override a failing check.")
 	}
 	return cmd
 }
 
 var taskQueryJSON bool
+
+var taskHistoryJSON bool
+
+var taskHistoryCmd = &cobra.Command{
+	Use:   "history <task-id>",
+	Short: "What happened to a task: created, edited, split, moved, started, checked, blocked",
+	Long: `Read a task's history back from the event log. Every edit records the
+fields it changed, every transition and check its own event, so the history
+is complete even though plan.json only holds the latest shape.`,
+	Args: cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		root, err := getProjectRoot()
+		if err != nil {
+			return fmt.Errorf("resolve project path: %w", err)
+		}
+		ws := wiring.NewWorkspace(root)
+		svc := application.NewTaskService(ws.Repo, ws.Audit, application.NewPolicyService(ws.Repo))
+		entries, err := svc.TaskHistory(args[0])
+		if err != nil {
+			return MapError(err)
+		}
+		if taskHistoryJSON {
+			enc := json.NewEncoder(cmd.OutOrStdout())
+			enc.SetIndent("", "  ")
+			return enc.Encode(entries)
+		}
+		_, err = fmt.Fprint(cmd.OutOrStdout(), application.RenderHistory(args[0], entries))
+		return err
+	},
+}
+
+var taskRenewCmd = &cobra.Command{
+	Use:   "renew <task-id>",
+	Short: "Keep your claim on an in-progress task",
+	Long: `Starting a task claims it with a lease (policy claim_lease, default 2h).
+The lease is renewed whenever you run ` + "`roady next`" + ` (the session-start hook does,
+also after compaction) and each time the agent writes a file (the write-guard
+hook); this renews it explicitly. A claim nobody renews runs out and the task goes back to pending,
+so an agent that crashed does not hold it forever.`,
+	Args: cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		root, err := getProjectRoot()
+		if err != nil {
+			return fmt.Errorf("resolve project path: %w", err)
+		}
+		ws := wiring.NewWorkspace(root)
+		svc := application.NewTaskService(ws.Repo, ws.Audit, application.NewPolicyService(ws.Repo))
+		actor := resolveCurrentOwner(gitConfigUserName)
+		lease, err := svc.RenewClaim(args[0], actor)
+		if err != nil {
+			return MapError(err)
+		}
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Claim on %s renewed until %s.\n", args[0], lease.ExpiresAt.Local().Format("2006-01-02 15:04"))
+		return nil
+	},
+}
 
 var taskReadyCmd = &cobra.Command{
 	Use:   "ready",
@@ -144,30 +223,6 @@ func outputTaskSummaries(title string, tasks []project.TaskSummary, jsonOut bool
 	return nil
 }
 
-var taskAssignCmd = &cobra.Command{
-	Use:   "assign <task-id> <assignee>",
-	Short: "Assign a task to a person or agent",
-	Args:  cobra.ExactArgs(2),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		cwd, cErr := getProjectRoot()
-		if cErr != nil {
-			return fmt.Errorf("resolve project path: %w", cErr)
-		}
-		workspace := wiring.NewWorkspace(cwd)
-		repo := workspace.Repo
-		audit := workspace.Audit
-		policy := application.NewPolicyService(repo)
-		service := application.NewTaskService(repo, audit, policy)
-
-		err := service.AssignTask(cmd.Context(), args[0], args[1])
-		if err != nil {
-			return MapError(fmt.Errorf("failed to assign task: %w", err))
-		}
-		fmt.Printf("Task %s assigned to %s\n", args[0], args[1])
-		return nil
-	},
-}
-
 // resolveCurrentOwner determines who "me" is for owner-scoped task queries.
 // Precedence: ROADY_USER, then git user.name, then USER. Returns "" when no
 // identity is configured, which callers must treat as an error rather than as
@@ -233,46 +288,17 @@ func listTasksForOwner(cmd *cobra.Command, owner, title string) error {
 	return outputTaskSummaries(title, tasks, taskQueryJSON)
 }
 
-var taskStartRate string
-
-var taskLogCmd = &cobra.Command{
-	Use:   "log <task-id> <minutes>",
-	Short: "Log time manually to a task",
-	Args:  cobra.ExactArgs(2),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		services, err := loadServicesForCurrentDir()
-		if err != nil {
-			return err
-		}
-		billingSvc := services.Billing
-
-		taskID := args[0]
-		var minutes int
-		_, err = fmt.Sscanf(args[1], "%d", &minutes)
-		if err != nil {
-			return fmt.Errorf("invalid minutes: %w", err)
-		}
-
-		err = billingSvc.LogTime(taskID, taskStartRate, minutes, "")
-		if err != nil {
-			return MapError(fmt.Errorf("failed to log time: %w", err))
-		}
-		fmt.Printf("Logged %d minutes to task %s\n", minutes, taskID)
-		return nil
-	},
-}
-
 func init() {
-	taskCmd.AddCommand(taskAssignCmd)
-	taskCmd.AddCommand(createTaskCommand("start", "Start a task", "start"))
+	taskCmd.AddCommand(createTaskCommand("start", "Start a task (claims it; see `roady task renew`)", "start"))
+	taskCmd.AddCommand(taskRenewCmd)
+	taskHistoryCmd.Flags().BoolVar(&taskHistoryJSON, "json", false, "Print the history as JSON")
+	taskCmd.AddCommand(taskHistoryCmd)
 	taskCmd.AddCommand(createTaskCommand("block", "Block a task", "block"))
 	taskCmd.AddCommand(createTaskCommand("unblock", "Unblock a task", "unblock"))
 	taskCmd.AddCommand(createTaskCommand("complete", "Complete a task", "complete"))
 	taskCmd.AddCommand(createTaskCommand("stop", "Stop working on a task", "stop"))
 	taskCmd.AddCommand(createTaskCommand("reopen", "Reopen a completed task", "reopen"))
-	taskCmd.AddCommand(createTaskCommand("verify", "Mark a task as verified with evidence", "verify"))
-
-	taskLogCmd.Flags().StringVar(&taskStartRate, "rate", "", "Rate ID to use for billing")
+	taskCmd.AddCommand(createTaskCommand("verify", "Mark a completed task as verified; runs its acceptance check first and refuses if it fails", "verify"))
 
 	taskReadyCmd.Flags().BoolVar(&taskQueryJSON, "json", false, "Output in JSON format")
 	taskBlockedCmd.Flags().BoolVar(&taskQueryJSON, "json", false, "Output in JSON format")
@@ -288,7 +314,6 @@ func init() {
 	taskCmd.AddCommand(taskReadyCmd)
 	taskCmd.AddCommand(taskBlockedCmd)
 	taskCmd.AddCommand(taskInProgressCmd)
-	taskCmd.AddCommand(taskLogCmd)
 
 	RootCmd.AddCommand(taskCmd)
 }

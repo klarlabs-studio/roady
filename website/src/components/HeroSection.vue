@@ -82,7 +82,7 @@ function submitWaitlist() {
       </h1>
 
       <p class="text-xl md:text-2xl text-gray-400 max-w-2xl mx-auto mb-10">
-        Spec, plan, and drift detection that stay in sync with your code &mdash; readable by you, writable by your agent, durable across sessions.
+        Capture intent of any size, keep it across sessions, and prove the work is done &mdash; readable by you, writable by your agent.
       </p>
 
       <!-- Install Method Selector -->
@@ -125,8 +125,9 @@ function submitWaitlist() {
 
       <p class="text-sm text-gray-500 mb-8 max-w-xl mx-auto">
         After install, run
-        <code class="mono text-violet-400 px-1">roady demo</code>
-        to see the full spec &rarr; plan &rarr; drift loop on a sample project in under a minute.
+        <code class="mono text-violet-400 px-1">roady init</code> then
+        <code class="mono text-violet-400 px-1">roady setup claude-code</code>
+        (or codex, gemini, cursor, &hellip;) and your agent starts every session from the plan.
       </p>
 
       <!-- Primary CTA: keep the visitor on-site through the value prop -->

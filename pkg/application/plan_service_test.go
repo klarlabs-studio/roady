@@ -289,21 +289,6 @@ func TestPlanService_GovernanceEventsFromManualTransitions(t *testing.T) {
 	}
 }
 
-func TestPlanService_GetStateUsage(t *testing.T) {
-	repo := &MockRepo{
-		State: planning.NewExecutionState("p1"),
-	}
-	audit := application.NewAuditService(repo)
-	service := application.NewPlanService(repo, audit)
-
-	if _, err := service.GetState(); err != nil {
-		t.Fatalf("GetState failed: %v", err)
-	}
-	if _, err := service.GetUsage(); err != nil {
-		t.Fatalf("GetUsage failed: %v", err)
-	}
-}
-
 func TestPlanService_GeneratePlanWithRequirements(t *testing.T) {
 	tempDir, _ := os.MkdirTemp("", "roady-plan-req-*")
 	defer func() { _ = os.RemoveAll(tempDir) }()
@@ -510,77 +495,6 @@ func TestPlanService_GovernanceEvents(t *testing.T) {
 	}
 }
 
-func TestPlanService_GettersReturnStoredValues(t *testing.T) {
-	tempDir, _ := os.MkdirTemp("", "roady-plan-getters-*")
-	defer func() { _ = os.RemoveAll(tempDir) }()
-
-	repo := storage.NewFilesystemRepository(tempDir)
-	if err := repo.Initialize(); err != nil {
-		t.Fatalf("init repo: %v", err)
-	}
-
-	spec := &spec.ProductSpec{
-		ID:    "getter-spec",
-		Title: "Getter Project",
-		Features: []spec.Feature{
-			{ID: "feature-x", Title: "Feature X"},
-		},
-	}
-	if err := repo.SaveSpec(spec); err != nil {
-		t.Fatalf("save spec: %v", err)
-	}
-
-	plan := &planning.Plan{
-		ID:             "plan-get",
-		SpecID:         spec.ID,
-		ApprovalStatus: planning.ApprovalPending,
-		Tasks: []planning.Task{
-			{ID: "task-get-1", FeatureID: "feature-x", Title: "Getter Task"},
-		},
-	}
-	if err := repo.SavePlan(plan); err != nil {
-		t.Fatalf("save plan: %v", err)
-	}
-
-	state := planning.NewExecutionState(plan.ID)
-	state.TaskStates["task-get-1"] = planning.TaskResult{Status: planning.StatusPending}
-	if err := repo.SaveState(state); err != nil {
-		t.Fatalf("save state: %v", err)
-	}
-
-	usage := domain.UsageStats{TotalCommands: 7}
-	if err := repo.UpdateUsage(usage); err != nil {
-		t.Fatalf("update usage: %v", err)
-	}
-
-	audit := application.NewAuditService(repo)
-	service := application.NewPlanService(repo, audit)
-
-	gotPlan, err := service.GetPlan()
-	if err != nil {
-		t.Fatalf("GetPlan failed: %v", err)
-	}
-	if gotPlan == nil || gotPlan.ID != plan.ID {
-		t.Fatalf("unexpected plan: %+v", gotPlan)
-	}
-
-	gotState, err := service.GetState()
-	if err != nil {
-		t.Fatalf("GetState failed: %v", err)
-	}
-	if gotState == nil || len(gotState.TaskStates) != 1 {
-		t.Fatalf("unexpected state: %+v", gotState)
-	}
-
-	gotUsage, err := service.GetUsage()
-	if err != nil {
-		t.Fatalf("GetUsage failed: %v", err)
-	}
-	if gotUsage.TotalCommands != usage.TotalCommands {
-		t.Fatalf("unexpected usage: %+v", gotUsage)
-	}
-}
-
 func TestPlanService_ApproveRejectErrorsWithoutPlan(t *testing.T) {
 	repo := &MockRepo{}
 	audit := application.NewAuditService(repo)
@@ -592,21 +506,6 @@ func TestPlanService_ApproveRejectErrorsWithoutPlan(t *testing.T) {
 
 	if err := service.RejectPlan(); err == nil || !strings.Contains(err.Error(), "no plan found to reject") {
 		t.Fatalf("expected rejection error when plan missing, got %v", err)
-	}
-}
-
-func TestPlanService_GettersLoadErrors(t *testing.T) {
-	repo := &MockRepo{LoadError: errors.New("boom")}
-	service := application.NewPlanService(repo, application.NewAuditService(repo))
-
-	if _, err := service.GetPlan(); err == nil || !strings.Contains(err.Error(), "boom") {
-		t.Fatalf("expected plan load error, got %v", err)
-	}
-	if _, err := service.GetState(); err == nil || !strings.Contains(err.Error(), "boom") {
-		t.Fatalf("expected state load error, got %v", err)
-	}
-	if _, err := service.GetUsage(); err == nil || !strings.Contains(err.Error(), "boom") {
-		t.Fatalf("expected usage load error, got %v", err)
 	}
 }
 
@@ -900,7 +799,7 @@ func TestPlanService_GetInProgressTasks(t *testing.T) {
 
 	// Start a task through the coordinator to move it to in_progress
 	coord := service.GetCoordinator()
-	if err := coord.StartTask(context.Background(), plan.Tasks[0].ID, "alice", ""); err != nil {
+	if err := coord.StartTask(context.Background(), plan.Tasks[0].ID, "alice"); err != nil {
 		t.Fatalf("StartTask: %v", err)
 	}
 
@@ -967,5 +866,76 @@ func TestPlanService_ReconcilePlanKeepsOrphans(t *testing.T) {
 	}
 	if !foundOrphan {
 		t.Fatalf("orphan task was dropped from plan: %+v", updated.Tasks)
+	}
+}
+
+func TestPlanService_GettersReturnStoredValues(t *testing.T) {
+	tempDir, _ := os.MkdirTemp("", "roady-plan-getters-*")
+	defer func() { _ = os.RemoveAll(tempDir) }()
+
+	repo := storage.NewFilesystemRepository(tempDir)
+	if err := repo.Initialize(); err != nil {
+		t.Fatalf("init repo: %v", err)
+	}
+
+	spec := &spec.ProductSpec{
+		ID:    "getter-spec",
+		Title: "Getter Project",
+		Features: []spec.Feature{
+			{ID: "feature-x", Title: "Feature X"},
+		},
+	}
+	if err := repo.SaveSpec(spec); err != nil {
+		t.Fatalf("save spec: %v", err)
+	}
+
+	plan := &planning.Plan{
+		ID:             "plan-get",
+		SpecID:         spec.ID,
+		ApprovalStatus: planning.ApprovalPending,
+		Tasks: []planning.Task{
+			{ID: "task-get-1", FeatureID: "feature-x", Title: "Getter Task"},
+		},
+	}
+	if err := repo.SavePlan(plan); err != nil {
+		t.Fatalf("save plan: %v", err)
+	}
+
+	state := planning.NewExecutionState(plan.ID)
+	state.TaskStates["task-get-1"] = planning.TaskResult{Status: planning.StatusPending}
+	if err := repo.SaveState(state); err != nil {
+		t.Fatalf("save state: %v", err)
+	}
+
+	audit := application.NewAuditService(repo)
+	service := application.NewPlanService(repo, audit)
+
+	gotPlan, err := service.GetPlan()
+	if err != nil {
+		t.Fatalf("GetPlan failed: %v", err)
+	}
+	if gotPlan == nil || gotPlan.ID != plan.ID {
+		t.Fatalf("unexpected plan: %+v", gotPlan)
+	}
+
+	gotState, err := service.GetState()
+	if err != nil {
+		t.Fatalf("GetState failed: %v", err)
+	}
+	if gotState == nil || len(gotState.TaskStates) != 1 {
+		t.Fatalf("unexpected state: %+v", gotState)
+	}
+
+}
+
+func TestPlanService_GettersLoadErrors(t *testing.T) {
+	repo := &MockRepo{LoadError: errors.New("boom")}
+	service := application.NewPlanService(repo, application.NewAuditService(repo))
+
+	if _, err := service.GetPlan(); err == nil || !strings.Contains(err.Error(), "boom") {
+		t.Fatalf("expected plan load error, got %v", err)
+	}
+	if _, err := service.GetState(); err == nil || !strings.Contains(err.Error(), "boom") {
+		t.Fatalf("expected state load error, got %v", err)
 	}
 }

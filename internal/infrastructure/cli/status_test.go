@@ -316,62 +316,6 @@ func TestStatusCmd_NoMatchingFilters(t *testing.T) {
 	}
 }
 
-func TestStatusSubcommand_Forecast(t *testing.T) {
-	_, cleanup := withTempDir(t)
-	defer cleanup()
-
-	repo := storage.NewFilesystemRepository(".")
-	if err := repo.Initialize(); err != nil {
-		t.Fatalf("init repo: %v", err)
-	}
-
-	// Using the subcommand should work
-	err := statusForecastCmd.RunE(statusForecastCmd, []string{})
-	if err == nil {
-		t.Fatal("expected error when no plan is available")
-	}
-}
-
-func TestStatusSubcommand_Usage(t *testing.T) {
-	_, cleanup := withTempDir(t)
-	defer cleanup()
-
-	repo := storage.NewFilesystemRepository(".")
-	if err := repo.Initialize(); err != nil {
-		t.Fatalf("init repo: %v", err)
-	}
-
-	output := captureStdout(t, func() {
-		if err := statusUsageCmd.RunE(statusUsageCmd, []string{}); err != nil {
-			t.Fatalf("status usage failed: %v", err)
-		}
-	})
-
-	if !strings.Contains(output, "Project Usage Metrics") {
-		t.Errorf("expected usage header, got:\n%s", output)
-	}
-}
-
-func TestStatusSubcommand_Timeline(t *testing.T) {
-	_, cleanup := withTempDir(t)
-	defer cleanup()
-
-	repo := storage.NewFilesystemRepository(".")
-	if err := repo.Initialize(); err != nil {
-		t.Fatalf("init repo: %v", err)
-	}
-
-	output := captureStdout(t, func() {
-		if err := statusTimelineCmd.RunE(statusTimelineCmd, []string{}); err != nil {
-			t.Fatalf("status timeline failed: %v", err)
-		}
-	})
-
-	if !strings.Contains(output, "Project Timeline") {
-		t.Errorf("expected timeline header, got:\n%s", output)
-	}
-}
-
 func TestFilterTasks_EmptyFilters(t *testing.T) {
 	tasks := []planning.Task{
 		{ID: "t1", Title: "Task 1", Priority: planning.PriorityHigh},

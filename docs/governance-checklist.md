@@ -16,7 +16,7 @@
 - Every CLI and MCP command that touches the plan, drift, or AI runtime flows through `internal/infrastructure/wiring.BuildAppServices`, so both transports log the same events.
 
 ## Plan lifecycle steps
-1. **Update the spec** (`docs/PLUGIN_ROADMAP.md`, `docs/`, or `.roady/spec.yaml`), then run `roady spec analyze docs/ --reconcile` if you keep the docs as the source of truth.
+1. **Update the spec** (`docs/` or `.roady/spec.yaml`), then run `roady spec analyze docs/ --reconcile` if you keep the docs as the source of truth.
 2. **Regenerate the plan** (`roady plan generate --ai` or `roady plan generate`). The action `plan.generate` writes the spec snapshot hash and plan ID so reviewers can see what triggered the change.
 3. **Approve the plan** once it matches the roadmap (`roady plan approve`). Look for `plan.approve` to ensure the approval metadata (plan_id/spec_id) lines up with the latest snapshot.
 4. **Prune or reject** if you experiment (`roady plan prune`, `roady plan reject`). Those commands emit `plan.prune` and `plan.reject`, making it easy to audit why plan structure changed.

@@ -29,10 +29,7 @@ func TestBothAuditServicesAgreeOnTheSameLog(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	es, err := application.NewEventSourcedAuditService(store, storage.NewInMemoryEventPublisher())
-	if err != nil {
-		t.Fatal(err)
-	}
+	es := application.NewEventSourcedAuditService(store)
 	for _, action := range []string{"plan.generate", "task.start", "task.complete"} {
 		if lErr := es.Log(action, "test", map[string]any{"n": action}); lErr != nil {
 			t.Fatalf("log %s: %v", action, lErr)

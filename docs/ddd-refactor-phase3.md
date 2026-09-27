@@ -24,4 +24,4 @@ Raise MCP to full feature parity with the CLI so they can be used interchangeabl
 Reduce manual steps for releases and governance.
 - Add a script (`scripts/release.sh`) that composes `coverctl`, `gorun ./cmd/roady plan generate`, and `relicta release` to standardize releases.
 - Log governance events (`.roady/events.jsonl`) whenever a plan is approved/released for audit trail.
-- Measure AI token usage vs policy limits and surface alerts when budgets approach thresholds (e.g., via `roady usage` enhancements).
+- ~~Measure AI token usage vs policy limits~~ — dropped: `roady usage` and token limits were removed.

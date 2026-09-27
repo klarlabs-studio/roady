@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/felixgeelhaar/roady/internal/infrastructure/wiring"
+	"github.com/felixgeelhaar/roady/pkg/application"
 	"github.com/spf13/cobra"
 )
 
@@ -65,6 +66,10 @@ var doctorCmd = &cobra.Command{
 			return nil
 		})
 
+		if path, shared := repo.StateLocation(); shared {
+			fmt.Printf("ℹ️  Execution state is shared by all worktrees: %s (.roady/state.json is a mirror)\n", path)
+		}
+
 		check("Audit Trail", func() error {
 			path, err := repo.ResolvePath("events.jsonl")
 			if err != nil {
@@ -75,31 +80,27 @@ var doctorCmd = &cobra.Command{
 		})
 
 		check("Audit Integrity", func() error {
-			auditSvc := workspace.Audit
-			violations, err := auditSvc.VerifyIntegrity()
+			// The same judgement as `roady audit verify`: entries this build
+			// cannot check (unhashed, or hashed before hash_algo existed) are
+			// history, not evidence. Counting them as violations made doctor
+			// fail a log that verify calls intact.
+			findings, err := application.NewAuditService(repo).VerifyIntegrityDetailed()
 			if err != nil {
 				return err
 			}
-			if len(violations) > 0 {
-				return fmt.Errorf("%d integrity violations found (run 'roady audit verify')", len(violations))
-			}
-			return nil
-		})
-
-		check("AI Governance", func() error {
-			cfg, _ := repo.LoadPolicy()
-			if cfg != nil && cfg.TokenLimit > 0 {
-				stats, _ := repo.LoadUsage()
-				if stats != nil {
-					total := 0
-					for _, c := range stats.ProviderStats {
-						total += c
-					}
-					if total >= cfg.TokenLimit {
-						return fmt.Errorf("AI budget exhausted (%d/%d)", total, cfg.TokenLimit)
-					}
-					fmt.Printf("(Budget: %d/%d) ", total, cfg.TokenLimit)
+			alteration, unchecked := 0, 0
+			for _, f := range findings {
+				if f.Kind.EvidencesAlteration() || f.Kind.Unexplained() {
+					alteration++
+				} else {
+					unchecked++
 				}
+			}
+			if alteration > 0 {
+				return fmt.Errorf("%d finding(s) that may mean the log was altered (run 'roady audit verify')", alteration)
+			}
+			if unchecked > 0 {
+				fmt.Printf("ℹ️  %d older audit entries cannot be checked by this build; none is evidence of alteration\n", unchecked)
 			}
 			return nil
 		})

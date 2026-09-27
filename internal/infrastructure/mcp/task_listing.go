@@ -6,9 +6,9 @@ import (
 	"github.com/felixgeelhaar/roady/pkg/domain/project"
 )
 
-// Limits for roady_tasks.
+// Limits for roady_task list.
 //
-// A tool result has to fit inside the caller's context, and roady_tasks is
+// A tool result has to fit inside the caller's context, and roady_task list is
 // the tool most likely to be called at the start of a session — the moment a
 // blown budget costs the most. A 96-task plan previously serialised to 84,000
 // characters and had to be spilled to a file before it could be read, which
@@ -25,7 +25,7 @@ const (
 	maxTaskLimit = 200
 )
 
-// taskView is the projection roady_tasks returns.
+// taskView is the projection roady_task list returns.
 //
 // Descriptions are omitted unless asked for: they are the bulk of the payload
 // and a caller listing tasks almost always wants to identify one, then read

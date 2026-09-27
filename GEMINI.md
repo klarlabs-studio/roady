@@ -24,7 +24,6 @@ Roady follows a **Domain-Driven Design (DDD)** approach with a clean separation 
 *   **`pkg/domain/`**: Pure domain logic and entities (Spec, Planning, Drift, Policy).
 *   **`pkg/application/`**: Use-case services that orchestrate domain logic.
 *   **`internal/infrastructure/`**: Adapters for CLI (`cobra`), AI Providers, MCP, and Storage.
-*   **`pkg/plugin/`**: Infrastructure for the plugin system (based on `hashicorp/go-plugin`).
 
 ## Project Status
 
@@ -33,7 +32,6 @@ Roady follows a **Domain-Driven Design (DDD)** approach with a clean separation 
 *   **CLI:** Fully scaffolded `cmd/roady` with commands for `init`, `spec`, `plan`, `drift`, `status`.
 *   **Core Logic:** Implemented services in `pkg/application` for Specs, Plans, and Drift.
 *   **AI:** Flexible provider architecture (`pkg/ai`) supporting Anthropic, Gemini, OpenAI, and Ollama.
-*   **Plugins:** Architecture defined in `pkg/plugin` with stubbed implementations for GitHub, Jira, and Linear.
 
 ## Intended Usage
 
@@ -42,7 +40,7 @@ Roady is used via the command line or MCP:
 ```bash
 # Workflow
 roady init              # Initialize project
-roady spec generate     # Create spec from context
+roady spec analyze docs/ # Create spec from docs
 roady plan generate     # Generate plan DAG
 roady drift detect      # Compare plan vs reality
 ```

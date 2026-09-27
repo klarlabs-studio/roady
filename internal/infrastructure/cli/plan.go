@@ -13,6 +13,8 @@ var planCmd = &cobra.Command{
 
 var useAI bool
 
+var planChangeChecks bool
+
 var planGenerateCmd = &cobra.Command{
 	Use:   "generate",
 	Short: "Generate a plan from the current spec",
@@ -25,7 +27,7 @@ var planGenerateCmd = &cobra.Command{
 		// --ai no longer runs a model. Roady assembles the decomposition
 		// prompt and hands it back; the caller runs inference with whatever
 		// model it already has and returns the tasks through
-		// `roady_plan_update`.
+		// `roady capture` / `roady_capture`.
 		if useAI {
 			req, pErr := services.Prompt.DecomposeSpec(cmd.Context())
 			if pErr != nil {
@@ -34,6 +36,7 @@ var planGenerateCmd = &cobra.Command{
 			return printPromptRequest(req, promptJSON)
 		}
 
+		services.Plan.AllowCheckChanges(planChangeChecks)
 		plan, err := services.Plan.GeneratePlan(cmd.Context())
 
 		if err != nil {
@@ -159,6 +162,7 @@ var planSmartDecomposeCmd = &cobra.Command{
 
 func init() {
 
+	planGenerateCmd.Flags().BoolVar(&planChangeChecks, "change-checks", false, "Allow removing or changing the acceptance check of work already started (reopens done tasks; recorded as an override)")
 	planGenerateCmd.Flags().BoolVar(&useAI, "ai", false, "Emit a decomposition prompt for your own model instead of the heuristic planner (Roady runs no inference)")
 
 	planCmd.AddCommand(planGenerateCmd)

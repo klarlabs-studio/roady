@@ -208,6 +208,19 @@ func EntryFrom(at time.Time, action, actor, hash string, metadata map[string]any
 	if v, ok := metadata["event"].(string); ok {
 		entry.Detail = v
 	}
+	// A check result is the evidence a trail exists to show, so its verdict
+	// belongs in the row rather than only in the raw event.
+	if action == "task.check" {
+		if passed, ok := metadata["passed"].(bool); ok {
+			entry.Detail = "failed"
+			if passed {
+				entry.Detail = "passed"
+			}
+			if kind, _ := metadata["kind"].(string); kind == "manual" && passed {
+				entry.Detail = "confirmed"
+			}
+		}
+	}
 
 	return entry
 }

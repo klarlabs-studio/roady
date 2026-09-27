@@ -72,22 +72,21 @@
       </div>
     </div>
 
-    <!-- v0.13 + v0.11 surfaces: reporting/audit + nested projects -->
+    <!-- Proof of done + nested projects -->
     <div class="grid md:grid-cols-2 gap-8">
-      <!-- Reporting + audit -->
+      <!-- Acceptance checks + audit -->
       <div class="glass p-8 rounded-3xl relative group hover:border-cyan-500/50 transition-all">
         <div class="flex items-center mb-4">
           <div class="w-12 h-12 bg-cyan-500/20 rounded-2xl flex items-center justify-center mr-4 text-cyan-400">
-            <i data-lucide="file-text"></i>
+            <i data-lucide="shield-check"></i>
           </div>
-          <span class="text-xs uppercase tracking-wide font-semibold text-cyan-400">new · v0.13</span>
         </div>
-        <h3 class="text-xl font-bold text-white mb-3">Reports and audit trails, not a dashboard</h3>
+        <h3 class="text-xl font-bold text-white mb-3">Prove done, don't claim it</h3>
         <p class="text-sm leading-relaxed text-gray-400 mb-4">
-          <code class="mono text-violet-400">roady report</code> renders progress, forecast, risks, and ownership to a self-contained page you can email or commit. <code class="mono text-violet-400">roady audit trail</code> proves which agent and session touched a task, with hash-chain verification. Nothing to host, nothing to log into.
+          Each task can carry an acceptance check. <code class="mono text-violet-400">roady task check</code> runs it, and verify refuses until it passes with evidence on the record. <code class="mono text-violet-400">roady audit trail</code> proves which agent and session touched a task, with hash-chain verification.
         </p>
         <div class="mono text-xs text-cyan-300 bg-black/40 p-3 rounded-lg">
-          $ roady report --format html -o status.html
+          $ roady task check task-42
         </div>
       </div>
 
@@ -101,7 +100,7 @@
         </div>
         <h3 class="text-xl font-bold text-white mb-3">Nested sub-projects</h3>
         <p class="text-sm leading-relaxed text-gray-400 mb-4">
-          One repo, many parallel projects under <code class="mono text-violet-400">.roady/projects/&lt;name&gt;/</code>. One agent juggles them by passing <code class="mono text-violet-400">--project / -P</code> (CLI) or <code class="mono text-violet-400">project</code> (MCP). Cross-project rollups via <code class="mono text-violet-400">roady org status</code>.
+          One repo, many parallel projects under <code class="mono text-violet-400">.roady/projects/&lt;name&gt;/</code>. One agent juggles them by passing <code class="mono text-violet-400">--project / -P</code> (CLI) or <code class="mono text-violet-400">project</code> (MCP).
         </p>
         <div class="mono text-xs text-purple-300 bg-black/40 p-3 rounded-lg">
           $ roady -P feature-auth task ready
@@ -152,7 +151,7 @@
         href="https://github.com/felixgeelhaar/roady/blob/main/docs/advanced.md"
         class="inline-flex items-center space-x-2 text-gray-300 hover:text-white transition-colors"
       >
-        <span>Everything else &mdash; billing, debt, deps, org dashboards, plugins</span>
+        <span>Everything else &mdash; policy, audit, semantic drift, sub-projects</span>
         <i data-lucide="arrow-right" class="w-4 h-4"></i>
       </a>
     </div>

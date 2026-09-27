@@ -106,3 +106,83 @@ func contains(h, n string) bool {
 	}
 	return false
 }
+
+// A deleted entry is an alteration. The chain detected it all along; what was
+// wrong was the classification the verdict read, which counted only hash
+// mismatches as evidence and so reassured over a removal.
+func TestRemovedEntryEvidencesAlteration(t *testing.T) {
+	log := []ChainEntry{
+		entry("a", "h1", ""),
+		// "b" (h2) was deleted; "c" still names it as its parent.
+		entry("c", "h3", "h2"),
+	}
+	violations := VerifyChainDetailed(log)
+	if len(violations) != 1 || violations[0].Kind != KindMissingParent {
+		t.Fatalf("expected one missing-parent finding, got %+v", violations)
+	}
+	if !violations[0].Kind.EvidencesAlteration() {
+		t.Fatal("a removed entry must count as evidence of alteration")
+	}
+}
+
+func TestViolationKindClassification(t *testing.T) {
+	tests := []struct {
+		kind        ViolationKind
+		altered     bool
+		unexplained bool
+	}{
+		{KindHashMismatch, true, false},
+		{KindMissingParent, true, false},
+		{KindDuplicate, false, true},
+		{KindUnhashed, false, false},
+		{KindUnknownAlgo, false, false},
+		{KindLegacyUnverifiable, false, false},
+		{KindRemovedSinceBaseline, true, false},
+	}
+	for _, tc := range tests {
+		if got := tc.kind.EvidencesAlteration(); got != tc.altered {
+			t.Errorf("kind %d: EvidencesAlteration = %v, want %v", tc.kind, got, tc.altered)
+		}
+		if got := tc.kind.Unexplained(); got != tc.unexplained {
+			t.Errorf("kind %d: Unexplained = %v, want %v", tc.kind, got, tc.unexplained)
+		}
+	}
+}
+
+// Truncating the tail left the chain internally consistent: nothing references
+// the newest entries, so VerifyChainDetailed has nothing to report. Only a
+// committed baseline can show they are gone.
+func TestMissingFromBaselineCatchesTruncatedTail(t *testing.T) {
+	committed := []ChainEntry{entry("a", "h1", ""), entry("b", "h2", "h1"), entry("c", "h3", "h2")}
+	truncated := committed[:1]
+
+	if v := VerifyChainDetailed(truncated); len(v) != 0 {
+		t.Fatalf("precondition: the truncated chain should verify on its own, got %+v", v)
+	}
+	missing := MissingFromBaseline(committed, truncated, "HEAD")
+	if len(missing) != 2 {
+		t.Fatalf("expected the two removed entries, got %+v", missing)
+	}
+	for _, v := range missing {
+		if v.Kind != KindRemovedSinceBaseline || !v.Kind.EvidencesAlteration() {
+			t.Errorf("unexpected finding %+v", v)
+		}
+	}
+}
+
+// A working copy that has grown since the baseline, by appends or a merged
+// branch, is not a finding.
+func TestMissingFromBaselineAllowsGrowth(t *testing.T) {
+	committed := []ChainEntry{entry("a", "h1", ""), entry("b", "h2", "h1")}
+	grown := append(append([]ChainEntry{}, committed...), entry("c", "h3", "h2"), entry("d", "h4", "h1"))
+	if v := MissingFromBaseline(committed, grown, "HEAD"); len(v) != 0 {
+		t.Fatalf("growth reported as removal: %+v", v)
+	}
+}
+
+func TestMissingFromBaselineMatchesUnhashedByID(t *testing.T) {
+	committed := []ChainEntry{{ID: "legacy-1"}, entry("a", "h1", "")}
+	if v := MissingFromBaseline(committed, []ChainEntry{entry("a", "h1", "")}, "origin/main"); len(v) != 1 || v[0].ID != "legacy-1" {
+		t.Fatalf("expected the unhashed entry to be reported by ID, got %+v", v)
+	}
+}

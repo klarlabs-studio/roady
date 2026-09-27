@@ -212,31 +212,6 @@ func TestTaskService_Transition_NoPlan(t *testing.T) {
 	}
 }
 
-func TestTaskService_LinkTask(t *testing.T) {
-	repo := &MockRepo{
-		State: &planning.ExecutionState{
-			TaskStates: map[string]planning.TaskResult{
-				"t1": {Status: planning.StatusPending},
-			},
-		},
-	}
-	audit := application.NewAuditService(repo)
-	policy := application.NewPolicyService(repo)
-	service := application.NewTaskService(repo, audit, policy)
-
-	ref := planning.ExternalRef{
-		ID:         "123",
-		Identifier: "EXT-1",
-		URL:        "https://example.com/EXT-1",
-	}
-	if err := service.LinkTask("t1", "jira", ref); err != nil {
-		t.Fatalf("LinkTask failed: %v", err)
-	}
-	if repo.State.TaskStates["t1"].ExternalRefs["jira"].Identifier != "EXT-1" {
-		t.Fatalf("expected external ref to be stored")
-	}
-}
-
 func TestTaskService_StartTask_Context(t *testing.T) {
 	repo := &MockRepo{
 		Plan: &planning.Plan{
@@ -253,7 +228,7 @@ func TestTaskService_StartTask_Context(t *testing.T) {
 	policy := application.NewPolicyService(repo)
 	service := application.NewTaskService(repo, audit, policy)
 
-	err := service.StartTask(context.TODO(), "t1", "test-user", "")
+	err := service.StartTask(context.TODO(), "t1", "test-user")
 	if err != nil {
 		t.Fatalf("StartTask failed: %v", err)
 	}
@@ -361,131 +336,6 @@ func TestTaskService_VerifyTask_Context(t *testing.T) {
 	}
 	if repo.State.TaskStates["t1"].Status != planning.StatusVerified {
 		t.Error("Expected Verified status")
-	}
-}
-
-func TestTaskService_AssignTask(t *testing.T) {
-	repo := &MockRepo{
-		Plan: &planning.Plan{
-			Tasks: []planning.Task{{ID: "t1"}},
-		},
-		State: &planning.ExecutionState{
-			TaskStates: map[string]planning.TaskResult{
-				"t1": {Status: planning.StatusPending},
-			},
-		},
-	}
-	audit := application.NewAuditService(repo)
-	policy := application.NewPolicyService(repo)
-	service := application.NewTaskService(repo, audit, policy)
-
-	err := service.AssignTask(context.TODO(), "t1", "alice")
-	if err != nil {
-		t.Fatalf("AssignTask failed: %v", err)
-	}
-	if repo.State.TaskStates["t1"].Owner != "alice" {
-		t.Errorf("expected owner alice, got %s", repo.State.TaskStates["t1"].Owner)
-	}
-}
-
-func TestTaskService_AssignTask_NotFound(t *testing.T) {
-	repo := &MockRepo{
-		Plan: &planning.Plan{
-			Tasks: []planning.Task{{ID: "t1"}},
-		},
-		State: &planning.ExecutionState{
-			TaskStates: map[string]planning.TaskResult{},
-		},
-	}
-	audit := application.NewAuditService(repo)
-	policy := application.NewPolicyService(repo)
-	service := application.NewTaskService(repo, audit, policy)
-
-	err := service.AssignTask(context.TODO(), "missing", "alice")
-	if err == nil {
-		t.Error("expected error for missing task")
-	}
-}
-
-func TestTaskService_AssignTask_NoPlan(t *testing.T) {
-	repo := &MockRepo{
-		Plan:  nil,
-		State: &planning.ExecutionState{TaskStates: map[string]planning.TaskResult{}},
-	}
-	audit := application.NewAuditService(repo)
-	policy := application.NewPolicyService(repo)
-	service := application.NewTaskService(repo, audit, policy)
-
-	err := service.AssignTask(context.TODO(), "t1", "alice")
-	if err == nil {
-		t.Error("expected error when no plan exists")
-	}
-}
-
-func TestTaskService_AssignThenStart(t *testing.T) {
-	repo := &MockRepo{
-		Plan: &planning.Plan{
-			Tasks:          []planning.Task{{ID: "t1"}},
-			ApprovalStatus: planning.ApprovalApproved,
-		},
-		State: &planning.ExecutionState{
-			TaskStates: map[string]planning.TaskResult{
-				"t1": {Status: planning.StatusPending},
-			},
-		},
-	}
-	audit := application.NewAuditService(repo)
-	policy := application.NewPolicyService(repo)
-	service := application.NewTaskService(repo, audit, policy)
-
-	// Assign owner first
-	if err := service.AssignTask(context.TODO(), "t1", "alice"); err != nil {
-		t.Fatalf("AssignTask failed: %v", err)
-	}
-	if repo.State.TaskStates["t1"].Owner != "alice" {
-		t.Errorf("expected owner alice, got %s", repo.State.TaskStates["t1"].Owner)
-	}
-
-	// Then start — should succeed with status still pending
-	if err := service.TransitionTask("t1", "start", "alice", ""); err != nil {
-		t.Fatalf("TransitionTask start failed after assign: %v", err)
-	}
-	if repo.State.TaskStates["t1"].Status != planning.StatusInProgress {
-		t.Errorf("expected InProgress, got %s", repo.State.TaskStates["t1"].Status)
-	}
-}
-
-func TestTaskService_AssignNewTask_ThenStart(t *testing.T) {
-	// Simulate a task in the plan but NOT yet in TaskStates (added after approval)
-	repo := &MockRepo{
-		Plan: &planning.Plan{
-			Tasks:          []planning.Task{{ID: "t1"}},
-			ApprovalStatus: planning.ApprovalApproved,
-		},
-		State: &planning.ExecutionState{
-			TaskStates: map[string]planning.TaskResult{},
-		},
-	}
-	audit := application.NewAuditService(repo)
-	policy := application.NewPolicyService(repo)
-	service := application.NewTaskService(repo, audit, policy)
-
-	// Assign creates an entry — with the fix, Status should be "pending"
-	if err := service.AssignTask(context.TODO(), "t1", "bob"); err != nil {
-		t.Fatalf("AssignTask failed: %v", err)
-	}
-
-	result := repo.State.TaskStates["t1"]
-	if result.Status != planning.StatusPending {
-		t.Fatalf("expected status pending after assign on new entry, got %q", result.Status)
-	}
-
-	// Transition should now succeed because Status is properly initialized
-	if err := service.TransitionTask("t1", "start", "bob", ""); err != nil {
-		t.Fatalf("TransitionTask start failed after assign on new entry: %v", err)
-	}
-	if repo.State.TaskStates["t1"].Status != planning.StatusInProgress {
-		t.Errorf("expected InProgress, got %s", repo.State.TaskStates["t1"].Status)
 	}
 }
 

@@ -9,11 +9,11 @@ const lines = [
   { type: 'output', text: 'Score: 85/100' },
   { type: 'highlight', text: '2 findings: 1 warning, 1 info' },
   { type: 'output', text: '' },
-  { type: 'command', text: '$ roady report --format html -o status.html' },
-  { type: 'success', text: '✓ 8 tasks generated from codebase analysis' },
+  { type: 'command', text: '$ roady capture -f plan.yaml' },
+  { type: 'success', text: '✓ Captured 8 tasks' },
   { type: 'output', text: '' },
-  { type: 'command', text: '$ roady task assign auth-api alice' },
-  { type: 'success', text: '✓ Assigned auth-api to alice' },
+  { type: 'command', text: '$ roady task check auth-api' },
+  { type: 'success', text: '✓ Acceptance check passed' },
   { type: 'output', text: '' },
   { type: 'command', text: '$ roady query "what tasks are blocked?"' },
   { type: 'output', text: '2 tasks blocked: db-migration, cache-layer' },
@@ -72,12 +72,12 @@ function getLineClass(type: string): string {
         <div class="space-y-8 text-gray-400">
           <div class="flex items-start space-x-4">
             <div class="w-8 h-8 bg-violet-500/20 rounded-lg flex-shrink-0 flex items-center justify-center text-violet-400 mt-1">
-              <i data-lucide="eye" class="w-5 h-5"></i>
+              <i data-lucide="plug" class="w-5 h-5"></i>
             </div>
             <div>
-              <h4 class="text-white font-semibold mb-1">roady watch</h4>
+              <h4 class="text-white font-semibold mb-1">Agent hooks</h4>
               <p class="text-sm">
-                A background sentinel that reacts to document changes, instantly updating your specification and checking for plan drift.
+                <code class="mono">roady setup &lt;agent&gt;</code> wires hooks for Claude Code, Codex, Gemini, Cursor, OpenCode, Copilot, and Kiro, so every session starts from <code class="mono">roady next</code>.
               </p>
             </div>
           </div>
@@ -105,12 +105,12 @@ function getLineClass(type: string): string {
           </div>
           <div class="flex items-start space-x-4">
             <div class="w-8 h-8 bg-violet-500/20 rounded-lg flex-shrink-0 flex items-center justify-center text-violet-400 mt-1">
-              <i data-lucide="link" class="w-5 h-5"></i>
+              <i data-lucide="check-circle" class="w-5 h-5"></i>
             </div>
             <div>
-              <h4 class="text-white font-semibold mb-1">Plugin Sync</h4>
+              <h4 class="text-white font-semibold mb-1">Evidence-gated verify</h4>
               <p class="text-sm">
-                Sync tasks with external systems via plugins (GitHub Issues, Jira, Linear).
+                A task is verified only when its acceptance check passes and its evidence is on the record.
               </p>
             </div>
           </div>
@@ -119,9 +119,9 @@ function getLineClass(type: string): string {
               <i data-lucide="users" class="w-5 h-5"></i>
             </div>
             <div>
-              <h4 class="text-white font-semibold mb-1">Team Collaboration</h4>
+              <h4 class="text-white font-semibold mb-1">Shared through git</h4>
               <p class="text-sm">
-                Role-based access, task assignment, optimistic locking, and git-based workspace sync for multi-user workflows.
+                Task owners, optimistic locking, and a union-mergeable event log, so several people and agents can work one plan.
               </p>
             </div>
           </div>
@@ -132,7 +132,7 @@ function getLineClass(type: string): string {
             <div>
               <h4 class="text-white font-semibold mb-1">Go SDK</h4>
               <p class="text-sm">
-                Public Go client package with typed helpers, versioned MCP schema, and OpenAPI spec generation.
+                Public Go client package with typed helpers and a versioned MCP schema.
               </p>
             </div>
           </div>

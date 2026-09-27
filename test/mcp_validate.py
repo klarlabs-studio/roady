@@ -12,36 +12,28 @@ tool is called with plausible arguments, and the result is classified as:
 import json
 import subprocess
 import sys
+import tempfile
 
 PROJECT = "."
 
 # Arguments per tool. Anything absent is called with no args beyond defaults.
+# Noun tools take an action; the validator calls a read-only one for each, so
+# running it leaves the project as it was. Decisions (plan approve, drift
+# accept, ...) ask the user and are covered by the Go tests.
 ARGS = {
-    "roady_transition_task": {"task_id": "task-tasks-create", "event": "start",
-                              "actor": "validator", "session_id": "val-1", "agent": "validator"},
-    "roady_assign_task": {"task_id": "task-tasks-create", "assignee": "bob"},
-    "roady_tasks": {"status": "all"},
-    "roady_add_feature": {"title": "Validated feature", "description": "added by validator"},
-    "roady_update_plan": {"tasks": []},
-    "roady_explain_drift": {},
+    "roady_task": {"action": "list"},
+    "roady_plan": {"action": "get"},
+    "roady_spec": {"action": "validate"},
+    "roady_drift": {"action": "detect"},
+    "roady_audit": {"action": "verify"},
+    "roady_state": {"action": "get"},
+    "roady_policy": {"action": "check"},
+    "roady_git": {"action": "sync"},
+    "roady_goal": {"action": "list"},
+    "roady_capture": {"dry_run": True, "tasks": []},
     "roady_query": {"question": "what is left?"},
-    "roady_cost_estimate": {"operation": "generate_plan"},
-    "roady_task_log_time": {"task_id": "task-auth-signup", "minutes": 15},
-    "roady_rate_add": {"id": "val", "name": "Validator", "hourly_rate": 50},
-    "roady_rate_remove": {"id": "val"},
-    "roady_rate_set_default": {"id": "val"},
-    "roady_rate_tax": {"name": "VAT", "percent": 19},
-    "roady_team_add": {"name": "carol", "role": "member"},
-    "roady_team_remove": {"name": "carol"},
-    "roady_debt_trend": {"window_days": 7},
-    "roady_drift_recurring": {},
-    "roady_sync": {"plugin_path": "/nonexistent-plugin"},
-    "roady_init": {"name": "validated"},
-    "roady_plan_decompose": {},
-    "roady_suggest_priorities": {},
-    "roady_review_spec": {},
-    "roady_explain_spec": {},
-    "roady_generate_plan": {},
+    # init writes a new project, so it gets a directory of its own.
+    "roady_init": {"name": "validator", "project_path": tempfile.mkdtemp(prefix="roady-validate-")},
 }
 
 # Substrings that mean "the environment was not set up for this", not a bug.

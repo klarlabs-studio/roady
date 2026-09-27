@@ -2,7 +2,6 @@
 package application
 
 import (
-	"context"
 	"time"
 
 	"github.com/felixgeelhaar/roady/pkg/domain"
@@ -14,12 +13,7 @@ import (
 // EventSourcedAuditService implements AuditLogger using the event store.
 // It bridges the existing audit interface with the new event sourcing system.
 type EventSourcedAuditService struct {
-	store      events.EventStore
-	publisher  events.EventPublisher
-	dispatcher *events.EventDispatcher
-	taskProj   *events.TaskStateProjection
-	velProj    *events.VelocityProjection
-	auditProj  *events.AuditTimelineProjection
+	store events.EventStore
 
 	// prov identifies the agent and session behind every event this service
 	// records. Stamping it in Log rather than at each call site means no
@@ -40,51 +34,9 @@ func (s *EventSourcedAuditService) Provenance() provenance.Context {
 // Compile-time check that EventSourcedAuditService implements AuditLogger.
 var _ domain.AuditLogger = (*EventSourcedAuditService)(nil)
 
-// NewEventSourcedAuditService creates a new event-sourced audit service.
-func NewEventSourcedAuditService(store events.EventStore, publisher events.EventPublisher) (*EventSourcedAuditService, error) {
-	svc := &EventSourcedAuditService{
-		store:     store,
-		publisher: publisher,
-		taskProj:  events.NewTaskStateProjection(),
-		velProj:   events.NewVelocityProjection(7),
-		auditProj: events.NewAuditTimelineProjection(),
-	}
-
-	// Rebuild projections from existing events
-	if err := svc.rebuildProjections(); err != nil {
-		return nil, err
-	}
-
-	// Subscribe projections to new events (errors non-fatal for projections)
-	if publisher != nil {
-		publisher.Subscribe(func(e *events.BaseEvent) error {
-			_ = svc.taskProj.Apply(e)
-			_ = svc.velProj.Apply(e)
-			_ = svc.auditProj.Apply(e)
-			return nil
-		})
-	}
-
-	return svc, nil
-}
-
-func (s *EventSourcedAuditService) rebuildProjections() error {
-	evts, err := s.store.LoadAll()
-	if err != nil {
-		return err
-	}
-
-	if err := s.taskProj.Rebuild(evts); err != nil {
-		return err
-	}
-	if err := s.velProj.Rebuild(evts); err != nil {
-		return err
-	}
-	if err := s.auditProj.Rebuild(evts); err != nil {
-		return err
-	}
-
-	return nil
+// NewEventSourcedAuditService creates an audit service over store.
+func NewEventSourcedAuditService(store events.EventStore) *EventSourcedAuditService {
+	return &EventSourcedAuditService{store: store}
 }
 
 // Log implements domain.AuditLogger.
@@ -110,56 +62,7 @@ func (s *EventSourcedAuditService) Log(action string, actor string, metadata map
 		return err
 	}
 
-	// Publish to subscribers (projections, fire-and-forget)
-	if s.publisher != nil {
-		_ = s.publisher.Publish(event)
-	}
-
-	// Dispatch to event handlers
-	if s.dispatcher != nil {
-		// Use background context for dispatch - handlers should not block audit logging
-		go func() {
-			_ = s.dispatcher.Dispatch(context.Background(), event)
-		}()
-	}
-
 	return nil
-}
-
-// GetProjectedTimeline returns the audit timeline from the projection.
-//
-// Deliberately not called GetTimeline. AuditService.GetTimeline returns the
-// raw event log; this returns rendered projection entries with different
-// fields. Sharing the name made them look interchangeable, and roady_timeline
-// was written against this one while the CLI read the other — so the two
-// surfaces described the same history differently until it was caught.
-func (s *EventSourcedAuditService) GetProjectedTimeline() []events.TimelineEntry {
-	return s.auditProj.GetTimeline()
-}
-
-// GetRecentTimeline returns the most recent n timeline entries.
-func (s *EventSourcedAuditService) GetRecentTimeline(n int) []events.TimelineEntry {
-	return s.auditProj.GetRecentEntries(n)
-}
-
-// GetTaskState returns the current state of a task from the projection.
-func (s *EventSourcedAuditService) GetTaskState(taskID string) *events.TaskState {
-	return s.taskProj.GetState(taskID)
-}
-
-// GetAllTaskStates returns all task states from the projection.
-func (s *EventSourcedAuditService) GetAllTaskStates() map[string]*events.TaskState {
-	return s.taskProj.GetAllStates()
-}
-
-// GetCompletionVelocity returns tasks completed per day.
-func (s *EventSourcedAuditService) GetCompletionVelocity() float64 {
-	return s.velProj.GetCompletionVelocity()
-}
-
-// GetVerificationVelocity returns tasks verified per day.
-func (s *EventSourcedAuditService) GetVerificationVelocity() float64 {
-	return s.velProj.GetVerificationVelocity()
 }
 
 // VerifyIntegrity checks the audit chain.
@@ -203,23 +106,4 @@ func (s *EventSourcedAuditService) LoadEvents() ([]*events.BaseEvent, error) {
 // LoadEventsSince returns events since the given time.
 func (s *EventSourcedAuditService) LoadEventsSince(since time.Time) ([]*events.BaseEvent, error) {
 	return s.store.LoadSince(since)
-}
-
-// SetDispatcher sets the event dispatcher for this service.
-func (s *EventSourcedAuditService) SetDispatcher(dispatcher *events.EventDispatcher) {
-	s.dispatcher = dispatcher
-}
-
-// GetDispatcher returns the event dispatcher.
-func (s *EventSourcedAuditService) GetDispatcher() *events.EventDispatcher {
-	return s.dispatcher
-}
-
-// RegisterHandler registers an event handler with the dispatcher.
-// If no dispatcher is set, this creates one.
-func (s *EventSourcedAuditService) RegisterHandler(reg events.HandlerRegistration) {
-	if s.dispatcher == nil {
-		s.dispatcher = events.NewEventDispatcher()
-	}
-	s.dispatcher.Register(reg)
 }

@@ -7,6 +7,322 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.25.0] - 2026-09-27
+
+Roady becomes the planning tool for AI: capture intent at any size, keep the
+agent on it across sessions, compaction and parallel agents, and prove work
+done. Breaking: the MCP surface is one tool per CLI noun (schema 5.0.0), and
+everything outside capture, keep and prove was removed — read **Removed**
+before upgrading.
+
+### Removed
+
+- **MCP: one tool per CLI noun, with the verbs as actions.** Fourteen tools —
+  `roady_task`, `roady_plan`, `roady_spec`, `roady_drift`, `roady_audit`,
+  `roady_state`, `roady_policy`, `roady_git`, `roady_goal`, plus `roady_next`,
+  `roady_status`, `roady_query`, `roady_capture` and `roady_init` — cover
+  every CLI project command in under 4k tokens of an agent's prompt. A test walks the CLI and fails when a
+  command has no MCP tool or action. Decisions — approving, rejecting or
+  pruning a plan, accepting drift, locking, importing or analyzing the spec,
+  rebuilding state — can be asked for by an agent but run only when the user
+  confirms in their client (MCP elicitation); a decline, or a client that
+  cannot ask, changes nothing and names the CLI command. The confirmation is
+  recorded as `approval.confirmed`. The inline MCP App UIs (`app/`,
+  `ui://roady/*`) and `ROADY_MCP_TOOLS` are removed. The Go SDK follows with
+  `Task`, `Plan`, `Spec`, `Drift`, `Audit`, `State`, `PolicyCheck`,
+  `GitSync`, `Init`, `Next` and `Capture`; its older helpers call the noun
+  tools. Schema 5.0.0.
+- **`roady spec add` no longer writes `docs/backlog.md`.** Appending every
+  new feature to a markdown backlog kept a second plan file beside the one
+  roady holds — the thing roady exists to replace. Intent lives in roady;
+  ROADMAP.md is rendered from goals.
+- **Unused event machinery.** The in-process event publisher, dispatcher,
+  handlers and projections (task state, velocity, timeline) were rebuilt from
+  the whole log on every command and read by nothing; the audit service now
+  appends and verifies only. Also gone: tracker-sync leftovers
+  (`LinkTask`, `SetExternalRef`, sync/file-change event types) and
+  `AuditService.GetVelocity`.
+- **Everything that is not capture, keep or prove.** Roady is the plan an AI
+  agent works from and the proof it did; these did not serve that and are
+  gone from the CLI, the MCP server, the SDK, the docs and the site:
+  - money and time: billing rates, tax, cost reports and budgets, time
+    logging (`task log`, `task start --rate`), usage and token tracking
+    (`usage.json`), forecasting;
+  - team and org: the team roster and role enforcement, `task assign`, org
+    rollups, `discover`, `workspace push/pull`;
+  - integrations: the tracker sync plugins (Jira, Linear, GitHub, Asana,
+    Notion, Trello) and `roady-plugin-*` binaries, messaging, webhooks,
+    `notify`, SSE;
+  - analysis extras: debt scoring and recurring drift, cross-repo
+    dependencies, `timeline`, `report`, the TUI `dashboard`, `watch`,
+    `demo`, `openapi`, and the MCP UI apps for those.
+
+  36 MCP tools are removed (38 remain). Task owners, `task mine`, sub-projects,
+  drift (including semantic drift), dispatch and the audit log stay. A
+  `policy.yaml` that still sets `budget_hours`, `enforce_team_roles` or
+  `token_limit` keeps loading; those keys are ignored. `roady config wizard`
+  no longer drops policy settings it does not ask about.
+
+### Added
+
+- **Goals: the roadmap lives in roady.** `roady goal add|edit|list` (MCP
+  `roady_goal`, and `goals` in a capture document) keep what a ROADMAP.md
+  held: goals on the now, next or later horizon with an optional milestone,
+  ideas that need no features yet, shipped goals, and deliberate
+  out-of-scope decisions. Features and requirements link to the goal they
+  serve, and `roady goal list` shows each goal's progress from its tasks.
+  Goals order work rather than define it, so they leave the spec hash and
+  the plan's approval alone. Roady's own ROADMAP.md is recorded this way —
+  every release back to v0.5.0 — and docs/backlog.md is gone, its entries
+  now goals. Shipped goals list newest first.
+- **Task claims with an expiring lease.** Starting a task claims it for the
+  agent (and session) that started it. Two agents starting the same task at
+  once can no longer both get it: state.json is written under a lock and a
+  version check, across processes, and the loser is told who holds the task
+  and until when. `roady next` renews the claims you hold (the session-start
+  hook runs it, also after compaction), the write-guard hook renews them
+  each time the agent writes a file, and `roady task renew` (MCP `roady_task` action `renew`) does it explicitly. A
+  claim nobody renews lapses after `claim_lease` in `policy.yaml` (default
+  `2h`, `off` disables): the task goes back to pending, `task.claim_expired`
+  is recorded, and it no longer counts against WIP limits. state.json is
+  now replaced atomically, so a reader never sees half a file.
+- **`roady stats`: is roady doing its job here?** Three numbers from the
+  local event log — plans captured automatically (the plan-approved hook,
+  of all plan imports), verified tasks with a passing check, and sessions
+  that resumed the task in progress rather than starting another. Plan
+  imports now record how they arrived (`via`), and events carry
+  `session_given` when the session ID came from `ROADY_SESSION_ID`, so a
+  per-command CLI session is not mistaken for a conversation. MCP:
+  `roady_status` with `stats: true`.
+- **Every plan edit is an appended record, and `roady task history <id>`
+  reads it back.** A capture's event (so every add, edit, split, move, goal
+  and decide) now carries the fields it changed on each item, from → to, the
+  full shape of anything it created, and a note of what it was for. `roady
+  task history` (MCP `roady_task` action `history`) shows a task's story —
+  created, edited, split, moved, started, checked, blocked, claims expired —
+  oldest first, one line each.
+- **Decision records.** `roady decide "<title>" --choice "…"` (MCP
+  `roady_capture` with `decisions`) records a decision with its context and
+  consequences, linked to the goals, features and requirements it
+  constrains; `--supersedes` retires an older one. `roady next` shows the
+  standing decisions behind the active task, so an agent does not reopen or
+  quietly reverse them. `roady decide --list` lists them all.
+- **Unplanned work has a place.** `roady add "<title>"` with no `--req` or
+  `--feature` (and tasks in a capture without either) now succeeds: the
+  task is unplanned work in the inbox, or under a roadmap goal with
+  `--goal`, where the goal's progress counts it. Drift reports it as
+  `UNPLANNED` with the new `info` severity, which no `--fail-on` gate trips,
+  instead of as an orphan to prune; `plan prune` keeps it. A task whose
+  feature was deleted is still an orphan.
+- **An honest exit from impossible work.** `roady task block <id> --reason
+  spec-conflict|cannot-complete -e "<what is wrong>"` (MCP `roady_task`
+  block with `reason`) lets an agent say a task cannot be done as specified
+  instead of forcing it done. The block is recorded with who and why; it is
+  listed under "Needs a decision" in `roady status`, counted in the brief,
+  and reported as `CONFLICT` drift (high) until a person changes the
+  requirement, re-scopes the task or unblocks it. The brief and the agent
+  instructions tell every agent the exit exists and never to weaken a check.
+- **Drift catches regressions.** `roady drift detect --checks` (MCP
+  `roady_drift` detect with `checks: true`) re-runs the acceptance check of
+  every verified task against the current code. A check that fails now is
+  reported as `REGRESSION` drift (high) with the task, command, the commit
+  it failed at and the commit it last passed at, and logged as
+  `task.regression`; each run lands in the task's check history.
+- **Execution state is shared across worktrees.** In a git repository,
+  claims and progress live in the common git directory
+  (`.git/roady/<project>/state.json`), so agents in separate worktrees see
+  each other's claims and completions immediately and cannot both take a
+  task. `.roady/state.json` is still written as a mirror for commits; the
+  shared file is seeded from it on first use. Outside git, or with
+  `shared_state: false` in `policy.yaml`, state stays per checkout. `roady
+  doctor` says where state lives. See docs/rfcs/0002-shared-execution-state.md.
+- **ROADMAP.md is rendered from the goals.** `roady goal render` (MCP
+  `roady_goal` action `render`) writes it with a first-line marker carrying a
+  hash of the rest; `roady drift detect` reports a hand edit (`doc` drift)
+  and a file the goals have moved past, and `render --check` fails for CI.
+  A hand-edited file is not replaced without `--force`, which over MCP asks
+  the user. Roady's own ROADMAP.md is now generated.
+
+- **Setup for Codex, Gemini CLI, Cursor, OpenCode, Copilot and Kiro.** `roady
+  setup <agent>` (or `all`) does for each what `setup claude-code` does,
+  as far as the agent allows: the MCP server in its project config, the
+  instruction block (`AGENTS.md` / `GEMINI.md`), the roady-planning skill in
+  `.agents/skills`, and hooks — the brief at session start (and after
+  compaction in Codex and OpenCode), the plan-file guard, and plan import on
+  Gemini's `exit_plan_mode`. `roady hook --agent <agent>` reads each agent's
+  payload (including file names inside a Codex `apply_patch`) and answers in
+  its format; OpenCode gets a plugin that calls it. `setup openai` now sets
+  up Codex instead of printing a Python snippet. See
+  docs/mcp-integration.md.
+- **`roady add`, `edit`, `split`, `move`: one task without a document.**
+  Thin builders over capture — `roady add "Handle empty file" --req pdf-gen
+  --after task-pdf-gen` — each validated like any capture and recorded as one
+  event. `add` infers the feature from `--after` and is idempotent by title;
+  `split` keeps the original task as the one its dependents wait on. See
+  docs/capture.md.
+- **Setup tells the agent where plans go.** `roady setup` keeps a marked
+  block in `CLAUDE.md` (claude-code), `AGENTS.md` (opencode, openai) or
+  `GEMINI.md` (gemini): plans live in roady, never ROADMAP.md / TODO.md /
+  PLAN.md, and done means the check passes. Re-running updates the block in
+  place and never duplicates it. Claude Code also gets a `roady-planning`
+  skill with the capture format and the finish sequence. `--no-instructions`
+  skips both.
+- **`roady setup claude-code` installs hooks, so the plan reaches roady
+  without anyone remembering to put it there.** In `.claude/settings.json`:
+  SessionStart (including after compaction) injects the `roady next` brief;
+  approving a plan in plan mode (PostToolUse on ExitPlanMode) saves it to
+  `.roady/plans/` and imports it as tasks; writing `ROADMAP*.md`, `TODO*.md`
+  or `plan*.md` in the project is refused with a pointer to `roady capture`
+  (`plan_files_allow` in policy.yaml keeps files on purpose). Other hooks in
+  the file are preserved and re-running setup changes nothing. See
+  docs/mcp-integration.md#hooks.
+- **`roady plan import` / `roady_plan_import`: take the plan the agent already
+  wrote.** Reads Claude Code / Cursor / Gemini CLI markdown plans, Kiro
+  `tasks.md` (sub-tasks become dependencies of their parent) and Codex
+  ExecPlans (the Progress checklist), and records each step as
+  `task-<plan>-<step>` citing its file and line, chained in plan order unless
+  `--parallel`. Checked-off steps are skipped unless `--include-done`. Applied
+  as a capture, so it is all or nothing and re-importing an edited plan
+  updates the same tasks. See docs/plan-import.md.
+- **`roady next` / `roady_next`: a brief to push into the agent.** The task
+  you are on — or the highest-priority ready task when none is — with why it
+  exists (and its doc:line), what done means and the last check result, what
+  it depends on and unblocks, what comes after, and the working rules. About
+  250 tokens for a typical task and bounded however long the requirement, so
+  it can be injected at session start, after compaction, or every few steps.
+  Agents rarely ask for their plan; showing it to them is what keeps them on
+  it.
+- **`roady capture` / `roady_capture`: one write for intent of any size.**
+  Features, requirements and tasks in one YAML or JSON document, from a single
+  task to a whole plan, replacing the spec_add → plan_generate --ai →
+  plan_update → approve round trip. Items are upserted by id and omitted
+  fields keep their value, so the same shape edits. A requirement brings its
+  task. The capture is all or nothing — spec rules, dependencies, cycles,
+  priorities and checks are validated together and every rejection is
+  reported — and re-sending the same document changes nothing. See
+  docs/capture.md.
+- **Acceptance checks: "done" can be shown, not only claimed.** A requirement
+  in spec.yaml can carry a `check` — `run:` (a command; exit 0 passes) or
+  `manual:` (a person confirms). `roady plan generate` copies it onto the task.
+  `roady task check <id>` runs it and records the result on the task and in
+  the audit log: pass or fail, exit code, commit, whether there were
+  uncommitted changes outside `.roady/`, who ran it, and the output tail.
+  `roady task verify` — and `roady_task_transition` with `verify` — re-runs a
+  run check against the current code and refuses when it fails; a manual
+  check needs a recorded `--confirm`, which is not available over MCP.
+  `roady_task_check` runs a check over MCP. A check is part of the spec hash,
+  so loosening one reads as spec drift; specs without checks keep their hash.
+  See docs/acceptance-checks.md.
+- **`roady spec analyze` reads a normal PRD.** It took every `##` heading as
+  a feature and never produced a requirement, so a PRD with "## Overview" and
+  "## Features" / "### …" sections became two features, Overview and
+  Features, planned as "Implement Overview" and "Implement Features". Headings
+  are now read as a tree: sections without sub-sections (or with their own
+  bullets) are features, container sections like "## Features" are not, and
+  top-level bullets are requirements, with nested bullets as their
+  description. "Acceptance criteria" / "Requirements" / "User stories"
+  sub-sections feed their feature; Overview-like sections become the
+  description or are skipped; "Non-functional requirements" become
+  constraints; numbering is stripped from titles; priorities follow
+  must/should/could wording; ids are unique across the spec and every item
+  keeps its doc:line. Merging several documents de-duplicates requirements.
+- **Loosening a check after work started is refused.** Removing or changing
+  the acceptance check of a task that is in progress, blocked, done or
+  verified is refused on every path that could make it stick: task edits
+  (capture, plan_update), requirement edits (capture, plan generate), and
+  re-locking a hand-edited spec.yaml (spec lock, drift accept, spec add) —
+  the last being how a loosened check would stop showing as drift. Adding a
+  check, or changing one before work starts, is free. `--change-checks` on the
+  CLI permits it on the record: done or verified work reopens and each change
+  is logged as `task.check_changed`. Not available over MCP or in watch mode.
+- **`verify_requires_evidence`: verified means proven.** With the policy on,
+  verify needs a passing acceptance check and a linked commit; missing
+  evidence is reported before any check runs. A person can verify without it
+  via `roady task verify <id> --override "<reason>"`, recorded in the audit
+  log — never over a failing check, and not over MCP. `roady init` turns the
+  policy on for new projects; existing projects are unaffected until they add
+  it. Roady's own `.roady/policy.yaml` turns it on.
+
+### Changed
+
+- **The MCP server lists seven tools by default instead of seventy-four.**
+  `roady_next`, `roady_capture`, `roady_plan_import`, `roady_task_transition`,
+  `roady_task_check`, `roady_status` and `roady_query` — the whole working
+  loop — cost about 2.5k tokens of every agent's prompt instead of ~19k.
+  Every other tool is still registered and callable by name, so the SDK and
+  scripted clients are unaffected; an agent simply does not see them.
+  `ROADY_MCP_TOOLS=all` restores the full list, `essential,<group>` adds a
+  group to it, and a group list (`core,debt`) keeps its old meaning.
+- **Adding or editing tasks no longer un-approves the plan.** Any change —
+  a new task, an edited estimate, a check attached to a task — returned an
+  approved plan to pending, so every agent was blocked until someone
+  re-approved work that had not changed scope. Under the new
+  `plan_approval: scope` (the default) the approval stands when only tasks
+  change; creating or editing a feature or requirement, including its check,
+  still needs re-approval and the result says which item did it. Applies to
+  `roady capture`, `roady plan generate` and `roady_plan_update`.
+  `plan_approval: every_change` restores the previous behaviour.
+
+### Fixed
+
+- **`roady doctor` failed a log `roady audit verify` calls intact.** It
+  counted every entry it could not check — unhashed, or hashed before
+  `hash_algo` existed — as an integrity violation, so roady's own repository
+  reported 86. It now judges as verify does: only findings that may mean
+  alteration fail it; uncheckable history is noted.
+- **A verified dependency read as unfinished.** The dependency policy rule
+  accepted only `done`, so a task in progress whose dependency had been
+  verified was reported as policy drift, and a cross-project dependency
+  (`@project:task`) always was. Found by running `drift detect --checks` on
+  roady itself.
+- **`roady spec lock` noticed only structural changes.** It compared IDs and
+  counts, so after a requirement's description or check changed it answered
+  "already in sync" while `drift detect`, which compares hashes, kept
+  reporting the mismatch that re-locking was meant to clear. It now uses the
+  same hash as drift.
+
+- **`roady git sync` links a commit to a task finished before it.** A
+  `[roady:<id>]` marker on a task already done was skipped as an invalid
+  transition, so completing a task and then committing left it with no linked
+  commit. The commit is now recorded as evidence (once) without changing the
+  task's status.
+
+- **`roady audit verify` detects entries removed from the end of the log.**
+  Nothing references the newest entries, so truncating the tail left the chain
+  internally consistent and verification answered "intact". Verify now also
+  checks that every entry of the log committed at a baseline revision is still
+  present (`--baseline`, default `HEAD`; use `origin/main` in CI), reports
+  missing ones as removed, and says when no committed baseline was available
+  instead of implying it checked. `roady_audit_verify` takes the same optional
+  `baseline` and returns what it compared against. The trail and
+  docs/audit-grc.md no longer claim completeness the chain alone cannot show.
+
+- **`roady setup claude-code` registers the MCP server where Claude Code
+  reads it.** It wrote `mcpServers` to `~/.claude/settings.local.json`, which
+  Claude Code does not read for MCP servers, and skipped silently when that
+  file already existed — so the server was never registered while setup
+  reported success. It now merges a `roady` entry into the project's
+  `.mcp.json` (other servers and keys preserved, an invalid file refused
+  rather than overwritten, re-runs are no-ops) and says what it changed.
+  `claude mcp list` then shows the server pending its one-time approval.
+  The PATH check uses `exec.LookPath` instead of running `roady`.
+
+- **`roady audit verify` no longer reassures over a deleted entry.** Removing
+  one event from the middle of events.jsonl was detected — as "referencing a
+  removed parent" — and then summarised with *nothing here is evidence of
+  alteration*, because the verdict only counted hash mismatches. A removed
+  entry is what the chain exists to prove did not happen. Which findings
+  evidence alteration now lives in the domain (`ViolationKind.EvidencesAlteration`),
+  a missing parent is labelled as a removal, a duplicate withholds the
+  reassurance as unexplained, and the reassurance is kept for logs whose only
+  findings are history this build cannot check.
+
+## [0.24.0] - 2026-09-27
+
+A security and MCP-compliance release. The planning-tool work first described
+under this version shipped in 0.25.0; v0.24.0 was tagged from `main` before
+that work was merged, and a published Go module version cannot be moved.
+
 ### Added
 
 - **`sdk.Client.Connect`**, the MCP 2026-07-28 handshake: it calls
@@ -20,6 +336,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **MCP tool errors reach strict clients.** Tool results without a structured
   payload no longer carry `"structuredContent": null`, which strict clients
   rejected together with the error text (#92). Via go.klarlabs.de/mcp 1.28.1; roady takes 1.28.2, which also fixes the client's Initialize header.
+  A test now drives a real tools/call over HTTP and reads the bytes a client
+  receives, since the unit test on the result type had passed throughout.
+
+### Security
+
+- Built with a patched Go toolchain (#99); dependency and GitHub Actions
+  remediation from nox (#97, #98, #100); npm advisories patched and a stale
+  AI-028 baseline entry dropped (#105).
 
 ## [0.23.0] - 2026-08-10
 
@@ -1232,7 +1556,9 @@ See [GitHub release notes](https://github.com/felixgeelhaar/roady/releases/tag/v
 - Resilience via `fortify` integration for filesystem retries
 - State management via `statekit` FSM for task transitions
 
-[Unreleased]: https://github.com/felixgeelhaar/roady/compare/v0.10.0...HEAD
+[Unreleased]: https://github.com/felixgeelhaar/roady/compare/v0.25.0...HEAD
+[0.25.0]: https://github.com/felixgeelhaar/roady/compare/v0.24.0...v0.25.0
+[0.24.0]: https://github.com/felixgeelhaar/roady/compare/v0.23.0...v0.24.0
 [0.10.0]: https://github.com/felixgeelhaar/roady/compare/v0.9.2...v0.10.0
 [0.9.2]: https://github.com/felixgeelhaar/roady/compare/v0.9.1...v0.9.2
 [0.9.1]: https://github.com/felixgeelhaar/roady/compare/v0.9.0...v0.9.1

@@ -8,10 +8,6 @@ import (
 	"github.com/felixgeelhaar/roady/internal/infrastructure/wiring"
 )
 
-func loadServices(root string) (*wiring.AppServices, error) {
-	return loadServicesForProject(root, currentSubProject())
-}
-
 func loadServicesForProject(root, project string) (*wiring.AppServices, error) {
 	services, loadErr := wiring.BuildAppServicesForProject(root, project)
 	if services == nil {
@@ -19,7 +15,7 @@ func loadServicesForProject(root, project string) (*wiring.AppServices, error) {
 	}
 	if loadErr != nil {
 		// Warnings go to stderr so they never corrupt machine-readable
-		// stdout — `roady report > status.md` and every `--json` flag
+		// stdout — `roady next > brief.md` and every `--json` flag
 		// depend on stdout carrying the payload alone.
 		fmt.Fprintf(os.Stderr, "Warning: %v\n", loadErr)
 	}

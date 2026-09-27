@@ -78,22 +78,9 @@ Bitbucket, and Compass. "Agents cannot reach them" is no longer true
 and has not been since early 2026. What Roady still has that they do
 not is the spec-lock/drift loop and `from doc:line` provenance.
 
-Roady ships syncer plugins for Linear, Jira, GitHub, Trello, Asana, and
-Notion. Sync is bidirectional: it creates issues from tasks, reads all
-five statuses back, and pushes Roady's status outward for anything the
-tracker still disagrees about. `--no-push` makes it pull-only.
-
-Priority also travels outward, mapped onto each tracker's own scale
-(Linear and Jira today). It is deliberately **one-way**: Roady's
-priority comes from the spec and is rebuilt from it on every
-`roady plan generate`, so a priority written inward would be discarded
-on the next replan. An unset Roady priority leaves the tracker's value
-untouched rather than clearing it.
-
-Estimate and assignee still map in neither direction. Roady's estimate
-is a free string and its owner is a free string, while trackers use
-story points and user IDs; mapping either without per-provider identity
-resolution would overwrite real data with a guess.
+Roady does not sync with them. The tracker syncer plugins (Linear, Jira,
+GitHub, Trello, Asana, Notion) were removed; the plan-of-record lives in
+the repo and trackers stay the human-facing view.
 
 ### vs `dadbodgeoff/drift` (the GitHub project, not the concept)
 
@@ -147,9 +134,8 @@ day 3 of a feature.
 
 ## Honest limitations
 
-- **Single-repo plans dominate.** `roady org` aggregates across
-  repos but each repo still owns its `.roady/`. Cross-repo planning
-  is on the roadmap.
+- **Single-repo plans.** Each repo owns its `.roady/`; sub-projects
+  split one repo, but there is no cross-repo rollup.
 - **No real-time multi-user UI.** State syncs via git push/pull plus
   optimistic locking. `.roady/events.jsonl` union-merges and still
   verifies, but `state.json` is a whole-file document and will still

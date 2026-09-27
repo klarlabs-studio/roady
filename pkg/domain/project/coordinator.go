@@ -3,6 +3,7 @@ package project
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -24,7 +25,7 @@ type StateRepository interface {
 // EventPublisher defines the interface for publishing domain events.
 type EventPublisher interface {
 	PublishPlanApproved(ctx context.Context, planID, approver string) error
-	PublishTaskStarted(ctx context.Context, taskID, owner, rateID string) error
+	PublishTaskStarted(ctx context.Context, taskID, owner string) error
 	PublishTaskCompleted(ctx context.Context, taskID, evidence string) error
 	PublishTaskBlocked(ctx context.Context, taskID, reason string) error
 	PublishTaskUnblocked(ctx context.Context, taskID string) error
@@ -118,9 +119,42 @@ func (c *Coordinator) ApprovePlan(ctx context.Context, approver string) error {
 }
 
 // StartTask validates dependencies and starts a task.
-func (c *Coordinator) StartTask(ctx context.Context, taskID, owner, rateID string) error {
+func (c *Coordinator) StartTask(ctx context.Context, taskID, owner string) error {
+	_, err := c.ClaimTask(ctx, taskID, owner, ClaimOptions{})
+	return err
+}
+
+// ClaimOptions shapes the claim starting a task takes.
+type ClaimOptions struct {
+	Session string
+	// TTL is the lease length; zero takes no lease.
+	TTL time.Duration
+	// Now is the clock; nil means time.Now.
+	Now func() time.Time
+}
+
+// ClaimedError is returned when a task is in progress under someone else's
+// live claim.
+type ClaimedError struct {
+	TaskID    string
+	Holder    string
+	ExpiresAt time.Time
+}
+
+func (e *ClaimedError) Error() string {
+	return fmt.Sprintf("task %s is claimed by %s until %s", e.TaskID, e.Holder, e.ExpiresAt.Format(time.RFC3339))
+}
+
+// ClaimTask starts a task for owner and puts a lease on it. A task still
+// in progress under a lease that has run out is taken over; the lease it
+// replaced is returned so the takeover can be recorded.
+func (c *Coordinator) ClaimTask(ctx context.Context, taskID, owner string, opt ClaimOptions) (*planning.Lease, error) {
 	if owner == "" {
-		return ErrOwnerRequired
+		return nil, ErrOwnerRequired
+	}
+	now := time.Now
+	if opt.Now != nil {
+		now = opt.Now
 	}
 
 	c.mu.Lock()
@@ -128,33 +162,45 @@ func (c *Coordinator) StartTask(ctx context.Context, taskID, owner, rateID strin
 
 	plan, err := c.planRepo.Load(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if plan == nil {
-		return ErrNoPlan
+		return nil, ErrNoPlan
 	}
 	if !plan.ApprovalStatus.IsApproved() {
-		return ErrPlanNotApproved
+		return nil, ErrPlanNotApproved
 	}
 
 	// Find task in plan
 	task := findTask(plan, taskID)
 	if task == nil {
-		return ErrTaskNotFound
+		return nil, ErrTaskNotFound
 	}
 
 	state, err := c.stateRepo.Load(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if state == nil {
-		return ErrNoState
+		return nil, ErrNoState
 	}
 
-	// Check current status allows starting
+	// Check current status allows starting. A claim that has run out no
+	// longer holds the task: it can be taken over.
 	currentStatus := state.GetTaskStatus(taskID)
+	var replaced *planning.Lease
+	if result, _ := state.GetTaskResult(taskID); currentStatus == planning.StatusInProgress && result.Lease != nil {
+		if !result.Lease.Expired(now()) {
+			if !result.Lease.HeldBy(owner, opt.Session) {
+				return nil, &ClaimedError{TaskID: taskID, Holder: result.Lease.Holder, ExpiresAt: result.Lease.ExpiresAt}
+			}
+		} else {
+			replaced = result.Lease
+			currentStatus = planning.StatusPending
+		}
+	}
 	if !currentStatus.CanTransitionWith("start") {
-		return &TransitionError{
+		return nil, &TransitionError{
 			TaskID:     taskID,
 			FromStatus: string(currentStatus),
 			ToStatus:   string(planning.StatusInProgress),
@@ -166,7 +212,7 @@ func (c *Coordinator) StartTask(ctx context.Context, taskID, owner, rateID strin
 	for _, depID := range task.DependsOn {
 		depStatus := state.GetTaskStatus(depID)
 		if !depStatus.IsComplete() {
-			return &DependencyError{
+			return nil, &DependencyError{
 				TaskID:       taskID,
 				DependencyID: depID,
 				Status:       string(depStatus),
@@ -178,23 +224,18 @@ func (c *Coordinator) StartTask(ctx context.Context, taskID, owner, rateID strin
 	state.SetTaskStatus(taskID, planning.StatusInProgress)
 	state.SetTaskOwner(taskID, owner)
 	state.StartTask(taskID)
-	if rateID != "" {
-		result := state.TaskStates[taskID]
-		result.RateID = rateID
-		state.TaskStates[taskID] = result
-		state.UpdatedAt = time.Now()
-	}
+	state.Claim(taskID, owner, opt.Session, opt.TTL, now())
 
 	if err := c.stateRepo.Save(ctx, state); err != nil {
-		return err
+		return nil, err
 	}
 
 	// Publish event (fire-and-forget, errors logged internally)
 	if c.publisher != nil {
-		_ = c.publisher.PublishTaskStarted(ctx, taskID, owner, rateID)
+		_ = c.publisher.PublishTaskStarted(ctx, taskID, owner)
 	}
 
-	return nil
+	return replaced, nil
 }
 
 // CompleteTask completes a task and returns newly unlocked task IDs.
@@ -258,6 +299,12 @@ func (c *Coordinator) CompleteTask(ctx context.Context, taskID, evidence string)
 
 // BlockTask blocks a task with a reason.
 func (c *Coordinator) BlockTask(ctx context.Context, taskID, reason string) error {
+	return c.BlockTaskWith(ctx, taskID, planning.Block{Detail: reason, At: time.Now()})
+}
+
+// BlockTaskWith blocks a task and records why.
+func (c *Coordinator) BlockTaskWith(ctx context.Context, taskID string, why planning.Block) error {
+	reason := why.Detail
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -280,6 +327,9 @@ func (c *Coordinator) BlockTask(ctx context.Context, taskID, reason string) erro
 	}
 
 	state.SetTaskStatus(taskID, planning.StatusBlocked)
+	result := state.TaskStates[taskID]
+	result.Block = &why
+	state.TaskStates[taskID] = result
 	if err := c.stateRepo.Save(ctx, state); err != nil {
 		return err
 	}

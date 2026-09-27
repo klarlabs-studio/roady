@@ -36,7 +36,7 @@ func TestWithSpecWarning(t *testing.T) {
 			want: []string{
 				"WARNING",
 				"does not currently parse",
-				"roady_spec_validate",
+				"roady spec validate",
 				"yaml: line 11",
 				"Tasks: 3 total",
 			},
@@ -47,7 +47,7 @@ func TestWithSpecWarning(t *testing.T) {
 			err:    errors.New("load spec: bad yaml"),
 			// "generate a plan" is bad advice when the spec cannot be read,
 			// because generating one reads it and fails too.
-			want: []string{"WARNING", "roady_spec_validate", "No plan found"},
+			want: []string{"WARNING", "roady spec validate", "No plan found"},
 		},
 	}
 

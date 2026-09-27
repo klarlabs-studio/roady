@@ -1,7 +1,257 @@
 {
   "id": "agent-handoff",
   "title": "Roady: Agent Handoff \u0026 Cross-Project Planning",
-  "description": "Roady planning system roadmap:\n- v0.5.0 (complete): Horizons 5 \u0026 6 — predictive analytics, domain hardening, event sourcing.\n- v0.6.0 (complete): Multi-repo org dashboard, plugin contracts, notification webhooks, fsnotify watch,\n  coordinator integration into CLI/MCP with snapshot and task queries.\n- v0.7.0 (complete): Org policy inheritance, cross-project drift, plugin registry and health,\n  Slack/realtime notifications, watch auto-sync and patterns.\n- v0.8.0 (complete): Developer experience polish, API/SDK stability, multi-user collaboration,\n  AI-powered workflows, interactive D3 MCP app visualizations.\n- v0.9.0 (complete): Expert-review-driven refinements — sharpen onboarding, reduce CLI\n  cognitive load, ship a pre-seeded demo, fix empty-state UX.\n- v0.10.0 (complete): AI quality and telemetry — eval harness over the planning\n  pipeline (heuristic + AI mock + drift corpus), Task.Origin provenance, source-doc\n  citations through spec analyze, CompletionResponse confidence + sources +\n  streaming OnToken contract, MCP tool consolidation (roady_tasks +\n  roady_cost_estimate), naming standardisation aliases, roady notify namespace\n  unification, AI command progress feedback with SIGINT cancellation.\n- v0.11.0 (complete): Positioning and narrative cleanup — single ICP picked\n  (devs using AI coding agents), category named (\"Planning memory for AI\n  coding agents\"), README hero rewritten, feature museum moved to\n  docs/advanced.md, docs/vs.md competitive comparison + docs/positioning.md\n  one-pager + ROADMAP.md sketch shipped, Astro website hero / definition /\n  features sections realigned to match.\n    - v0.12.0 (complete): Live Kanban dashboard, cross-project board, SSE updates,\n      dashboard auth token.\n    - v0.13.x (complete): Release pipeline — dedicated release workflow, cask\n      publishing, cleared goreleaser deprecations.\n    - v0.14.0 (complete): Coordination and stakeholder reporting without a UI —\n      owner-scoped task queries, per-owner WIP limits, enforceable team roles,\n      `roady report`, `roady notify digest`, agent/session provenance on every\n      event, `roady audit trail`, bidirectional tracker sync, parallel-safe\n      event logs with `roady state rebuild`. Web dashboard removed.\n    - v0.15.0 (complete): Roady stopped calling language models. Provider clients\n      removed; the model-assisted operations return assembled prompts plus the\n      tool that accepts the result. MCP tool failures became readable results\n      rather than masked protocol faults. MCP schema 3.0.0.\n    - v0.16.0 (complete): staleness drift detection, audit-verification\n      correctness (three causes, none of them tampering), and plan prune\n      cleaning execution state.\n    - v0.17.0 (complete): roady_audit_trail exposed over MCP; schema 3.1.0.\n    - Planned (unversioned until it ships): the features below.\n",
+  "description": "Roady is the planning tool for AI coding agents: it captures intent at any size, keeps the agent on it across sessions, compaction and parallel agents, and proves work done with acceptance checks and a hash-chained audit log. The roadmap is the goals below; ROADMAP.md is rendered from them.",
+  "goals": [
+    {
+      "id": "goal-planning-for-ai",
+      "title": "The planning tool for AI: capture, keep, prove",
+      "description": "Roady is the plan an AI agent works from and the proof it did: capture intent at whatever size it arrives, keep the agent on it across sessions, compaction and parallel agents, and prove work done with acceptance checks and a hash-chained audit log. Everything outside that was removed.\n\nThe most useful input is field use: v0.18.0 came entirely from one person running Roady on a real 118-feature project for a day.",
+      "horizon": "now",
+      "source": {}
+    },
+    {
+      "id": "goal-release-0-22-x",
+      "title": "The MCP surface mirrors the CLI",
+      "description": "- **The MCP surface mirrors the CLI.** Twenty tools were renamed from\n  verb-first (`roady_add_feature`) to noun-first (`roady_spec_add`), so\n  knowledge of one surface transfers to the other. Breaking, with no aliases\n  kept — see the table in CHANGELOG.md before upgrading a client with\n  hardcoded names (#87).\n- **`ROADY_MCP_TOOLS` trims what is advertised.** All ~70 tools were\n  registered on every session and a client paid for each one in its prompt\n  whether or not the project had a rate card or a debt ledger.\n  `ROADY_MCP_TOOLS=core` registers 30 instead. A tool missing from the\n  grouping fails the build, so an unclassified tool cannot silently vanish\n  from every profile.\n- **Error results survive strict schema validation.** Every error encoded\n  `\"structuredContent\": null`, which matches no object schema, so a strict\n  client rejected the whole result including the text explaining what went\n  wrong. Fixed upstream in `go.klarlabs.de/mcp` v1.24.1; roady now asserts\n  the wire format itself so a future dependency change cannot reintroduce it\n  invisibly (#92).",
+      "status": "shipped",
+      "milestone": "v0.22.x",
+      "source": {}
+    },
+    {
+      "id": "goal-release-0-21-0",
+      "title": "Derived-state reconciliation",
+      "description": "- **Derived-state reconciliation** — `roady spec lock` re-captures the drift\n  baseline from the current spec and reconciles execution state with it, and\n  `spec validate` reports when they disagree instead of answering \"valid\".\n  Found by adopting Roady in an existing project (#77).",
+      "status": "shipped",
+      "milestone": "v0.21.0",
+      "source": {}
+    },
+    {
+      "id": "goal-release-0-20-0",
+      "title": "Correctness sweep",
+      "description": "- **Correctness sweep** — one audit-chain verifier instead of two that\n  disagreed on the same log; `roady_timeline` reading the same source as the\n  CLI; dead AI telemetry removed; and the CLI help and docs corrected to\n  describe a Roady that calls no model.",
+      "status": "shipped",
+      "milestone": "v0.20.0",
+      "source": {}
+    },
+    {
+      "id": "goal-release-0-19-0",
+      "title": "Semantic drift",
+      "description": "- **Semantic drift** — `roady drift semantic` frames the question of whether\n  an implementation still means what its requirement says; the caller's model\n  answers it and `roady_record_semantic_drift` records divergence.\n- **CLI/MCP parity** — 69 tools; every CLI operation an agent should be able\n  to perform is reachable over MCP.",
+      "status": "shipped",
+      "milestone": "v0.19.0",
+      "source": {}
+    },
+    {
+      "id": "goal-release-0-18-0",
+      "title": "Five field-reported defects",
+      "description": "- Five field-reported defects: id sanitisation, feature-link resolution,\n  documentation written to the project rather than the server's cwd, paged\n  task listings, and MCP errors carrying the actionable message.",
+      "status": "shipped",
+      "milestone": "v0.18.0",
+      "source": {}
+    },
+    {
+      "id": "goal-release-0-17-0",
+      "title": "`roady_audit_trail` over MCP",
+      "description": "- **`roady_audit_trail` over MCP** — the evidence trail was CLI-only, so\n  the agents the GRC work targets could not ask \"which agent worked on\n  this, and what proves it\" without shelling out. MCP schema 3.1.0.",
+      "status": "shipped",
+      "milestone": "v0.17.0",
+      "source": {}
+    },
+    {
+      "id": "goal-release-0-16-0",
+      "title": "Staleness drift",
+      "description": "- **Staleness drift** — `roady drift detect` reports a plan the repository\n  has left behind, judged by commit volume rather than file timestamps.\n  Found by running Roady on Roady: 55 commits and seven releases past a\n  plan marked complete, reported as healthy.\n- **Audit verification correctness** — three distinct causes were all\n  being reported as \"possible tampering\": two hash functions writing one\n  log, a shell script appending unhashed entries, and a hash-algorithm\n  change that invalidated history. Events now carry `hash_algo`.\n- **`plan prune` cleans execution state**, which it previously orphaned.",
+      "status": "shipped",
+      "milestone": "v0.16.0",
+      "source": {}
+    },
+    {
+      "id": "goal-release-0-15-0",
+      "title": "Roady runs no inference",
+      "description": "- **Roady runs no inference.** The provider clients are gone. The\n  model-assisted operations return the assembled prompt plus the tool\n  that accepts the result; the caller, which already has a model, runs\n  it. No API key is needed for anything. See\n  [`docs/prompts.md`](docs/prompts.md).\n- **MCP tool errors reach the agent.** Failures are returned as results\n  carrying `isError` with a readable message, rather than as JSON-RPC\n  protocol faults the transport replaced with \"internal error\".\n- MCP schema 3.0.0; `pkg/sdk` requires major 3.",
+      "status": "shipped",
+      "milestone": "v0.15.0",
+      "source": {}
+    },
+    {
+      "id": "goal-release-0-14-0",
+      "title": "Coordination",
+      "description": "- **Coordination**: owner-scoped task queries (`roady task mine |\n  assigned \u003cname\u003e | unassigned`), per-owner WIP limits\n  (`policy.max_wip_per_owner`), and enforceable `team.yaml` roles\n  (`policy.enforce_team_roles`).\n- **Stakeholder reporting without a UI**: `roady report` renders\n  progress, forecast, a risk register, ownership, and a change log to\n  Markdown, self-contained HTML, or JSON. `roady notify digest` pushes\n  one chat-sized summary through configured adapters.\n- **Removed the web dashboard** (BREAKING). Agents render and update a\n  human-readable view from the same data through MCP Apps, and\n  stakeholders get a document rather than a server they must reach.\n  `roady dashboard` remains as the TUI.",
+      "status": "shipped",
+      "milestone": "v0.14.0",
+      "source": {}
+    },
+    {
+      "id": "goal-release-0-11-x",
+      "title": "Nested sub-projects",
+      "description": "- **Nested sub-projects** under `.roady/projects/\u003cname\u003e/`. One repo\n  hosts many projects in parallel; coding agents switch context with\n  `--project / -P \u003cname\u003e` (CLI) or `project` (MCP). Existing flat\n  `.roady/` repos unchanged. See\n  [`docs/rfcs/0001-nested-projects.md`](docs/rfcs/0001-nested-projects.md).\n- `roady discover` and `roady org status` surface sub-projects.",
+      "status": "shipped",
+      "milestone": "v0.11.x",
+      "source": {}
+    },
+    {
+      "id": "goal-release-0-10-x",
+      "title": "Eval harness and task provenance",
+      "description": "- Eval harness over heuristic + AI planners + drift corpus\n- Task provenance: `Origin` (heuristic / ai / human) + source citations\n  back to the doc that motivated each task\n- Provider streaming end-to-end (Anthropic / OpenAI / Gemini / Ollama)\n  with MCP progress notifications and CLI `withAIProgress` integration\n- MCP tool consolidation (`roady_tasks` parameterised + deprecation\n  aliases for the legacy task-listing tools)\n- `roady_cost_estimate` pre-flight token + USD projection per AI op\n- Unified `roady notify` namespace; `messaging` and `webhook notif`\n  retained as deprecation aliases\n- AI command progress + clean SIGINT cancellation across the five AI\n  CLI surfaces\n- `roady demo` for \u003c1s aha; `roady init --interactive` default in TTY;\n  empty-state ladder on `roady status`",
+      "status": "shipped",
+      "milestone": "v0.10.x",
+      "source": {}
+    },
+    {
+      "id": "goal-release-0-6-0",
+      "title": "Multi-repo org dashboard",
+      "description": "Multi-repo org dashboard, plugin contracts, notification webhooks, fsnotify watch, coordinator integration into CLI/MCP with snapshot and task queries.",
+      "status": "shipped",
+      "milestone": "v0.6.0",
+      "source": {}
+    },
+    {
+      "id": "goal-release-0-5-0",
+      "title": "Horizons 5 \u0026 6",
+      "description": "Horizons 5 \u0026 6 — predictive analytics, domain hardening, event sourcing.",
+      "status": "shipped",
+      "milestone": "v0.5.0",
+      "source": {}
+    },
+    {
+      "id": "goal-roady-cloud",
+      "title": "Roady Cloud",
+      "description": "Open-core boundary for a hosted product, no committed date. Intended scope:\n\n- **Hosted MCP**: managed multi-tenant MCP server so teams without a per-developer install can plug their agents into a shared workspace.\n- **Audit log retention** beyond what fits comfortably in `events.jsonl`, with structured search and export.\n- **SSO / RBAC / SCIM** for enterprise IdP integrations.\n- **SOC 2** compliance posture for the hosted plane.\n\nWhat stays open and free, forever: the full CLI and MCP server, and the `.roady/` file format. If Cloud lands, opting in is a `roady cloud login` away; opting out is the existing local workflow with no behavioural change.",
+      "horizon": "later",
+      "status": "idea",
+      "source": {}
+    },
+    {
+      "id": "goal-no-tracker-parity",
+      "title": "Matching Linear / Jira feature-for-feature",
+      "description": "No sprints, custom fields, configurable workflows, or non-engineer intake queues. Where non-engineers create and triage work daily, use a tracker.",
+      "status": "out_of_scope",
+      "source": {}
+    },
+    {
+      "id": "goal-no-own-agent",
+      "title": "A web-based code editor or AI agent of our own",
+      "status": "out_of_scope",
+      "source": {}
+    },
+    {
+      "id": "goal-no-hosted-memory",
+      "title": "Hosted general-purpose memory for non-coding workflows",
+      "status": "out_of_scope",
+      "source": {}
+    },
+    {
+      "id": "goal-no-authenticated-identity",
+      "title": "Authenticated identity",
+      "description": "Actors and agents are asserted by the caller and never verified. Roady's audit trail is tamper-evident about what was recorded, not proof of who acted; see docs/audit-grc.md.",
+      "status": "out_of_scope",
+      "source": {}
+    },
+    {
+      "id": "goal-no-plugin-marketplace",
+      "title": "Plugin marketplace",
+      "description": "Was on Later: a marketplace for syncers and notifiers with signed binaries and contract tests. Tracker sync, notifications and the plugin system were removed as outside capture, keep and prove.",
+      "status": "out_of_scope",
+      "source": {}
+    },
+    {
+      "id": "goal-release-0-7-0",
+      "title": "Org policy inheritance and cross-project drift",
+      "description": "Org policy inheritance, cross-project drift, plugin registry and health, Slack/realtime notifications, watch auto-sync and patterns.",
+      "status": "shipped",
+      "milestone": "v0.7.0",
+      "source": {}
+    },
+    {
+      "id": "goal-release-0-8-0",
+      "title": "Developer experience and API/SDK stability",
+      "description": "Developer experience polish, API/SDK stability, multi-user collaboration, AI-powered workflows, interactive D3 MCP app visualizations.",
+      "status": "shipped",
+      "milestone": "v0.8.0",
+      "source": {}
+    },
+    {
+      "id": "goal-release-0-9-0",
+      "title": "Expert-review-driven refinements",
+      "description": "Sharper onboarding, less CLI cognitive load, a pre-seeded demo, fixed empty-state UX.",
+      "status": "shipped",
+      "milestone": "v0.9.0",
+      "source": {}
+    },
+    {
+      "id": "goal-release-0-12-0",
+      "title": "Live Kanban dashboard",
+      "description": "Live Kanban dashboard, cross-project board, SSE updates, dashboard auth token.",
+      "status": "shipped",
+      "milestone": "v0.12.0",
+      "source": {}
+    },
+    {
+      "id": "goal-release-0-13-x",
+      "title": "Release pipeline",
+      "description": "Dedicated release workflow, cask publishing, cleared goreleaser deprecations.",
+      "status": "shipped",
+      "milestone": "v0.13.x",
+      "source": {}
+    },
+    {
+      "id": "goal-no-mcp-app-visualizations",
+      "title": "Interactive D3 visualizations in MCP apps",
+      "description": "Was in the backlog (docs/backlog.md) — D3 charts embedded in MCP apps for status, plan, state, drift, spec, policy and git sync. The MCP apps were removed when the server was cut to what agents use; people read roady through the CLI and ROADMAP.md.",
+      "status": "out_of_scope",
+      "source": {}
+    },
+    {
+      "id": "goal-release-0-23-0",
+      "title": "Audit verification tells history it cannot check from alteration",
+      "description": "`roady audit verify` reports entries it cannot check (unhashed, or hashed before `hash_algo` existed) apart from evidence of alteration, with a reason on every finding.",
+      "status": "shipped",
+      "milestone": "v0.23.0",
+      "source": {}
+    },
+    {
+      "id": "goal-release-0-24-0",
+      "title": "The planning tool for AI",
+      "description": "Capture, keep, prove. One MCP tool per CLI noun, with decisions confirmed by the user in their client; `roady capture` and single-task edits; goals, decisions and a ROADMAP.md rendered from them; plan import from agent plan files and hooks for Claude Code, Codex, Gemini, Cursor, OpenCode, Copilot and Kiro; task claims with expiring leases, shared across worktrees; acceptance checks, regression drift, an honest exit for impossible work, task history and local adoption stats. Billing, teams, tracker sync, messaging, debt, forecasting and dashboards were removed.",
+      "status": "shipped",
+      "milestone": "v0.25.0",
+      "source": {}
+    }
+  ],
+  "decisions": [
+    {
+      "id": "decision-shared-state",
+      "title": "Where execution state lives",
+      "context": "Parallel agents in separate worktrees could not see each other's claims. A git ref would version state but costs a commit per write.",
+      "choice": "The common git directory (.git/roady/), shared by all worktrees; .roady/state.json is a mirror",
+      "consequences": "State does not travel with pushes; the committed event log and roady state rebuild cover other machines. See docs/rfcs/0002-shared-execution-state.md.",
+      "date": "2026-09-27",
+      "requirements": [
+        "shared-execution-state"
+      ]
+    },
+    {
+      "id": "decision-mcp-nouns",
+      "title": "MCP surface shape",
+      "context": "A per-verb surface cost ~16k tokens; an agent-loop-only surface broke CLI/MCP parity.",
+      "choice": "One tool per CLI noun, the CLI verbs as actions; decisions run only after the user confirms in-client (MCP elicitation)",
+      "consequences": "Every CLI project command has a tool or action (TestEveryCLICommandHasAnMCPTool). Clients without elicitation cannot run decisions over MCP.",
+      "date": "2026-09-27",
+      "features": [
+        "mcp-surface"
+      ]
+    },
+    {
+      "id": "decision-roadmap-from-goals",
+      "title": "Roadmap source of truth",
+      "choice": "Goals in spec.yaml; ROADMAP.md is rendered from them and hand edits are drift",
+      "date": "2026-09-27",
+      "requirements": [
+        "render-roadmap"
+      ]
+    }
+  ],
   "features": [
     {
       "id": "cross-project-deps",
@@ -14,7 +264,7 @@
           "description": "DependsOn accepts @project:task-id and resolves it to the named sub-project.",
           "priority": "high",
           "estimate": "1d",
-          "depends_on": null,
+          "depends_on": [],
           "source": {}
         },
         {
@@ -23,7 +273,7 @@
           "description": "Cycle detection and readiness checks span sub-projects, so a cross-project cycle is refused.",
           "priority": "high",
           "estimate": "1d",
-          "depends_on": null,
+          "depends_on": [],
           "source": {}
         },
         {
@@ -32,11 +282,12 @@
           "description": "A task blocked by another project is not reported ready, in CLI and MCP alike.",
           "priority": "medium",
           "estimate": "4h",
-          "depends_on": null,
+          "depends_on": [],
           "source": {}
         }
       ],
-      "source": {}
+      "source": {},
+      "goal": "goal-release-0-19-0"
     },
     {
       "id": "subagent-dispatch",
@@ -49,7 +300,7 @@
           "description": "A task handed to a subagent carries its spec citation, acceptance criteria, and the tool to report completion through.",
           "priority": "high",
           "estimate": "1d",
-          "depends_on": null,
+          "depends_on": [],
           "source": {}
         },
         {
@@ -58,11 +309,12 @@
           "description": "A dispatched task completes through a recorded transition, so the audit trail attributes the work to that agent and session.",
           "priority": "high",
           "estimate": "1d",
-          "depends_on": null,
+          "depends_on": [],
           "source": {}
         }
       ],
-      "source": {}
+      "source": {},
+      "goal": "goal-release-0-19-0"
     },
     {
       "id": "spec-to-pr",
@@ -75,7 +327,7 @@
           "description": "A documented CI job runs drift detect on merge and fails or reports based on severity.",
           "priority": "medium",
           "estimate": "4h",
-          "depends_on": null,
+          "depends_on": [],
           "source": {}
         },
         {
@@ -84,11 +336,12 @@
           "description": "Drift left unaccepted after merge becomes a tracked issue rather than a silent divergence.",
           "priority": "medium",
           "estimate": "1d",
-          "depends_on": null,
+          "depends_on": [],
           "source": {}
         }
       ],
-      "source": {}
+      "source": {},
+      "goal": "goal-release-0-19-0"
     },
     {
       "id": "drift-patch-prompt",
@@ -101,11 +354,12 @@
           "description": "roady drift explain can emit a request whose expected format is a patch, with the write-back tool named.",
           "priority": "medium",
           "estimate": "1d",
-          "depends_on": null,
+          "depends_on": [],
           "source": {}
         }
       ],
-      "source": {}
+      "source": {},
+      "goal": "goal-release-0-19-0"
     },
     {
       "id": "cross-repo-planning",
@@ -118,7 +372,7 @@
           "description": "A workspace lists member repos and resolves their .roady/ directories.",
           "priority": "low",
           "estimate": "1d",
-          "depends_on": null,
+          "depends_on": [],
           "source": {}
         },
         {
@@ -127,11 +381,12 @@
           "description": "Status, report, and drift span every member repo in one view.",
           "priority": "low",
           "estimate": "2d",
-          "depends_on": null,
+          "depends_on": [],
           "source": {}
         }
       ],
-      "source": {}
+      "source": {},
+      "goal": "goal-release-0-19-0"
     },
     {
       "id": "field-reliability",
@@ -144,7 +399,7 @@
           "description": "Feature and task ids must be usable as a path component, a URL segment and a shell argument. Improving the derivation must not re-identify features that already exist. (#74)",
           "priority": "high",
           "estimate": "1d",
-          "depends_on": null,
+          "depends_on": [],
           "source": {}
         },
         {
@@ -153,7 +408,7 @@
           "description": "add_feature must resolve docs/backlog.md against the project root rather than the process working directory, and must not report a sync that did not happen. (#71)",
           "priority": "high",
           "estimate": "0.5d",
-          "depends_on": null,
+          "depends_on": [],
           "source": {}
         },
         {
@@ -162,7 +417,7 @@
           "description": "A task written back with a feature title, or a legacy id, must be linked to the right feature; a link that resolves to nothing must be reported to the caller rather than stored silently. (#73)",
           "priority": "high",
           "estimate": "1d",
-          "depends_on": null,
+          "depends_on": [],
           "source": {}
         },
         {
@@ -171,7 +426,7 @@
           "description": "roady_tasks must page and project its results, and must say when it truncated rather than returning a partial list that looks complete. (#75)",
           "priority": "medium",
           "estimate": "1d",
-          "depends_on": null,
+          "depends_on": [],
           "source": {}
         },
         {
@@ -180,11 +435,12 @@
           "description": "A domain error must reach the MCP client as the message the CLI gives, not as a bare internal error. (#72)",
           "priority": "high",
           "estimate": "0.5d",
-          "depends_on": null,
+          "depends_on": [],
           "source": {}
         }
       ],
-      "source": {}
+      "source": {},
+      "goal": "goal-release-0-18-0"
     },
     {
       "id": "mcp-surface",
@@ -197,7 +453,7 @@
           "description": "MCP tools are named noun-first to match the CLI verbs (roady_spec_add, not roady_add_feature), so knowledge of one surface transfers to the other. Breaking on the 0.x line with no aliases kept. (#87)",
           "priority": "high",
           "estimate": "1d",
-          "depends_on": null,
+          "depends_on": [],
           "source": {}
         },
         {
@@ -206,7 +462,7 @@
           "description": "ROADY_MCP_TOOLS selects which tool groups are registered, so a client does not pay prompt cost for a rate card or debt ledger the project does not have. A tool missing from the grouping must fail the build rather than silently vanish from every profile. (#87)",
           "priority": "high",
           "estimate": "1d",
-          "depends_on": null,
+          "depends_on": [],
           "source": {}
         },
         {
@@ -215,11 +471,333 @@
           "description": "A result with no structured payload must omit structuredContent rather than encode null, which matches no object schema and caused strict clients to reject the whole result including the text explaining the failure. roady asserts the wire format itself so a dependency change cannot reintroduce it invisibly. (#92)",
           "priority": "high",
           "estimate": "0.5d",
-          "depends_on": null,
+          "depends_on": [],
           "source": {}
         }
       ],
-      "source": {}
+      "source": {},
+      "goal": "goal-planning-for-ai"
+    },
+    {
+      "id": "trust",
+      "title": "Trust: done means proven",
+      "description": "Roady is only worth planning into if its record can be believed. A task reaches verified on evidence, not assertion, and the audit and MCP surfaces report failures truthfully. Motivated by the September 2026 evaluation: a verified task (#92) had regressed on the live path, and agents in the literature claim done prematurely (ImpossibleBench, Anthropic long-running-agents post).",
+      "requirements": [
+        {
+          "id": "mcp-error-live-path",
+          "title": "Tool errors omit structuredContent on the wire",
+          "description": "A failing tools/call (e.g. roady_task_transition on an unknown task) currently returns \"structuredContent\": null, because go.klarlabs.de/mcp applyStructuredResult writes the field unconditionally. Fix upstream and replace the marshal-only assertion with a test that drives a real tools/call. Done when: an end-to-end MCP test fails on null structuredContent and passes after the fix.",
+          "priority": "high",
+          "estimate": "0.5d",
+          "depends_on": [],
+          "source": {},
+          "check": {
+            "run": "go test -tags mcpwire ./internal/infrastructure/mcp/ -run TestToolErrorOnTheWire -count=1"
+          }
+        },
+        {
+          "id": "audit-deletion-is-alteration",
+          "title": "audit verify treats a removed or duplicated entry as alteration",
+          "description": "A deleted middle entry is reported as 'referencing a removed parent' followed by 'nothing here is evidence of alteration' (cli/audit.go only checks KindHashMismatch). Done when: missing-parent and duplicate findings suppress the reassurance line and are summarised as evidence of alteration.",
+          "priority": "high",
+          "estimate": "2h",
+          "depends_on": [],
+          "source": {},
+          "check": {
+            "run": "go test ./pkg/domain/ -run 'TestRemovedEntryEvidencesAlteration|TestViolationKindClassification' -count=1 \u0026\u0026 go test ./internal/infrastructure/cli/ -run TestAuditVerdict -count=1"
+          }
+        },
+        {
+          "id": "audit-tail-anchor",
+          "title": "Detect truncation of the audit log tail",
+          "description": "Removing the last N events verifies as intact. Anchor the head hash outside events.jsonl (e.g. state.json or a git ref) and compare on verify, or narrow the attestation wording. Done when: truncating the log fails audit verify.",
+          "priority": "medium",
+          "estimate": "1d",
+          "depends_on": [],
+          "source": {},
+          "check": {
+            "run": "go test ./pkg/domain/ -run MissingFromBaseline -count=1 \u0026\u0026 go test ./pkg/application/ -run 'Baseline|CommittedFile' -count=1"
+          }
+        },
+        {
+          "id": "setup-registers-mcp",
+          "title": "setup claude-code registers MCP where Claude Code reads it",
+          "description": "setup writes mcpServers into ~/.claude/settings.local.json and skips silently if the file exists. Register via project .mcp.json or `claude mcp add`, merge instead of skipping, and report what changed. Done when: after `roady setup claude-code` on a clean machine, roady tools are listed in a new Claude Code session.",
+          "priority": "high",
+          "estimate": "0.5d",
+          "depends_on": [],
+          "source": {},
+          "check": {
+            "run": "go test ./internal/infrastructure/cli/ -run RegisterClaudeCodeMCP -count=1"
+          }
+        },
+        {
+          "id": "acceptance-checks",
+          "title": "Requirements and tasks carry an acceptance check",
+          "description": "A check is a command, a named test, or a named manual check. `roady task verify` runs it and records the result, exit code and commit as evidence. Done when: a task with a check can be verified by running it, and the result is in the audit trail.",
+          "priority": "high",
+          "estimate": "2d",
+          "depends_on": [],
+          "source": {},
+          "check": {
+            "run": "go test ./pkg/application/ -run 'RunCheck|ManualCheck|Verify' -count=1 \u0026\u0026 go test ./pkg/domain/planning/ ./pkg/domain/spec/ -run 'Check|Hash' -count=1"
+          }
+        },
+        {
+          "id": "evidence-gated-verify",
+          "title": "verified requires a linked commit and a passing check",
+          "description": "The done -\u003e verified transition is guarded: it needs at least one linked commit and a recorded passing check (or an explicit human override that is logged as such). Done when: an agent cannot move a task to verified without evidence, over CLI or MCP.",
+          "priority": "high",
+          "estimate": "1d",
+          "depends_on": [],
+          "source": {},
+          "check": {
+            "run": "go test ./pkg/application/ -run 'Evidence|Override|SyncLinksCommit' -count=1"
+          }
+        },
+        {
+          "id": "drift-reruns-checks",
+          "title": "Drift re-runs the checks of verified tasks",
+          "description": "`roady drift detect --checks` re-runs acceptance checks of verified tasks; a failing check is reported as regression drift with the task and commit. Done when: breaking the code behind a verified task makes drift report it.",
+          "priority": "medium",
+          "estimate": "1d",
+          "depends_on": [],
+          "source": {}
+        },
+        {
+          "id": "spec-conflict-exit",
+          "title": "A legitimate exit for impossible or conflicting work",
+          "description": "Add a blocked reason 'spec-conflict' (and 'cannot-complete') the agent can choose instead of forcing done; it raises drift for a human to resolve. Research: offering an explicit abort cut test manipulation from 54% to 9% (ImpossibleBench). Done when: the transition exists in CLI and MCP and surfaces in status, report and drift.",
+          "priority": "medium",
+          "estimate": "0.5d",
+          "depends_on": [],
+          "source": {}
+        }
+      ],
+      "source": {},
+      "goal": "goal-planning-for-ai"
+    },
+    {
+      "id": "capture",
+      "title": "Capture: intent at whatever size it arrives",
+      "description": "Agents plan anywhere; roady records it. One validated, logged write path takes a whole plan, a few tasks, or a single task, and plans produced by harness plan modes flow in without a manual step. Writing to roady must be cheaper than writing plan.md.",
+      "requirements": [
+        {
+          "id": "capture-upsert",
+          "title": "One capture operation, idempotent upsert keyed by id",
+          "description": "`roady capture` (CLI, stdin JSON/YAML) and MCP `capture` accept goals, requirements and tasks with dependencies, in any quantity from one item to a full plan, and return what was created, changed and rejected. Replaces the spec_add -\u003e plan_generate --ai -\u003e plan_update -\u003e approve round trip. Done when: an agent records a 10-task plan with dependencies in one call, and re-sending it is a no-op.",
+          "priority": "high",
+          "estimate": "2d",
+          "depends_on": [],
+          "source": {},
+          "check": {
+            "run": "go test ./pkg/application/ -run Capture -count=1"
+          }
+        },
+        {
+          "id": "single-task-cli",
+          "title": "Ergonomic single-task commands",
+          "description": "`roady add`, `roady edit`, `roady split`, `roady move` as thin wrappers over capture, e.g. `roady add \"Handle empty file\" --req pdf-gen --after task-pdf-gen`. Done when: each command works without an editor and appears as one event in the audit log.",
+          "priority": "high",
+          "estimate": "1d",
+          "depends_on": [],
+          "source": {}
+        },
+        {
+          "id": "per-change-approval",
+          "title": "Approval is per change, not per plan",
+          "description": "Adding or splitting tasks within an existing requirement applies directly; adding or removing requirements or goals needs approval per policy.yaml. Today any regenerate resets the whole plan to pending. Done when: a single in-scope task add leaves the plan approved and its other tasks untouched.",
+          "priority": "high",
+          "estimate": "1d",
+          "depends_on": [],
+          "source": {},
+          "check": {
+            "run": "go test ./pkg/application/ -run 'ApprovalFollowsScope|KeepsApprovalWhenIntentUnchanged' -count=1"
+          }
+        },
+        {
+          "id": "unplanned-tasks",
+          "title": "Tasks without a requirement are allowed",
+          "description": "An ad-hoc task attaches to a goal or an inbox; drift reports it as 'unplanned work' (informational) rather than an orphan to prune. Done when: `roady add` with no --req succeeds and drift classifies it as unplanned.",
+          "priority": "medium",
+          "estimate": "0.5d",
+          "depends_on": [],
+          "source": {}
+        },
+        {
+          "id": "guarded-fields",
+          "title": "Edits that weaken done are guarded",
+          "description": "Title, notes, priority, dependencies and splits are freely editable. Tightening an acceptance check is free; loosening or removing it on an in-progress or verified task needs approval and reopens the task. The spec lock is not writable by the implementing agent. Done when: these rules are enforced in the domain layer for CLI and MCP alike, with tests.",
+          "priority": "high",
+          "estimate": "1d",
+          "depends_on": [],
+          "source": {},
+          "check": {
+            "run": "go test ./pkg/application/ -run 'Loosen|CheckChanges|CheckChange|Locking|SpecLockNotices|RemovingStartedCheck' -count=1"
+          }
+        },
+        {
+          "id": "markdown-importer",
+          "title": "Markdown import extracts requirements, not just headings",
+          "description": "parseMarkdownFile only turns '## ' headings into features and never creates requirements, so a normal PRD becomes 'Implement Overview'. Treat ###-sections as features and list items as requirements, skip overview-style sections, keep doc:line. Done when: the invoice-tool PRD from the evaluation imports as 3 features and 6 requirements.",
+          "priority": "high",
+          "estimate": "1d",
+          "depends_on": [],
+          "source": {},
+          "check": {
+            "run": "go test ./pkg/application/ -run 'MarkdownImport|SpecService' -count=1"
+          }
+        },
+        {
+          "id": "harness-importers",
+          "title": "Import plans from agent harness plan files",
+          "description": "Importers for Claude Code plan-mode files (~/.claude/plans or plansDirectory), Gemini CLI plans, Cursor .cursor/plans, Codex ExecPlans (PLANS.md) and Kiro .kiro/specs/*/tasks.md, mapping to capture. Done when: each format has a fixture test and `roady import \u003cfile\u003e` detects the format.",
+          "priority": "medium",
+          "estimate": "3d",
+          "depends_on": [],
+          "source": {}
+        },
+        {
+          "id": "claude-code-hooks",
+          "title": "setup installs Claude Code hooks",
+          "description": "Hooks: import the approved plan on ExitPlanMode; inject the current task brief on SessionStart and after compaction; block Write/Edit of ROADMAP*.md, TODO*.md and *plan*.md with a message pointing to capture (configurable allowlist). Done when: in a fresh project, approving a plan-mode plan lands it in roady with no manual step, and creating ROADMAP.md is redirected.",
+          "priority": "high",
+          "estimate": "2d",
+          "depends_on": [],
+          "source": {}
+        },
+        {
+          "id": "instructions-and-skill",
+          "title": "setup writes an instruction block and a planning skill",
+          "description": "Idempotent marked block in CLAUDE.md / AGENTS.md / GEMINI.md ('plans live in roady; never create ROADMAP.md/TODO.md/plan.md'), plus a roady planning skill for Claude Code. Done when: re-running setup updates the block in place and never duplicates it.",
+          "priority": "medium",
+          "estimate": "1d",
+          "depends_on": [],
+          "source": {}
+        },
+        {
+          "id": "slim-mcp",
+          "title": "Default MCP surface of about six tools",
+          "description": "capture, next, update (claim/progress/block/complete), prove, status, query. The current ~70 tools (~16.5k tokens) stay behind ROADY_MCP_TOOLS=all. Reconciles the cli-mcp-parity constraint by capability rather than 1:1 tools: every CLI operation stays reachable. Done when: the default tools/list is under 3k tokens and the core loop needs no other tool.",
+          "priority": "high",
+          "estimate": "2d",
+          "depends_on": [],
+          "source": {}
+        }
+      ],
+      "source": {},
+      "goal": "goal-planning-for-ai"
+    },
+    {
+      "id": "keep",
+      "title": "Keep: continuity across sessions, compaction and parallel agents",
+      "description": "Everything a ROADMAP.md holds has a home in roady, the current task is pushed into the agent rather than waiting to be asked, and parallel agents cannot collide. Research: plan reminders every few steps improve success; recall tools are rarely called (arXiv 2604.12147, 2609.20804); summarisation compaction destroys long-horizon runs (SWE-Marathon).",
+      "requirements": [
+        {
+          "id": "goals-horizons",
+          "title": "Goals with horizons and milestones",
+          "description": "A Goal object with horizon now/next/later, optional milestone/release, and an idea state that needs no requirements yet. Features/requirements link to goals. Done when: roady's own ROADMAP.md content can be expressed without loss.",
+          "priority": "high",
+          "estimate": "2d",
+          "depends_on": [],
+          "source": {}
+        },
+        {
+          "id": "decisions",
+          "title": "Decision records linked to goals and requirements",
+          "description": "Lightweight decisions (context, choice, consequences, date) attached to goals or requirements, included in task briefs when relevant. Done when: `roady decide` records one and `roady next` shows decisions for the active task.",
+          "priority": "medium",
+          "estimate": "1d",
+          "depends_on": [],
+          "source": {}
+        },
+        {
+          "id": "render-roadmap",
+          "title": "ROADMAP.md is generated from roady",
+          "description": "`roady render roadmap` writes ROADMAP.md with a generated header; drift flags hand edits to the rendered file. Done when: the rendered file round-trips and a manual edit is reported.",
+          "priority": "high",
+          "estimate": "1d",
+          "depends_on": [],
+          "source": {}
+        },
+        {
+          "id": "task-brief",
+          "title": "A compact task brief for re-injection",
+          "description": "`roady next --brief` (and MCP next) returns the active task, its acceptance check, dependencies, relevant decisions and source citation within a small token budget, for hooks at session start, after compaction and every N steps. Done when: the brief stays under 500 tokens for a typical task.",
+          "priority": "medium",
+          "estimate": "1d",
+          "depends_on": [],
+          "source": {},
+          "check": {
+            "run": "go test ./pkg/application/ -run Brief -count=1"
+          }
+        },
+        {
+          "id": "leased-claims",
+          "title": "Task claims with an expiring lease",
+          "description": "Starting a task claims it for an actor/session with a lease that heartbeats and expires, so crashed agents do not hold tasks and two agents cannot take the same task. Done when: a concurrency test with two agents never double-claims, and an expired claim is released.",
+          "priority": "high",
+          "estimate": "2d",
+          "depends_on": [],
+          "source": {}
+        },
+        {
+          "id": "shared-execution-state",
+          "title": "Execution state shared across worktrees and branches",
+          "description": "The plan stays in the repo for review; claims and progress live in one location all worktrees see (e.g. a git ref or the common git dir), so state is not forked per branch. Needs a decision record first. Done when: two worktrees see each other's claims and completions immediately.",
+          "priority": "high",
+          "estimate": "3d",
+          "depends_on": [],
+          "source": {}
+        },
+        {
+          "id": "append-only-edits",
+          "title": "Every plan edit is an appended event",
+          "description": "Splits, moves, edits and re-plans are recorded as events and the plan is derivable from them, rather than rewritten wholesale (avoids 'context collapse' from full rewrites). Done when: `roady timeline` shows a readable history of a task's splits and edits.",
+          "priority": "medium",
+          "estimate": "1d",
+          "depends_on": [],
+          "source": {}
+        }
+      ],
+      "source": {},
+      "goal": "goal-planning-for-ai"
+    },
+    {
+      "id": "focus",
+      "title": "Focus and proof of adoption",
+      "description": "Narrow roady to capture, keep and prove, and prove it on roady itself.",
+      "requirements": [
+        {
+          "id": "extras-as-plugins",
+          "title": "Move peripheral features behind opt-in modules",
+          "description": "Billing rates, cost reports, debt scoring, org views, the TUI and tracker syncers move behind opt-in modules or plugins; the default binary and docs present the core loop only. Done when: the README quickstart and default MCP surface reference none of them.",
+          "priority": "low",
+          "estimate": "3d",
+          "depends_on": [],
+          "source": {}
+        },
+        {
+          "id": "dogfood-roadmap",
+          "title": "Roady plans itself in roady",
+          "description": "Migrate ROADMAP.md and docs/backlog.md into .roady and generate ROADMAP.md from it; the hand-written file is deleted. The 1.0 exit criterion. Done when: ROADMAP.md in this repo is generated and drift is clean with checks.",
+          "priority": "high",
+          "estimate": "1d",
+          "depends_on": [],
+          "source": {}
+        },
+        {
+          "id": "adoption-metrics",
+          "title": "Local adoption metrics",
+          "description": "`roady stats` reports, locally only: share of harness plans captured automatically, share of verified tasks with a passing check, and sessions that resumed on the right task without re-briefing. Done when: the three numbers are computed from the event log.",
+          "priority": "low",
+          "estimate": "1d",
+          "depends_on": [],
+          "source": {}
+        }
+      ],
+      "source": {},
+      "goal": "goal-planning-for-ai"
     }
   ],
   "constraints": [
@@ -237,7 +815,7 @@
     },
     {
       "id": "cli-mcp-parity",
-      "description": "All new CLI commands should have corresponding MCP tools"
+      "description": "Every project operation is reachable from both the CLI and MCP (one MCP tool per CLI noun, the verbs as actions; TestEveryCLICommandHasAnMCPTool). Decisions - approving, rejecting or pruning a plan, accepting drift, locking, importing or analyzing the spec, rebuilding state - run over MCP only after the user confirms them in-client, so an agent can ask but never approve its own work."
     }
   ],
   "version": ""

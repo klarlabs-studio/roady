@@ -4,13 +4,18 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"strings"
 )
 
 // ProductSpec represents the top-level specification of what is being built.
 type ProductSpec struct {
-	ID          string       `json:"id" yaml:"id"`
-	Title       string       `json:"title" yaml:"title"`
-	Description string       `json:"description" yaml:"description"`
+	ID          string `json:"id" yaml:"id"`
+	Title       string `json:"title" yaml:"title"`
+	Description string `json:"description" yaml:"description"`
+	// Goals are the roadmap: outcomes with a horizon, which features link to.
+	Goals []Goal `json:"goals,omitempty" yaml:"goals,omitempty"`
+	// Decisions record choices made along the way, linked to what they constrain.
+	Decisions   []Decision   `json:"decisions,omitempty" yaml:"decisions,omitempty"`
 	Features    []Feature    `json:"features" yaml:"features"`
 	Constraints []Constraint `json:"constraints" yaml:"constraints"`
 	Version     string       `json:"version" yaml:"version"`
@@ -61,6 +66,8 @@ type Feature struct {
 	Description  string        `json:"description" yaml:"description"`
 	Requirements []Requirement `json:"requirements" yaml:"requirements"`
 	Source       Source        `json:"source,omitempty" yaml:"source,omitempty"`
+	// Goal is the ID of the goal this feature serves. Optional.
+	Goal string `json:"goal,omitempty" yaml:"goal,omitempty"`
 }
 
 // Requirement represents a granular condition that a feature must satisfy.
@@ -72,6 +79,19 @@ type Requirement struct {
 	Estimate    string   `json:"estimate" yaml:"estimate"`
 	DependsOn   []string `json:"depends_on" yaml:"depends_on"`
 	Source      Source   `json:"source,omitempty" yaml:"source,omitempty"`
+	// Check states how the requirement is shown to be met: a command (run)
+	// or a named manual check (manual). Copied onto the task at planning.
+	Check *Check `json:"check,omitempty" yaml:"check,omitempty"`
+	// Goal links the requirement to a goal other than its feature's.
+	Goal string `json:"goal,omitempty" yaml:"goal,omitempty"`
+}
+
+// Check is a requirement's acceptance check. It mirrors planning.Check; the
+// spec package does not depend on planning, so the plan service maps one to
+// the other.
+type Check struct {
+	Run    string `json:"run,omitempty" yaml:"run,omitempty"`
+	Manual string `json:"manual,omitempty" yaml:"manual,omitempty"`
 }
 
 // Constraint represents non-functional requirements or policies.
@@ -92,6 +112,12 @@ func (s *ProductSpec) Hash() string {
 		for _, r := range f.Requirements {
 			h.Write([]byte(r.ID))
 			h.Write([]byte(r.Description))
+			// A check is part of the intent: loosening it must show up as a
+			// spec change. Hashed only when present, so specs without checks
+			// keep the hash they already had and existing locks stay valid.
+			if r.Check != nil {
+				_, _ = fmt.Fprintf(h, "check:%s|%s", r.Check.Run, r.Check.Manual)
+			}
 		}
 	}
 	return hex.EncodeToString(h.Sum(nil))
@@ -127,7 +153,14 @@ func (s *ProductSpec) Validate() []error {
 			if r.Title == "" {
 				errs = append(errs, fmt.Errorf("feature '%s' requirement '%s' missing title", f.ID, r.ID))
 			}
+			if r.Check != nil {
+				run, manual := strings.TrimSpace(r.Check.Run) != "", strings.TrimSpace(r.Check.Manual) != ""
+				if run == manual {
+					errs = append(errs, fmt.Errorf("feature '%s' requirement '%s': check needs exactly one of run (a command) or manual (a description)", f.ID, r.ID))
+				}
+			}
 		}
 	}
-	return errs
+	errs = append(errs, s.validateGoals()...)
+	return append(errs, s.validateDecisions()...)
 }

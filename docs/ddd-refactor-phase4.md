@@ -8,6 +8,9 @@
 With the new wiring helper in `internal/infrastructure/wiring/services.go`, both CLI and MCP now share a single composition root. That means we can safely continue the roadmap without worrying about divergent adapters or configuration paths.
 
 ## 1. Policy vs Provider Separation
+
+_Note: `token_limit` and `budget_hours` were later removed from policy._
+
 - Keep policy files focused on governance (`max_wip`, `allow_ai`, `token_limit`). Strip AI provider/model metadata out of `.roady/policy.yaml` and move all such defaults into `.roady/ai.yaml` (already the canonical source).
 - Update `roady ai configure` and the interactive prompt to edit `.roady/ai.yaml` only for provider/model changes while keeping policy limited to allowance/budgets. Mention this explicitly in the CLI output so users know where each setting lives.
 - Expose a helper (`internal/infrastructure/wiring.BuildAppServicesWithProvider`) that lets tests or external tools inject a mock provider without touching policy, ensuring policy never drives provider selection.

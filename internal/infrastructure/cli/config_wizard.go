@@ -19,7 +19,7 @@ var configCmd = &cobra.Command{
 
 var configWizardCmd = &cobra.Command{
 	Use:   "wizard",
-	Short: "Interactive configuration wizard for ai.yaml and policy.yaml",
+	Short: "Interactive configuration wizard for policy.yaml",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cwd, cErr := getProjectRoot()
 		if cErr != nil {
@@ -44,19 +44,17 @@ var configWizardCmd = &cobra.Command{
 
 		maxWIPStr := prompt(reader, "Max WIP (concurrent in-progress tasks)", intOrDefault(existingPolicy.MaxWIP, "3"))
 		allowAIStr := prompt(reader, "Allow AI usage (true/false)", boolStr(existingPolicy.AllowAI))
-		tokenLimitStr := prompt(reader, "AI token limit (0 = unlimited)", intOrDefault(existingPolicy.TokenLimit, "0"))
 
 		maxWIP, _ := strconv.Atoi(maxWIPStr)
 		allowAI := strings.ToLower(allowAIStr) == "true" || allowAIStr == "1" || allowAIStr == "yes"
-		tokenLimit, _ := strconv.Atoi(tokenLimitStr)
 
-		policyCfg := &domain.PolicyConfig{
-			MaxWIP:     maxWIP,
-			AllowAI:    allowAI,
-			TokenLimit: tokenLimit,
-		}
+		// Change only what was asked; the rest of the policy (evidence,
+		// approval mode, allowlists) stays as it was.
+		policyCfg := *existingPolicy
+		policyCfg.MaxWIP = maxWIP
+		policyCfg.AllowAI = allowAI
 
-		if err := repo.SavePolicy(policyCfg); err != nil {
+		if err := repo.SavePolicy(&policyCfg); err != nil {
 			return MapError(fmt.Errorf("failed to save policy: %w", err))
 		}
 		fmt.Println("Policy configuration saved.")

@@ -138,6 +138,8 @@ Roady must answer instantly:
 > Corrected 2026-08. This list previously named ownership tracking, team
 > dashboards, forecasting, billing, and compliance as out of scope. All of
 > them shipped in Core, so the list described the opposite of reality.
+> Forecasting, billing, and team dashboards were later removed again;
+> ownership tracking (task owners) and compliance (audit trail) remain.
 
 - Real-time multi-user presence (state syncs through git, not a server)
 - A hosted control plane — see `ROADMAP.md` for the Roady Cloud boundary

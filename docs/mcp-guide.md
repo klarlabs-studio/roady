@@ -67,184 +67,102 @@ roady mcp --transport ws --addr :8080
 
 ## Available Tools
 
-### Core State Tools
+Every CLI command that works on a project has an MCP tool: one tool per CLI
+noun, with the CLI verbs as its `action`. Fourteen tools, under 4k tokens of
+every agent's prompt.
 
-| Tool | Description | Returns |
-|------|-------------|---------|
-| `roady_init` | Initialize a new roady project | Confirmation message |
-| `roady_spec_get` | Retrieve the current product specification | JSON ProductSpec |
-| `roady_plan_get` | Retrieve the current execution plan | JSON Plan with tasks |
-| `roady_state_get` | Retrieve task execution states | JSON ExecutionState |
-| `roady_status` | Get a high-level project summary | Status summary text |
+| Tool | Actions (CLI) |
+|------|---------------|
+| `roady_next` | — the task in progress, or the one to start: why it exists (doc:line), what done means, dependencies |
+| `roady_capture` | — goals, features, requirements and tasks in one write, from one task to a whole plan (`roady capture`, `add`, `edit`, `split`, `move`) |
+| `roady_task` | `start` `complete` `block` `unblock` `stop` `reopen` `verify` `check` `dispatch` `list` `renew` — start claims the task with an expiring lease that `roady_next` renews; `block` with `reason: spec-conflict` or `cannot-complete` hands work that cannot be done as specified to a person |
+| `roady_plan` | `get` `generate` `import` `prioritize` `decompose` · **`approve` `reject` `prune`** |
+| `roady_spec` | `get` `add` `explain` `review` `validate` · **`analyze` `import` `lock`** |
+| `roady_drift` | `detect` (`checks: true` re-runs verified tasks' checks) `explain` `semantic` `record` · **`accept`** |
+| `roady_state` | `get` · **`rebuild`** |
+| `roady_audit` | `verify` `trail` |
+| `roady_goal` | `list` `add` `edit` `render` (ROADMAP.md; replacing a hand edit needs the user) — the roadmap: goals on now, next or later, shipped or out of scope, with the features serving them |
+| `roady_policy` | `check` |
+| `roady_git` | `sync` |
+| `roady_status` | — progress and tasks; `snapshot: true` for the task ids in each lifecycle bucket |
+| `roady_query` | — project context for a question, for your model to answer |
+| `roady_init` | — a new project |
 
-### Planning Tools
+### Decisions need the user
 
-| Tool | Description | Parameters |
-|------|-------------|------------|
-| `roady_plan_generate` | Generate plan using 1:1 heuristic | None |
-| `roady_plan_update` | Update with specific task list | `tasks[]` - Task definitions |
-| `roady_plan_approve` | Approve plan for execution | None |
-| `roady_spec_explain` | AI architectural walkthrough | None |
+The actions in bold are decisions: approving or rejecting a plan, pruning it,
+accepting drift, re-baselining the spec, rebuilding state. An agent may ask
+for them, but they run only when **the user** says yes. Roady asks the user
+directly in their client (MCP elicitation), and the confirmation is recorded
+in the audit log as `approval.confirmed` next to the operation it allowed.
 
-### Drift Detection Tools
+If the user declines or cancels — or the client cannot ask — nothing changes,
+and the agent gets a refusal naming the CLI command (`roady plan approve`) so
+the decision still reaches a person. An agent can never approve its own plan
+or accept its own drift on its own say-so.
 
-| Tool | Description | Returns |
-|------|-------------|---------|
-| `roady_drift_detect` | Detect spec/plan discrepancies | DriftReport JSON |
-| `roady_drift_accept` | Accept drift, lock spec snapshot | Confirmation |
-| `roady_drift_explain` | AI explanation of drift causes | Analysis text |
-
-### Task Lifecycle Tools
-
-| Tool | Description | Parameters |
-|------|-------------|------------|
-| `roady_task_transition` | Transition task state | `task_id`, `event` (start/complete/block/stop), optional `evidence` |
-| `roady_policy_check` | Validate against WIP limits | None |
-
-### Forecasting & Analytics Tools
-
-| Tool | Description | Returns |
-|------|-------------|---------|
-| `roady_forecast` | Predict completion based on velocity | Velocity, remaining tasks, estimated days |
-| `roady_usage_get` | Get AI token consumption stats | UsageStats JSON |
-
-### Dependency Management Tools (Horizon 5)
-
-| Tool | Description | Returns |
-|------|-------------|---------|
-| `roady_deps_list` | List cross-repo dependencies | Dependencies JSON |
-| `roady_deps_scan` | Scan dependent repo health | Health status |
-| `roady_deps_graph` | Get dependency graph | Graph with cycle detection |
-
-### Debt Analysis Tools (Horizon 5)
-
-| Tool | Description | Returns |
-|------|-------------|---------|
-| `roady_debt_report` | Comprehensive debt analysis | DebtReport JSON |
-| `roady_debt_summary` | Quick debt overview | Summary text |
-| `roady_sticky_drift` | Items unresolved >7 days | Sticky items list |
-| `roady_debt_trend` | Drift trend over time | Trend analysis |
-
-### Integration Tools
-
-| Tool | Description | Parameters |
-|------|-------------|------------|
-| `roady_spec_add` | Add feature to spec | `title`, `description` |
-| `roady_git_sync` | Sync via commit markers | None |
-| `roady_sync` | External plugin sync | `plugin_path` |
-| `roady_org_status` | Multi-project overview | None |
+`TestEveryCLICommandHasAnMCPTool` walks the CLI and fails when a command has
+no MCP tool or action; `TestGatedActionsNeedTheUser` pins the gate. Host
+commands — `setup`, `hook`, `mcp`, `completion`, `config`, `doctor` — are
+about the machine, not the project, and stay CLI-only.
 
 ---
 
 ## Tool Parameters
 
-### roady_init
+### roady_capture
 ```json
 {
-  "name": "my-project"  // Optional: project name
-}
-```
-
-### roady_plan_update
-```json
-{
+  "features": [
+    {"id": "auth", "title": "Authentication", "requirements": [
+      {"id": "jwt", "title": "JWT sessions", "priority": "high",
+       "check": {"run": "go test ./auth -run TestJWT"}}
+    ]}
+  ],
   "tasks": [
-    {
-      "id": "task-auth",
-      "title": "Implement authentication",
-      "description": "Add JWT-based auth",
-      "feature_id": "feat-security",
-      "depends_on": [],
-      "priority": "high",
-      "estimate": "3d"
-    }
-  ]
+    {"id": "task-auth-docs", "title": "Document the login flow",
+     "requirement": "jwt", "depends_on": ["task-jwt"]}
+  ],
+  "dry_run": false
 }
 ```
 
-### roady_task_transition
+### roady_task
 ```json
 {
-  "task_id": "task-auth",
-  "event": "start",           // start|complete|block|stop|unblock|verify
-  "evidence": "commit-sha"    // Optional: proof of completion
+  "action": "start",          // start|complete|block|unblock|stop|reopen|verify|check|dispatch|list
+  "task_id": "task-jwt",
+  "evidence": "commit-sha"    // complete/verify: proof of completion
 }
 ```
 
-### roady_spec_add
+### roady_plan (a gated action)
 ```json
-{
-  "title": "User Dashboard",
-  "description": "A comprehensive dashboard showing user metrics and activity"
-}
+{"action": "approve"}
 ```
+The user is asked in their client; the plan is approved only on their yes.
 
 ---
 
-## Example Workflows
-
-### 1. Initial Project Setup (AI Agent)
+## Example Workflow
 
 ```python
-# 1. Initialize project
-await mcp.call("roady_init", {"name": "my-app"})
+# What am I doing, and what does done mean?
+brief = await mcp.call("roady_next")
 
-# 2. Generate initial plan from existing spec
-await mcp.call("roady_plan_generate")
+# Record the plan the agent made (all or nothing, idempotent)
+await mcp.call("roady_capture", {"features": [...], "tasks": [...]})
 
-# 3. Review and approve
-plan = await mcp.call("roady_plan_get")
-# ... agent reviews plan ...
-await mcp.call("roady_plan_approve")
-```
+await mcp.call("roady_plan", {"action": "approve"})   # the user is asked; runs only on their yes
 
-### 2. Task Execution Loop
+await mcp.call("roady_task", {"action": "start", "task_id": "task-jwt"})
+# ... implement, commit with [roady:task-jwt] ...
+await mcp.call("roady_git", {"action": "sync"})
+await mcp.call("roady_task", {"action": "check", "task_id": "task-jwt"})
+await mcp.call("roady_task", {"action": "complete", "task_id": "task-jwt", "evidence": "abc123"})
 
-```python
-# Check policy before starting
-policy_ok = await mcp.call("roady_policy_check")
-
-# Start task
-await mcp.call("roady_task_transition", {
-    "task_id": "task-api",
-    "event": "start"
-})
-
-# ... agent implements feature ...
-
-# Complete with evidence
-await mcp.call("roady_task_transition", {
-    "task_id": "task-api",
-    "event": "complete",
-    "evidence": "PR #123"
-})
-```
-
-### 3. Drift Detection & Resolution
-
-```python
-# Detect drift
-drift = await mcp.call("roady_drift_detect")
-
-if drift["has_issues"]:
-    # Get AI explanation
-    explanation = await mcp.call("roady_drift_explain")
-
-    # If drift is intentional, accept it
-    await mcp.call("roady_drift_accept")
-```
-
-### 4. Progress Monitoring
-
-```python
-# Get current status
-status = await mcp.call("roady_status")
-
-# Get velocity forecast
-forecast = await mcp.call("roady_forecast")
-
-# Check debt status
-debt = await mcp.call("roady_debt_summary")
+# Has reality diverged from intent?
+drift = await mcp.call("roady_drift", {"action": "detect"})
 ```
 
 ---
@@ -275,11 +193,11 @@ Example event:
 
 ## Best Practices
 
-1. **Always check policy** before starting tasks to respect WIP limits
-2. **Provide evidence** when completing tasks for audit trails
-3. **Monitor debt** periodically to catch sticky drift early
-4. **Use git sync** after commits with `[roady:task-id]` markers
-5. **Accept drift explicitly** rather than ignoring discrepancies
+1. **Start from `roady_next`** at the beginning of a session and after compaction
+2. **Record new work with `roady_capture`**, never in a markdown file
+3. **Run the acceptance check** (`roady_task` action `check`) before calling a task done
+4. **Provide evidence** when completing tasks, and commit with `[roady:task-id]`
+5. **Let the user decide** — approval, drift acceptance and re-baselining run only on the user's confirmation
 
 ---
 

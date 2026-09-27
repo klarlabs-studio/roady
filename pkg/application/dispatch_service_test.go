@@ -81,13 +81,13 @@ func TestDispatchCompletionContractAttributesTheSubagent(t *testing.T) {
 	}
 
 	c := brief.Completion
-	if c.Tool != "roady_task_transition" {
+	if c.Tool != "roady_task" {
 		t.Errorf("tool = %q", c.Tool)
 	}
 	if c.Arguments["agent"] != "codex" || c.Arguments["session_id"] != "run-9" {
 		t.Errorf("agent/session not carried into the contract: %+v", c.Arguments)
 	}
-	if c.Arguments["task_id"] != "task-signup" || c.Arguments["event"] != "complete" {
+	if c.Arguments["task_id"] != "task-signup" || c.Arguments["action"] != "complete" {
 		t.Errorf("unexpected arguments: %+v", c.Arguments)
 	}
 	if !c.EvidenceRequired {

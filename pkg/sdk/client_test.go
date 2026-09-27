@@ -116,7 +116,7 @@ func findRepoRoot(t *testing.T) string {
 	return cwd
 }
 
-func TestIntegrationInitGetSpec(t *testing.T) {
+func TestIntegrationCaptureAndNext(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test in short mode")
 	}
@@ -131,7 +131,13 @@ func TestIntegrationInitGetSpec(t *testing.T) {
 		t.Fatalf("build roady: %v\n%s", err, out)
 	}
 
-	// Use environment variables for AI config so project can be initialized
+	// A person initialises the project; roady_init is not an agent tool.
+	initCmd := exec.Command(binPath, "init", "test-sdk")
+	initCmd.Dir = tempDir
+	if out, err := initCmd.CombinedOutput(); err != nil {
+		t.Fatalf("roady init: %v\n%s", err, out)
+	}
+
 	cmd := fmt.Sprintf("cd '%s' && ROADY_AI_PROVIDER=mock ROADY_AI_MODEL=test '%s' mcp --transport stdio", tempDir, binPath)
 	transport, err := client.NewUnsafeStdioTransport("bash", "-lc", cmd)
 	if err != nil {
@@ -151,29 +157,24 @@ func TestIntegrationInitGetSpec(t *testing.T) {
 		t.Fatalf("expected tools capability")
 	}
 
-	msg, err := c.Init(ctx, "test-sdk")
+	msg, err := c.Capture(ctx, map[string]any{
+		"features": []any{map[string]any{"id": "sdk", "title": "SDK", "requirements": []any{
+			map[string]any{"id": "sdk-next", "title": "Brief over MCP"},
+		}}},
+	}, false)
 	if err != nil {
-		t.Fatalf("init: %v", err)
+		t.Fatalf("capture: %v", err)
 	}
-	if !strings.Contains(msg, "test-sdk") {
-		t.Fatalf("unexpected init result: %s", msg)
+	if !strings.Contains(msg, "task:task-sdk-next") {
+		t.Fatalf("unexpected capture result: %s", msg)
 	}
 
-	spec, err := c.GetSpec(ctx)
+	brief, err := c.Next(ctx, "")
 	if err != nil {
-		t.Fatalf("get spec: %v", err)
+		t.Fatalf("next: %v", err)
 	}
-	if spec.Title != "test-sdk" {
-		t.Fatalf("unexpected spec title: %s", spec.Title)
-	}
-
-	// Verify spec is persisted
-	spec2, err := c.GetSpec(ctx)
-	if err != nil {
-		t.Fatalf("get spec again: %v", err)
-	}
-	if spec2.Title != "test-sdk" {
-		t.Fatalf("spec not persisted: %s", spec2.Title)
+	if !strings.Contains(brief, "task-sdk-next") {
+		t.Fatalf("the brief should name the captured task: %s", brief)
 	}
 
 	// GetSchema should return valid schema info
@@ -225,6 +226,12 @@ func TestIntegrationConnectOverHTTP(t *testing.T) {
 	addr := ln.Addr().String()
 	_ = ln.Close()
 
+	initCmd := exec.Command(binPath, "init", "test-sdk-http")
+	initCmd.Dir = tempDir
+	if out, err := initCmd.CombinedOutput(); err != nil {
+		t.Fatalf("roady init: %v\n%s", err, out)
+	}
+
 	srv := exec.Command(binPath, "mcp", "--transport", "http", "--addr", addr)
 	srv.Dir = tempDir
 	srv.Env = append(os.Environ(), "ROADY_AI_PROVIDER=mock", "ROADY_AI_MODEL=test")
@@ -262,11 +269,11 @@ func TestIntegrationConnectOverHTTP(t *testing.T) {
 	if !info.Capabilities.Tools {
 		t.Fatalf("expected tools capability")
 	}
-	msg, err := c.Init(ctx, "test-sdk-http")
+	msg, err := c.Status(ctx, nil)
 	if err != nil {
-		t.Fatalf("init over HTTP: %v", err)
+		t.Fatalf("status over HTTP: %v", err)
 	}
-	if !strings.Contains(msg, "test-sdk-http") {
-		t.Fatalf("unexpected init result: %s", msg)
+	if msg == "" {
+		t.Fatal("empty status over HTTP")
 	}
 }

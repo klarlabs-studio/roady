@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/felixgeelhaar/roady/pkg/domain"
@@ -36,10 +37,19 @@ type DriftService struct {
 	// activity is optional; a nil inspector skips the staleness check
 	// rather than reporting a plan as stale on no evidence.
 	activity RepoActivityInspector
+
+	// roadmapPath is the rendered ROADMAP.md, or empty to skip that check.
+	roadmapPath string
 }
 
 // SetActivityInspector supplies the repository-movement signal used for
 // staleness detection.
+// SetRoadmapPath names the rendered ROADMAP.md to check against the goals.
+// Empty (the default) skips the check.
+func (s *DriftService) SetRoadmapPath(path string) {
+	s.roadmapPath = path
+}
+
 func (s *DriftService) SetActivityInspector(a RepoActivityInspector) {
 	s.activity = a
 }
@@ -110,6 +120,16 @@ func (s *DriftService) DetectDrift(ctx context.Context) (*drift.Report, error) {
 		report.Issues = append(report.Issues, codeIssues...)
 	}
 
+	// 2b. Rendered documents vs their source: a ROADMAP.md edited by hand
+	// or left behind by the goals.
+	if s.roadmapPath != "" {
+		report.Issues = append(report.Issues, RoadmapDrift(s.roadmapPath, spec)...)
+	}
+
+	// 2c. Work an agent could not do as specified. It stays drift until a
+	// person changes the requirement, re-scopes the task, or unblocks it.
+	report.Issues = append(report.Issues, needsDecisionIssues(state)...)
+
 	// 3. Policy vs State (Policy Drift)
 	violations, _ := s.policy.CheckCompliance()
 	if policyIssues := s.detector.DetectPolicyDrift(violations); len(policyIssues) > 0 {
@@ -121,6 +141,14 @@ func (s *DriftService) DetectDrift(ctx context.Context) (*drift.Report, error) {
 
 // AcceptDrift locks the current spec snapshot and records the acceptance event.
 func (s *DriftService) AcceptDrift() error {
+	return s.AcceptDriftWith(false, "cli")
+}
+
+// AcceptDriftWith accepts drift by re-locking the spec. Accepting is exactly
+// how a check loosened by hand in spec.yaml would stop being reported, so a
+// removed or changed check on started work needs allowCheckChange (the CLI's
+// --change-checks; never MCP or watch mode).
+func (s *DriftService) AcceptDriftWith(allowCheckChange bool, actor string) error {
 	spec, err := s.repo.LoadSpec()
 	if err != nil {
 		return fmt.Errorf("load spec: %w", err)
@@ -129,8 +157,16 @@ func (s *DriftService) AcceptDrift() error {
 		return fmt.Errorf("no spec found to accept drift")
 	}
 
+	guard := NewCheckGuard(s.repo, s.audit)
+	guarded := guard.Inspect(spec, nil)
+	if err := guard.Authorize(guarded, allowCheckChange); err != nil {
+		return err
+	}
 	if err := s.repo.SaveSpecLock(spec); err != nil {
 		return fmt.Errorf("save spec lock: %w", err)
+	}
+	if err := guard.Record(guarded, actor); err != nil {
+		return err
 	}
 
 	if s.audit == nil {
@@ -178,4 +214,37 @@ func (s *DriftService) RecordSemanticDrift(ctx context.Context, judgements []dri
 	}
 
 	return report, nil
+}
+
+func needsDecisionIssues(state *planning.ExecutionState) []drift.Issue {
+	if state == nil {
+		return nil
+	}
+	blocks := state.NeedsDecision()
+	ids := make([]string, 0, len(blocks))
+	for id := range blocks {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	issues := make([]drift.Issue, 0, len(ids))
+	for _, id := range ids {
+		b := blocks[id]
+		typ, what := drift.DriftTypeSpec, "conflicts with the spec"
+		if b.Kind == planning.BlockCannotComplete {
+			typ, what = drift.DriftTypePlan, "cannot be completed as specified"
+		}
+		msg := fmt.Sprintf("%s %s", id, what)
+		if b.By != "" {
+			msg += " (reported by " + b.By + ")"
+		}
+		if b.Detail != "" {
+			msg += ": " + b.Detail
+		}
+		issues = append(issues, drift.Issue{
+			ID: "needs-decision-" + id, Type: typ, Category: drift.CategoryConflict, Severity: drift.SeverityHigh,
+			ComponentID: id, Message: msg,
+			Hint: fmt.Sprintf("A person decides: change the requirement (roady capture / roady edit), split or move the task, or `roady task unblock %s` if it can be done after all.", id),
+		})
+	}
+	return issues
 }

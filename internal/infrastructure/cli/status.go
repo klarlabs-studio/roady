@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/felixgeelhaar/roady/internal/infrastructure/wiring"
+	"github.com/felixgeelhaar/roady/pkg/application"
 	"github.com/felixgeelhaar/roady/pkg/domain/planning"
 	"github.com/felixgeelhaar/roady/pkg/domain/spec"
 	"github.com/spf13/cobra"
@@ -55,6 +56,8 @@ type statusJSONOutput struct {
 	Features int              `json:"features"`
 	Plan     *planJSONOutput  `json:"plan,omitempty"`
 	Drift    *driftJSONOutput `json:"drift,omitempty"`
+	// NeedsDecision lists tasks an agent could not do as specified.
+	NeedsDecision []application.NeedsDecision `json:"needs_decision,omitempty"`
 }
 
 type planJSONOutput struct {
@@ -174,6 +177,7 @@ func outputStatusJSON(productSpec *spec.ProductSpec, plan *planning.Plan, state 
 		}
 
 		output.Plan = planOutput
+		output.NeedsDecision = application.NeedsDecisions(state)
 	}
 
 	if driftCount > 0 {
@@ -255,6 +259,10 @@ func outputStatusText(cmd *cobra.Command, productSpec *spec.ProductSpec, plan *p
 
 	if len(filteredTasks) == 0 && hasActiveFilters() {
 		fmt.Println("  No tasks match the current filters.")
+	}
+
+	if nd := application.RenderNeedsDecisions(application.NeedsDecisions(state)); nd != "" {
+		fmt.Print("\n" + nd)
 	}
 
 	// Drift warning
@@ -431,32 +439,6 @@ func hasActiveFilters() bool {
 	return statusFilter != "" || priorityFilter != "" || readyOnly || blockedOnly || activeOnly
 }
 
-// Status subcommands - consolidated from top-level commands
-var statusForecastCmd = &cobra.Command{
-	Use:   "forecast",
-	Short: "Predict project completion based on current velocity",
-	Long: `Forecast provides project completion predictions with optional detailed analysis.
-
-Flags:
-  --detailed   Show confidence intervals and all velocity windows
-  --burndown   Show burndown chart data
-  --trend      Show velocity trend analysis
-  --json       Output in JSON format`,
-	RunE: RunForecast,
-}
-
-var statusUsageCmd = &cobra.Command{
-	Use:   "usage",
-	Short: "Show project usage and AI token statistics",
-	RunE:  RunUsage,
-}
-
-var statusTimelineCmd = &cobra.Command{
-	Use:   "timeline",
-	Short: "Show a chronological view of project activity",
-	RunE:  RunTimeline,
-}
-
 func outputSnapshot(services *wiring.AppServices, jsonOut bool) error {
 	ctx := context.Background()
 	snapshot, err := services.Plan.GetProjectSnapshot(ctx)
@@ -537,16 +519,6 @@ func init() {
 		"Output in JSON format")
 	statusCmd.Flags().BoolVar(&snapshotMode, "snapshot", false,
 		"Show coordinator-based project snapshot with progress and categorized task counts")
-
-	// Add subcommands for consolidated views
-	statusForecastCmd.Flags().BoolVar(&forecastDetailed, "detailed", false, "Show detailed forecast with confidence intervals")
-	statusForecastCmd.Flags().BoolVar(&forecastBurndown, "burndown", false, "Show burndown chart data")
-	statusForecastCmd.Flags().BoolVar(&forecastTrend, "trend", false, "Show velocity trend analysis")
-	statusForecastCmd.Flags().BoolVar(&forecastJSON, "json", false, "Output in JSON format")
-
-	statusCmd.AddCommand(statusForecastCmd)
-	statusCmd.AddCommand(statusUsageCmd)
-	statusCmd.AddCommand(statusTimelineCmd)
 
 	RootCmd.AddCommand(statusCmd)
 }

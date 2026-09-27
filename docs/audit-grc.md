@@ -29,9 +29,20 @@ gate a CI job.
 
 ## What this attests — read this before quoting a trail
 
-Roady offers **a complete, tamper-evident record of what was asserted.** If any
-entry were altered or removed after being written, the hash chain breaks and
-the trail says so.
+Roady offers **a tamper-evident record of what was asserted.** If an entry is
+altered, or an entry that a later one references is removed, the hash chain
+breaks and the trail says so.
+
+The chain alone cannot prove completeness. Nothing references the newest
+entries, so deleting them leaves every remaining link intact — and because the
+chain carries no secret, anyone able to edit `events.jsonl` could recompute it.
+What they cannot rewrite quietly is history already committed and pushed. So
+`roady audit verify` also checks that every entry of the log committed at a
+baseline revision is still present (`--baseline`, default `HEAD`). **In CI,
+pass the protected branch** — `roady audit verify --baseline origin/main` — so
+a truncation committed on a feature branch is caught too. Completeness is
+attested relative to that baseline, and the command says when no baseline was
+available rather than implying it checked.
 
 Roady does **not** offer **proof of identity.** Actor, agent, and session values
 are supplied by the caller and are never authenticated. Anyone able to run
@@ -50,13 +61,13 @@ Provenance is stamped onto every event automatically. Precedence:
 | `ROADY_SESSION_ID` | Explicit session. Otherwise one is generated per process. |
 | `ROADY_AGENT` | Explicit agent name. |
 | Runtime detection | `CLAUDECODE`, `CURSOR_TRACE_ID`, `CODEX_SANDBOX`, `GEMINI_CLI` |
-| Surface | `cli`, `mcp`, or `plugin` — set automatically. |
+| Surface | `cli` or `mcp` — set automatically. |
 
 A session ID is minted **once per process**. One CLI invocation is one session;
 one long-lived `roady mcp` server is one session spanning the agent's whole
 conversation — which is the granularity a reviewer asks about.
 
-Over MCP, `roady_task_transition` accepts `session_id` and `agent` per call.
+Over MCP, `roady_task` accepts `session_id` and `agent` per call.
 A caller-supplied value always wins over the ambient process identity, because
 an agent forwarding the run that spawned it knows more than the server does.
 
@@ -71,9 +82,14 @@ an agent forwarding the run that spawned it knows more than the server does.
 | `predates the hash_algo field` | The entry names no algorithm, so the function that wrote its hash is unknown. It can be neither confirmed nor convicted. See below. |
 | `outside the chain` | The entry has no hash at all, so it was never chained. Something appended to `events.jsonl` directly instead of going through Roady. |
 | `cannot verify` | The entry was written by a Roady version using a hash algorithm this build does not know. Not an attack. |
+| `missing parent` | An entry that a later entry references is gone. **An entry was removed.** |
+| `present in the log committed at <ref> and missing now` | The entry was committed and has since been removed from the working log — including from the tail, which the chain alone cannot see. **An entry was removed.** |
+| `duplicate of event` | The same event appears twice. Not proof of alteration (a bad merge can do it), but unexplained, so it withholds the all-clear. |
 
-The command closes with a breakdown by cause, and — when no entry failed
-under a known algorithm — says so explicitly. That line is the one to read
+The command closes with a breakdown by cause, and — only when every finding is
+history this build cannot check — says explicitly that nothing is evidence of
+alteration. A removed entry, whether found by the chain or against the
+baseline, is evidence of alteration and is reported as such. That line is the one to read
 first: it is the difference between a log full of unverifiable history and a
 log somebody edited. Every finding is still listed and the command still
 exits non-zero either way, so nothing is suppressed by the distinction.

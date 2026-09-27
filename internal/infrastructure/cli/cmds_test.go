@@ -3,7 +3,6 @@ package cli
 import (
 	"bytes"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"testing"
 )
@@ -107,12 +106,6 @@ func TestAllCmds_Internal(t *testing.T) {
 	RootCmd.SetArgs([]string{"doctor"})
 	_ = RootCmd.Execute()
 
-	// 8.1 Dashboard
-	_ = os.Setenv("ROADY_SKIP_DASHBOARD_RUN", "true")
-	defer func() { _ = os.Unsetenv("ROADY_SKIP_DASHBOARD_RUN") }()
-	RootCmd.SetArgs([]string{"dashboard"})
-	_ = RootCmd.Execute()
-
 	// 9. Spec Import
 	md := filepath.Join(tempDir, "test.md")
 	_ = os.WriteFile(md, []byte("# Test\n## F1"), 0600)
@@ -123,12 +116,6 @@ func TestAllCmds_Internal(t *testing.T) {
 	txt := filepath.Join(tempDir, "test.txt")
 	_ = os.WriteFile(txt, []byte("plain text"), 0600)
 	RootCmd.SetArgs([]string{"spec", "import", txt})
-	_ = RootCmd.Execute()
-
-	// 10. Sync
-	pluginBin := filepath.Join(tempDir, "roady-plugin-mock")
-	_ = exec.Command("go", "build", "-o", pluginBin, "../../../cmd/roady-plugin-mock/main.go").Run()
-	RootCmd.SetArgs([]string{"sync", pluginBin})
 	_ = RootCmd.Execute()
 
 	// 11. MCP (Internal)

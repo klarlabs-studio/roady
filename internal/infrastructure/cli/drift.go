@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/felixgeelhaar/roady/pkg/application"
 	"github.com/felixgeelhaar/roady/pkg/domain/drift"
 	"github.com/spf13/cobra"
 )
@@ -12,6 +13,9 @@ var driftCmd = &cobra.Command{
 	Use:   "drift",
 	Short: "Detect drift between specs, plans, and code",
 }
+
+// driftChecks re-runs the acceptance checks of verified tasks.
+var driftChecks bool
 
 // driftFailOn is the severity at or above which drift fails the command.
 var driftFailOn string
@@ -70,6 +74,17 @@ var driftDetectCmd = &cobra.Command{
 		if err != nil {
 			return MapError(fmt.Errorf("failed to detect drift: %w", err))
 		}
+		if driftChecks {
+			actor := resolveCurrentOwner(gitConfigUserName)
+			regressions, runs, err := services.Task.RecheckVerified(cmd.Context(), actor, application.CheckOptions{})
+			if err != nil {
+				return MapError(err)
+			}
+			if outputFormat != "json" {
+				fmt.Printf("Re-ran the checks of %d verified task(s); %d fail now.\n", len(runs), len(regressions))
+			}
+			report.Issues = append(report.Issues, regressions...)
+		}
 
 		// --fail-on decides what makes the command exit non-zero. Without
 		// it any drift at all fails, which is too blunt for CI: a
@@ -119,6 +134,8 @@ var driftDetectCmd = &cobra.Command{
 	},
 }
 
+var driftAcceptChangeChecks bool
+
 var driftAcceptCmd = &cobra.Command{
 	Use:   "accept",
 	Short: "Accept current drift by locking the spec snapshot",
@@ -128,7 +145,11 @@ var driftAcceptCmd = &cobra.Command{
 			return err
 		}
 
-		if err := services.Drift.AcceptDrift(); err != nil {
+		actor := resolveCurrentOwner(gitConfigUserName)
+		if actor == "" {
+			actor = "unknown-human"
+		}
+		if err := services.Drift.AcceptDriftWith(driftAcceptChangeChecks, actor); err != nil {
 			return MapError(fmt.Errorf("failed to accept drift: %w", err))
 		}
 
@@ -139,11 +160,13 @@ var driftAcceptCmd = &cobra.Command{
 
 func init() {
 	driftDetectCmd.Flags().StringP("output", "o", "text", "Output format (text, json)")
+	driftDetectCmd.Flags().BoolVar(&driftChecks, "checks", false, "Also re-run the acceptance checks of verified tasks; a failing one is reported as a regression")
 	driftDetectCmd.Flags().StringVar(&driftFailOn, "fail-on", "", "Exit non-zero only for drift at or above this severity (low, medium, high, critical)")
 	driftCmd.AddCommand(driftDetectCmd)
 	driftExplainCmd.Flags().BoolVar(&driftWantPatch, "patch", false, "Ask for a unified diff that closes the drift, instead of an explanation")
 	addPromptJSONFlag(driftExplainCmd)
 	driftCmd.AddCommand(driftExplainCmd)
+	driftAcceptCmd.Flags().BoolVar(&driftAcceptChangeChecks, "change-checks", false, "Allow removing or changing the acceptance check of work already started (reopens done tasks; recorded as an override)")
 	driftCmd.AddCommand(driftAcceptCmd)
 	RootCmd.AddCommand(driftCmd)
 }

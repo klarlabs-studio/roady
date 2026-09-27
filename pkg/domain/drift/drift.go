@@ -11,6 +11,7 @@ const (
 	DriftTypePlan   DriftType = "plan"   // Plan vs Spec
 	DriftTypeCode   DriftType = "code"   // Code vs Plan
 	DriftTypePolicy DriftType = "policy" // Policy vs State
+	DriftTypeDoc    DriftType = "doc"    // A document rendered from roady vs its source
 )
 
 type DriftCategory string
@@ -23,11 +24,17 @@ const (
 	CategoryViolation      DriftCategory = "VIOLATION"      // Policy violation
 	CategoryImplementation DriftCategory = "IMPLEMENTATION" // Code reality doesn't match state
 	CategoryStale          DriftCategory = "STALE"          // The artifact is internally consistent but the repository has moved past it
+	CategoryRegression     DriftCategory = "REGRESSION"     // A verified task's acceptance check fails now
+	CategoryUnplanned      DriftCategory = "UNPLANNED"      // Work done outside the spec, on purpose; informational
+	CategoryConflict       DriftCategory = "CONFLICT"       // An agent reported work it cannot do as specified; a person decides
 )
 
 type Severity string
 
 const (
+	// SeverityInfo is for things worth knowing that are not a problem;
+	// it never trips a --fail-on gate.
+	SeverityInfo     Severity = "info"
 	SeverityLow      Severity = "low"
 	SeverityMedium   Severity = "medium"
 	SeverityHigh     Severity = "high"

@@ -87,8 +87,9 @@ func (r *PlanReconciler) Reconcile(existing *Plan, proposedTasks []Task, opts Re
 func (r *PlanReconciler) FilterValidTasks(tasks []Task, validTaskIDs, validFeatureIDs map[string]bool) []Task {
 	result := make([]Task, 0, len(tasks))
 	for _, t := range tasks {
-		// Task is valid if it matches a requirement ID OR its feature ID exists
-		if validTaskIDs[t.ID] || validFeatureIDs[t.FeatureID] {
+		// Task is valid if it matches a requirement ID OR its feature ID
+		// exists. A task with no feature is unplanned work, kept on purpose.
+		if validTaskIDs[t.ID] || validFeatureIDs[t.FeatureID] || t.FeatureID == "" {
 			result = append(result, t)
 		}
 	}

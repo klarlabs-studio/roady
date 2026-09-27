@@ -259,39 +259,3 @@ func (s *FileEventStore) loadEvents() ([]*events.BaseEvent, error) {
 
 	return result, nil
 }
-
-// InMemoryEventPublisher is a simple in-process event publisher.
-type InMemoryEventPublisher struct {
-	mu       sync.RWMutex
-	handlers []events.EventHandler
-}
-
-// NewInMemoryEventPublisher creates a new in-memory publisher.
-func NewInMemoryEventPublisher() *InMemoryEventPublisher {
-	return &InMemoryEventPublisher{
-		handlers: make([]events.EventHandler, 0),
-	}
-}
-
-// Publish sends an event to all subscribers.
-func (p *InMemoryEventPublisher) Publish(event *events.BaseEvent) error {
-	p.mu.RLock()
-	handlers := make([]events.EventHandler, len(p.handlers))
-	copy(handlers, p.handlers)
-	p.mu.RUnlock()
-
-	for _, h := range handlers {
-		if err := h(event); err != nil {
-			// Log error but don't fail - handlers shouldn't block publishing
-			continue
-		}
-	}
-	return nil
-}
-
-// Subscribe registers a handler for events.
-func (p *InMemoryEventPublisher) Subscribe(handler events.EventHandler) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	p.handlers = append(p.handlers, handler)
-}

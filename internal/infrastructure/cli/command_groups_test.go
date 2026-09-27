@@ -17,7 +17,7 @@ func TestAssignCommandGroups(t *testing.T) {
 		"init":   groupGetStarted,
 		"task":   groupGetStarted,
 		"setup":  groupGetStarted,
-		"cost":   groupTrackReport,
+		"drift":  groupTrackReport,
 		"mcp":    groupIntegrate,
 		"audit":  groupAdmin,
 		"doctor": groupAdmin,

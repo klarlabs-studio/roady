@@ -47,7 +47,7 @@ func (m *mockPublisher) PublishPlanApproved(ctx context.Context, planID, approve
 	return nil
 }
 
-func (m *mockPublisher) PublishTaskStarted(ctx context.Context, taskID, owner, rateID string) error {
+func (m *mockPublisher) PublishTaskStarted(ctx context.Context, taskID, owner string) error {
 	m.events = append(m.events, "task.started:"+taskID)
 	return nil
 }
@@ -149,7 +149,7 @@ func TestCoordinator_StartTask(t *testing.T) {
 
 	coord := NewCoordinator(planRepo, stateRepo, publisher)
 
-	err := coord.StartTask(context.Background(), "task-1", "alice", "")
+	err := coord.StartTask(context.Background(), "task-1", "alice")
 	if err != nil {
 		t.Fatalf("StartTask failed: %v", err)
 	}
@@ -184,7 +184,7 @@ func TestCoordinator_StartTask_DependencyNotMet(t *testing.T) {
 	coord := NewCoordinator(planRepo, stateRepo, nil)
 
 	// Try to start task-2 which depends on task-1
-	err := coord.StartTask(context.Background(), "task-2", "alice", "")
+	err := coord.StartTask(context.Background(), "task-2", "alice")
 	if err == nil {
 		t.Error("Expected error for unmet dependency")
 	}
@@ -201,7 +201,7 @@ func TestCoordinator_StartTask_DependencyNotMet(t *testing.T) {
 func TestCoordinator_StartTask_OwnerRequired(t *testing.T) {
 	coord := NewCoordinator(nil, nil, nil)
 
-	err := coord.StartTask(context.Background(), "task-1", "", "")
+	err := coord.StartTask(context.Background(), "task-1", "")
 	if err != ErrOwnerRequired {
 		t.Errorf("Expected ErrOwnerRequired, got: %v", err)
 	}
@@ -214,7 +214,7 @@ func TestCoordinator_StartTask_PlanNotApproved(t *testing.T) {
 
 	coord := NewCoordinator(planRepo, stateRepo, nil)
 
-	err := coord.StartTask(context.Background(), "task-1", "alice", "")
+	err := coord.StartTask(context.Background(), "task-1", "alice")
 	if err != ErrPlanNotApproved {
 		t.Errorf("Expected ErrPlanNotApproved, got: %v", err)
 	}
@@ -389,7 +389,7 @@ func TestCoordinator_StartTask_TaskNotFound(t *testing.T) {
 
 	coord := NewCoordinator(planRepo, stateRepo, nil)
 
-	err := coord.StartTask(context.Background(), "nonexistent", "alice", "")
+	err := coord.StartTask(context.Background(), "nonexistent", "alice")
 	if err != ErrTaskNotFound {
 		t.Errorf("Expected ErrTaskNotFound, got: %v", err)
 	}
@@ -403,7 +403,7 @@ func TestCoordinator_StartTask_NoState(t *testing.T) {
 
 	coord := NewCoordinator(planRepo, stateRepo, nil)
 
-	err := coord.StartTask(context.Background(), "task-1", "alice", "")
+	err := coord.StartTask(context.Background(), "task-1", "alice")
 	if err != ErrNoState {
 		t.Errorf("Expected ErrNoState, got: %v", err)
 	}
@@ -574,7 +574,7 @@ func TestCoordinator_StartTask_NoPlan(t *testing.T) {
 
 	coord := NewCoordinator(planRepo, stateRepo, nil)
 
-	err := coord.StartTask(context.Background(), "task-1", "alice", "")
+	err := coord.StartTask(context.Background(), "task-1", "alice")
 	if err != ErrNoPlan {
 		t.Errorf("Expected ErrNoPlan, got: %v", err)
 	}

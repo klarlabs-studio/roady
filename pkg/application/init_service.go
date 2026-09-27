@@ -74,8 +74,9 @@ func (s *InitService) InitializeProject(name string) error {
 
 	// Create a default policy
 	defaultPolicy := &domain.PolicyConfig{
-		MaxWIP:  3,
-		AllowAI: true,
+		MaxWIP:                 3,
+		AllowAI:                true,
+		VerifyRequiresEvidence: true,
 	}
 	if err := s.repo.SavePolicy(defaultPolicy); err != nil {
 		return err
@@ -87,5 +88,5 @@ func (s *InitService) InitializeProject(name string) error {
 		return err
 	}
 
-	return s.repo.UpdateUsage(domain.UsageStats{})
+	return nil
 }

@@ -7,7 +7,9 @@ import (
 
 	"github.com/felixgeelhaar/roady/pkg/domain"
 	"github.com/felixgeelhaar/roady/pkg/domain/planning"
+	"github.com/felixgeelhaar/roady/pkg/domain/policy"
 	"github.com/felixgeelhaar/roady/pkg/domain/project"
+	specdomain "github.com/felixgeelhaar/roady/pkg/domain/spec"
 )
 
 type PlanService struct {
@@ -15,6 +17,9 @@ type PlanService struct {
 	audit       domain.AuditLogger
 	reconciler  *planning.PlanReconciler
 	coordinator *project.Coordinator
+	// allowCheckChange permits removing or changing the check of started
+	// work; see CheckGuard.
+	allowCheckChange bool
 }
 
 func NewPlanService(repo domain.WorkspaceRepository, audit domain.AuditLogger) *PlanService {
@@ -92,6 +97,7 @@ func (s *PlanService) GeneratePlan(ctx context.Context) (*planning.Plan, error) 
 				DependsOn:   taskDeps,
 				Origin:      planning.OriginHeuristic,
 				Source:      source,
+				Check:       taskCheck(req.Check),
 			})
 		}
 	}
@@ -147,6 +153,14 @@ func (s *PlanService) ReconcilePlan(proposedTasks []planning.Task) (*planning.Pl
 	if err != nil {
 		return nil, nil, err
 	}
+	if s.approvalSurvives(existingPlan, newPlan, spec) {
+		newPlan.ApprovalStatus = planning.ApprovalApproved
+	}
+	guard := NewCheckGuard(s.repo, s.audit)
+	guarded := guard.Inspect(spec, newPlan)
+	if err := guard.Authorize(guarded, s.allowCheckChange); err != nil {
+		return nil, nil, err
+	}
 
 	if err := s.repo.SavePlan(newPlan); err != nil {
 		return nil, nil, fmt.Errorf("failed to save plan: %w", err)
@@ -155,9 +169,16 @@ func (s *PlanService) ReconcilePlan(proposedTasks []planning.Task) (*planning.Pl
 	if err := s.repo.SaveSpecLock(spec); err != nil {
 		return nil, nil, fmt.Errorf("save spec lock: %w", err)
 	}
+	if err := guard.Record(guarded, "cli"); err != nil {
+		return nil, nil, err
+	}
 
 	return newPlan, warnings, nil
 }
+
+// AllowCheckChanges lets the next plan writes remove or change the check of
+// work already started. Set by the CLI's --change-checks; never from MCP.
+func (s *PlanService) AllowCheckChanges(allow bool) { s.allowCheckChange = allow }
 
 func (s *PlanService) GetPlan() (*planning.Plan, error) {
 
@@ -169,10 +190,6 @@ func (s *PlanService) GetState() (*planning.ExecutionState, error) {
 
 	return s.repo.LoadState()
 
-}
-
-func (s *PlanService) GetUsage() (*domain.UsageStats, error) {
-	return s.repo.LoadUsage()
 }
 
 func (s *PlanService) ApprovePlan() error {
@@ -340,4 +357,44 @@ func (s *PlanService) GetTasksByOwner(ctx context.Context, owner string) ([]proj
 // GetCoordinator returns the underlying project coordinator for advanced operations.
 func (s *PlanService) GetCoordinator() *project.Coordinator {
 	return s.coordinator
+}
+
+// taskCheck carries a requirement's acceptance check onto its task.
+func taskCheck(c *specdomain.Check) *planning.Check {
+	if c == nil || (c.Run == "" && c.Manual == "") {
+		return nil
+	}
+	return &planning.Check{Run: c.Run, Manual: c.Manual}
+}
+
+// approvalSurvives reports whether an approved plan stays approved through a
+// plan update or regeneration.
+//
+// The reconciler returns every rewritten plan as pending, which sent an
+// approved plan back to pending for any change at all, such as attaching a
+// check to a task. Under plan_approval "scope" (the default) the approval
+// stands when the intent did not change — the spec still matches its lock —
+// and no task was dropped. Changing the intent, or plan_approval
+// "every_change", still requires re-approval.
+func (s *PlanService) approvalSurvives(prev, next *planning.Plan, current *specdomain.ProductSpec) bool {
+	if prev == nil || prev.ApprovalStatus != planning.ApprovalApproved {
+		return false
+	}
+	if cfg, err := s.repo.LoadPolicy(); err == nil && cfg != nil && cfg.ApprovalMode() == policy.PlanApprovalEveryChange {
+		return false
+	}
+	lock, err := s.repo.LoadSpecLock()
+	if err != nil || lock == nil || lock.Hash() != current.Hash() {
+		return false
+	}
+	kept := make(map[string]bool, len(next.Tasks))
+	for _, t := range next.Tasks {
+		kept[t.ID] = true
+	}
+	for _, t := range prev.Tasks {
+		if !kept[t.ID] {
+			return false
+		}
+	}
+	return true
 }

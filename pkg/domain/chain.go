@@ -50,7 +50,31 @@ const (
 	KindHashMismatch
 	KindLegacyUnverifiable
 	KindMissingParent
+	// KindRemovedSinceBaseline is an entry present in a committed copy of the
+	// log and absent now. Unlike KindMissingParent it covers the tail: the
+	// last entries of a log are referenced by nothing, so removing them left
+	// the chain internally consistent and verification silent.
+	KindRemovedSinceBaseline
 )
+
+// EvidencesAlteration reports whether a finding of this kind means the log was
+// changed after it was written, as opposed to history this build cannot check.
+//
+// A removed entry is an alteration just as much as an edited one: the chain
+// exists to prove that nothing referenced has been taken out. Reporting a
+// missing parent under a line that says "nothing here is evidence of
+// alteration" told the reader the opposite of what the chain had found.
+func (k ViolationKind) EvidencesAlteration() bool {
+	return k == KindHashMismatch || k == KindMissingParent || k == KindRemovedSinceBaseline
+}
+
+// Unexplained reports whether a finding of this kind rules out reassurance
+// without by itself proving alteration. A duplicated event is not what an
+// honest writer produces, but it can arise from a bad merge as well as from
+// tampering, so it is neither excused nor convicted.
+func (k ViolationKind) Unexplained() bool {
+	return k == KindDuplicate
+}
 
 // ChainViolation is one finding, with the reason kept separate from the prose
 // so callers do not match on message text.
@@ -188,4 +212,51 @@ func shortHash(h string) string {
 		return h
 	}
 	return h[:12]
+}
+
+// MissingFromBaseline reports every entry of baseline that is absent from
+// current.
+//
+// The chain alone cannot see a truncated tail: nothing references the newest
+// entries, so deleting them leaves every remaining link intact. And because the
+// chain has no secret, anyone able to edit the log can also recompute it. What
+// an editor of the working copy cannot rewrite is history already committed,
+// so the baseline is a committed copy of the log and the check is simply that
+// nothing committed has gone missing. current may legitimately hold more:
+// entries appended since, or merged in from another branch.
+//
+// Entries are matched by hash, or by ID for entries written without one.
+func MissingFromBaseline(baseline, current []ChainEntry, baselineName string) []ChainViolation {
+	have := make(map[string]bool, len(current))
+	for i := range current {
+		have[chainKey(current[i])] = true
+	}
+	var violations []ChainViolation
+	reported := map[string]bool{}
+	for i := range baseline {
+		key := chainKey(baseline[i])
+		if key == "" || have[key] || reported[key] {
+			continue
+		}
+		reported[key] = true
+		violations = append(violations, ChainViolation{
+			Kind:  KindRemovedSinceBaseline,
+			Index: i,
+			ID:    baseline[i].ID,
+			Message: fmt.Sprintf("Event %s: present in the log committed at %s and missing now. It was removed after being committed.",
+				orUnidentified(baseline[i].ID), baselineName),
+		})
+	}
+	return violations
+}
+
+func chainKey(e ChainEntry) string {
+	switch {
+	case e.Hash != "":
+		return "h:" + e.Hash
+	case e.ID != "":
+		return "id:" + e.ID
+	default:
+		return ""
+	}
 }

@@ -7,87 +7,9 @@ import (
 
 	"github.com/felixgeelhaar/roady/pkg/domain"
 	"github.com/felixgeelhaar/roady/pkg/domain/planning"
-	"github.com/felixgeelhaar/roady/pkg/domain/policy"
 	"github.com/felixgeelhaar/roady/pkg/domain/spec"
 	"github.com/felixgeelhaar/roady/pkg/storage"
 )
-
-func TestServer_HandleTransitionalTools(t *testing.T) {
-	tempDir := t.TempDir()
-	repo := storage.NewFilesystemRepository(tempDir)
-	if err := repo.Initialize(); err != nil {
-		t.Fatalf("initialize repo: %v", err)
-	}
-	if err := initProjectDir(tempDir); err != nil {
-		t.Fatalf("init mock AI config: %v", err)
-	}
-
-	spec := &spec.ProductSpec{
-		ID:    "mcp",
-		Title: "MCP Project",
-		Features: []spec.Feature{
-			{ID: "feature-1", Title: "Feature 1", Requirements: []spec.Requirement{{ID: "req-1", Title: "Req 1"}}},
-		},
-	}
-	if err := repo.SaveSpec(spec); err != nil {
-		t.Fatalf("save spec: %v", err)
-	}
-	plan := &planning.Plan{
-		ID:             "plan-1",
-		SpecID:         spec.ID,
-		ApprovalStatus: planning.ApprovalApproved,
-		Tasks: []planning.Task{
-			{ID: "task-req-1", Title: "Task 1", FeatureID: "feature-1"},
-		},
-	}
-	if err := repo.SavePlan(plan); err != nil {
-		t.Fatalf("save plan: %v", err)
-	}
-	if err := repo.SavePolicy(&domain.PolicyConfig{AllowAI: true, MaxWIP: 2}); err != nil {
-		t.Fatalf("save policy: %v", err)
-	}
-	if err := repo.UpdateUsage(domain.UsageStats{}); err != nil {
-		t.Fatalf("update usage: %v", err)
-	}
-
-	server, err := NewServer(tempDir)
-	if err != nil {
-		t.Fatalf("create server: %v", err)
-	}
-	ctx := context.Background()
-
-	if _, err := server.handleGetUsage(ctx, GetUsageArgs{}); err != nil {
-		t.Fatalf("handleGetUsage failed: %v", err)
-	}
-
-	if _, err := server.handleGetPlan(ctx, GetPlanArgs{}); err != nil {
-		t.Fatalf("handleGetPlan failed: %v", err)
-	}
-
-	if _, err := server.handleGetState(ctx, GetStateArgs{}); err != nil {
-		t.Fatalf("handleGetState failed: %v", err)
-	}
-
-	if _, err := server.handleTransitionTask(ctx, TransitionTaskArgs{
-		TaskID:   "task-req-1",
-		Event:    "start",
-		Evidence: "test",
-	}); err != nil {
-		t.Fatalf("handleTransitionTask failed: %v", err)
-	}
-
-	if _, err := server.handleCheckPolicy(ctx, CheckPolicyArgs{}); err != nil {
-		t.Fatalf("handleCheckPolicy failed: %v", err)
-	}
-
-	if _, err := server.handleDetectDrift(ctx, DetectDriftArgs{}); err != nil {
-		t.Fatalf("handleDetectDrift failed: %v", err)
-	}
-
-	if _, err := server.handleAcceptDrift(ctx, AcceptDriftArgs{}); err != nil {
-		t.Fatalf("handleAcceptDrift failed: %v", err)
-	}
-}
 
 func TestServerHandleStatusCounts(t *testing.T) {
 	root := t.TempDir()
@@ -298,375 +220,57 @@ func TestServerHandleStatusFiltering(t *testing.T) {
 	})
 }
 
-func TestServerHandleCheckPolicyViolations(t *testing.T) {
-	root := t.TempDir()
-	repo := storage.NewFilesystemRepository(root)
+func TestServer_HandleTransitionalTools(t *testing.T) {
+	tempDir := t.TempDir()
+	repo := storage.NewFilesystemRepository(tempDir)
 	if err := repo.Initialize(); err != nil {
 		t.Fatalf("initialize repo: %v", err)
 	}
-	if err := initProjectDir(root); err != nil {
+	if err := initProjectDir(tempDir); err != nil {
 		t.Fatalf("init mock AI config: %v", err)
 	}
 
 	spec := &spec.ProductSpec{
-		ID:    "policy-spec",
-		Title: "Policy Project",
+		ID:    "mcp",
+		Title: "MCP Project",
 		Features: []spec.Feature{
-			{
-				ID:    "feature-pol",
-				Title: "Policy Feature",
-				Requirements: []spec.Requirement{
-					{ID: "req-pol", Title: "Req", Description: "Desc"},
-				},
-			},
+			{ID: "feature-1", Title: "Feature 1", Requirements: []spec.Requirement{{ID: "req-1", Title: "Req 1"}}},
 		},
 	}
 	if err := repo.SaveSpec(spec); err != nil {
 		t.Fatalf("save spec: %v", err)
 	}
-
 	plan := &planning.Plan{
-		ID:             "plan-policy",
+		ID:             "plan-1",
 		SpecID:         spec.ID,
 		ApprovalStatus: planning.ApprovalApproved,
 		Tasks: []planning.Task{
-			{ID: "task-a", FeatureID: "feature-pol", Title: "Task A"},
-			{ID: "task-b", FeatureID: "feature-pol", Title: "Task B"},
+			{ID: "task-req-1", Title: "Task 1", FeatureID: "feature-1"},
 		},
 	}
 	if err := repo.SavePlan(plan); err != nil {
 		t.Fatalf("save plan: %v", err)
 	}
-
-	state := planning.NewExecutionState(plan.ID)
-	state.TaskStates["task-a"] = planning.TaskResult{Status: planning.StatusInProgress}
-	state.TaskStates["task-b"] = planning.TaskResult{Status: planning.StatusInProgress}
-	if err := repo.SaveState(state); err != nil {
-		t.Fatalf("save state: %v", err)
-	}
-
-	if err := repo.SavePolicy(&domain.PolicyConfig{MaxWIP: 1, AllowAI: true}); err != nil {
+	if err := repo.SavePolicy(&domain.PolicyConfig{AllowAI: true, MaxWIP: 2}); err != nil {
 		t.Fatalf("save policy: %v", err)
 	}
 
-	server, err := NewServer(root)
+	server, err := NewServer(tempDir)
 	if err != nil {
 		t.Fatalf("create server: %v", err)
 	}
-	result, err := server.handleCheckPolicy(context.Background(), CheckPolicyArgs{})
-	if err != nil {
-		t.Fatalf("handleCheckPolicy failed: %v", err)
+	ctx := context.Background()
+
+	if _, err := server.handleTransitionTask(ctx, TransitionTaskArgs{
+		TaskID:   "task-req-1",
+		Event:    "start",
+		Evidence: "test",
+	}); err != nil {
+		t.Fatalf("handleTransitionTask failed: %v", err)
 	}
 
-	violations, ok := result.([]policy.Violation)
-	if !ok {
-		t.Fatalf("expected []policy.Violation, got %T", result)
-	}
-	if len(violations) == 0 {
-		t.Fatalf("expected violations, got none")
-	}
-}
-
-func TestServerHandleDepsList(t *testing.T) {
-	root := t.TempDir()
-	repo := storage.NewFilesystemRepository(root)
-	if err := repo.Initialize(); err != nil {
-		t.Fatalf("initialize repo: %v", err)
-	}
-	if err := initProjectDir(root); err != nil {
-		t.Fatalf("init mock AI config: %v", err)
+	if _, err := server.handleDetectDrift(ctx, DetectDriftArgs{}); err != nil {
+		t.Fatalf("handleDetectDrift failed: %v", err)
 	}
 
-	specData := &spec.ProductSpec{
-		ID:    "deps-spec",
-		Title: "Deps Project",
-		Features: []spec.Feature{
-			{ID: "feat-1", Title: "Feature 1"},
-		},
-	}
-	if err := repo.SaveSpec(specData); err != nil {
-		t.Fatalf("save spec: %v", err)
-	}
-
-	if err := repo.SavePolicy(&domain.PolicyConfig{MaxWIP: 2, AllowAI: true}); err != nil {
-		t.Fatalf("save policy: %v", err)
-	}
-
-	server, err := NewServer(root)
-	if err != nil {
-		t.Fatalf("create server: %v", err)
-	}
-
-	result, err := server.handleDepsList(context.Background(), GetSpecArgs{})
-	if err != nil {
-		t.Fatalf("handleDepsList failed: %v", err)
-	}
-
-	if result == nil {
-		t.Fatal("expected non-nil result")
-	}
-}
-
-func TestServerHandleDepsScan(t *testing.T) {
-	root := t.TempDir()
-	repo := storage.NewFilesystemRepository(root)
-	if err := repo.Initialize(); err != nil {
-		t.Fatalf("initialize repo: %v", err)
-	}
-	if err := initProjectDir(root); err != nil {
-		t.Fatalf("init mock AI config: %v", err)
-	}
-
-	specData := &spec.ProductSpec{
-		ID:    "scan-spec",
-		Title: "Scan Project",
-		Features: []spec.Feature{
-			{ID: "feat-1", Title: "Feature 1"},
-		},
-	}
-	if err := repo.SaveSpec(specData); err != nil {
-		t.Fatalf("save spec: %v", err)
-	}
-
-	if err := repo.SavePolicy(&domain.PolicyConfig{MaxWIP: 2, AllowAI: true}); err != nil {
-		t.Fatalf("save policy: %v", err)
-	}
-
-	server, err := NewServer(root)
-	if err != nil {
-		t.Fatalf("create server: %v", err)
-	}
-
-	result, err := server.handleDepsScan(context.Background(), GetSpecArgs{})
-	if err != nil {
-		t.Fatalf("handleDepsScan failed: %v", err)
-	}
-
-	if result == nil {
-		t.Fatal("expected non-nil scan result")
-	}
-}
-
-func TestServerHandleDepsGraph(t *testing.T) {
-	root := t.TempDir()
-	repo := storage.NewFilesystemRepository(root)
-	if err := repo.Initialize(); err != nil {
-		t.Fatalf("initialize repo: %v", err)
-	}
-	if err := initProjectDir(root); err != nil {
-		t.Fatalf("init mock AI config: %v", err)
-	}
-
-	specData := &spec.ProductSpec{
-		ID:    "graph-spec",
-		Title: "Graph Project",
-		Features: []spec.Feature{
-			{ID: "feat-1", Title: "Feature 1"},
-		},
-	}
-	if err := repo.SaveSpec(specData); err != nil {
-		t.Fatalf("save spec: %v", err)
-	}
-
-	if err := repo.SavePolicy(&domain.PolicyConfig{MaxWIP: 2, AllowAI: true}); err != nil {
-		t.Fatalf("save policy: %v", err)
-	}
-
-	server, err := NewServer(root)
-	if err != nil {
-		t.Fatalf("create server: %v", err)
-	}
-
-	// Test without cycle check
-	result, err := server.handleDepsGraph(context.Background(), DepsGraphArgs{CheckCycles: false})
-	if err != nil {
-		t.Fatalf("handleDepsGraph failed: %v", err)
-	}
-	if result == nil {
-		t.Fatal("expected non-nil result")
-	}
-
-	// Test with cycle check
-	result, err = server.handleDepsGraph(context.Background(), DepsGraphArgs{CheckCycles: true})
-	if err != nil {
-		t.Fatalf("handleDepsGraph with cycle check failed: %v", err)
-	}
-
-	resultMap, ok := result.(map[string]any)
-	if !ok {
-		t.Fatalf("expected map[string]any, got %T", result)
-	}
-	if _, hasCycle := resultMap["has_cycle"]; !hasCycle {
-		t.Fatal("expected has_cycle in result when CheckCycles is true")
-	}
-}
-
-func TestServerHandleDebtReport(t *testing.T) {
-	root := t.TempDir()
-	repo := storage.NewFilesystemRepository(root)
-	if err := repo.Initialize(); err != nil {
-		t.Fatalf("initialize repo: %v", err)
-	}
-	if err := initProjectDir(root); err != nil {
-		t.Fatalf("init mock AI config: %v", err)
-	}
-
-	specData := &spec.ProductSpec{
-		ID:    "debt-spec",
-		Title: "Debt Test Project",
-		Features: []spec.Feature{
-			{ID: "feat-1", Title: "Feature 1"},
-		},
-	}
-	if err := repo.SaveSpec(specData); err != nil {
-		t.Fatalf("save spec: %v", err)
-	}
-
-	if err := repo.SavePolicy(&domain.PolicyConfig{MaxWIP: 2, AllowAI: true}); err != nil {
-		t.Fatalf("save policy: %v", err)
-	}
-
-	server, err := NewServer(root)
-	if err != nil {
-		t.Fatalf("create server: %v", err)
-	}
-
-	result, err := server.handleDebtReport(context.Background(), GetSpecArgs{})
-	if err != nil {
-		t.Fatalf("handleDebtReport failed: %v", err)
-	}
-
-	if result == nil {
-		t.Fatal("expected non-nil result")
-	}
-}
-
-func TestServerHandleDebtSummary(t *testing.T) {
-	root := t.TempDir()
-	repo := storage.NewFilesystemRepository(root)
-	if err := repo.Initialize(); err != nil {
-		t.Fatalf("initialize repo: %v", err)
-	}
-	if err := initProjectDir(root); err != nil {
-		t.Fatalf("init mock AI config: %v", err)
-	}
-
-	specData := &spec.ProductSpec{
-		ID:    "debt-summary-spec",
-		Title: "Debt Summary Project",
-		Features: []spec.Feature{
-			{ID: "feat-1", Title: "Feature 1"},
-		},
-	}
-	if err := repo.SaveSpec(specData); err != nil {
-		t.Fatalf("save spec: %v", err)
-	}
-
-	if err := repo.SavePolicy(&domain.PolicyConfig{MaxWIP: 2, AllowAI: true}); err != nil {
-		t.Fatalf("save policy: %v", err)
-	}
-
-	server, err := NewServer(root)
-	if err != nil {
-		t.Fatalf("create server: %v", err)
-	}
-
-	result, err := server.handleDebtSummary(context.Background(), GetSpecArgs{})
-	if err != nil {
-		t.Fatalf("handleDebtSummary failed: %v", err)
-	}
-
-	if result == nil {
-		t.Fatal("expected non-nil result")
-	}
-}
-
-func TestServerHandleStickyDrift(t *testing.T) {
-	root := t.TempDir()
-	repo := storage.NewFilesystemRepository(root)
-	if err := repo.Initialize(); err != nil {
-		t.Fatalf("initialize repo: %v", err)
-	}
-	if err := initProjectDir(root); err != nil {
-		t.Fatalf("init mock AI config: %v", err)
-	}
-
-	specData := &spec.ProductSpec{
-		ID:    "sticky-spec",
-		Title: "Sticky Drift Project",
-		Features: []spec.Feature{
-			{ID: "feat-1", Title: "Feature 1"},
-		},
-	}
-	if err := repo.SaveSpec(specData); err != nil {
-		t.Fatalf("save spec: %v", err)
-	}
-
-	if err := repo.SavePolicy(&domain.PolicyConfig{MaxWIP: 2, AllowAI: true}); err != nil {
-		t.Fatalf("save policy: %v", err)
-	}
-
-	server, err := NewServer(root)
-	if err != nil {
-		t.Fatalf("create server: %v", err)
-	}
-
-	result, err := server.handleStickyDrift(context.Background(), GetSpecArgs{})
-	if err != nil {
-		t.Fatalf("handleStickyDrift failed: %v", err)
-	}
-
-	// Result can be nil or empty slice if no sticky items
-	_ = result
-}
-
-func TestServerHandleDebtTrend(t *testing.T) {
-	root := t.TempDir()
-	repo := storage.NewFilesystemRepository(root)
-	if err := repo.Initialize(); err != nil {
-		t.Fatalf("initialize repo: %v", err)
-	}
-	if err := initProjectDir(root); err != nil {
-		t.Fatalf("init mock AI config: %v", err)
-	}
-
-	specData := &spec.ProductSpec{
-		ID:    "trend-spec",
-		Title: "Trend Analysis Project",
-		Features: []spec.Feature{
-			{ID: "feat-1", Title: "Feature 1"},
-		},
-	}
-	if err := repo.SaveSpec(specData); err != nil {
-		t.Fatalf("save spec: %v", err)
-	}
-
-	if err := repo.SavePolicy(&domain.PolicyConfig{MaxWIP: 2, AllowAI: true}); err != nil {
-		t.Fatalf("save policy: %v", err)
-	}
-
-	server, err := NewServer(root)
-	if err != nil {
-		t.Fatalf("create server: %v", err)
-	}
-
-	// Test with default days
-	result, err := server.handleDebtTrend(context.Background(), DebtTrendArgs{})
-	if err != nil {
-		t.Fatalf("handleDebtTrend failed: %v", err)
-	}
-
-	if result == nil {
-		t.Fatal("expected non-nil result")
-	}
-
-	// Test with custom days
-	result, err = server.handleDebtTrend(context.Background(), DebtTrendArgs{Days: 14})
-	if err != nil {
-		t.Fatalf("handleDebtTrend with custom days failed: %v", err)
-	}
-
-	if result == nil {
-		t.Fatal("expected non-nil result with custom days")
-	}
 }

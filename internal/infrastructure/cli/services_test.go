@@ -16,7 +16,7 @@ func TestLoadServicesSucceeds(t *testing.T) {
 		t.Fatalf("initialize repo: %v", err)
 	}
 
-	services, err := loadServices(tempDir)
+	services, err := loadServicesForProject(tempDir, "")
 	if err != nil {
 		t.Fatalf("load services: %v", err)
 	}
@@ -156,7 +156,7 @@ func TestLoadServices_AIProviderFails(t *testing.T) {
 
 	// There is no provider to configure any more — Roady assembles prompts
 	// and the caller runs inference — so services must load regardless.
-	svc, err := loadServices(tempDir)
+	svc, err := loadServicesForProject(tempDir, "")
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}

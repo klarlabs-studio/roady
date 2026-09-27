@@ -5,6 +5,7 @@ import (
 
 	"github.com/felixgeelhaar/roady/pkg/domain"
 	"github.com/felixgeelhaar/roady/pkg/domain/provenance"
+	"github.com/felixgeelhaar/roady/pkg/storage"
 	"github.com/google/uuid"
 )
 
@@ -97,7 +98,27 @@ func (s *AuditService) VerifyIntegrityDetailed() ([]domain.ChainViolation, error
 	if err != nil {
 		return nil, err
 	}
+	return domain.VerifyChainDetailed(chainEntries(events)), nil
+}
 
+// VerifyAgainstBaseline reports entries of a committed copy of the log that
+// are missing from the working copy — the truncation VerifyIntegrityDetailed
+// cannot see, since nothing references the newest entries. baseline is the raw
+// events.jsonl body at the committed revision named by baselineName.
+func (s *AuditService) VerifyAgainstBaseline(baseline []byte, baselineName string) ([]domain.ChainViolation, error) {
+	load := s.repo.LoadEvents
+	if raw, ok := s.repo.(rawEventLoader); ok {
+		load = raw.LoadEventsRaw
+	}
+	current, err := load()
+	if err != nil {
+		return nil, err
+	}
+	committed := storage.ParseEvents(baseline, false)
+	return domain.MissingFromBaseline(chainEntries(committed), chainEntries(current), baselineName), nil
+}
+
+func chainEntries(events []domain.Event) []domain.ChainEntry {
 	entries := make([]domain.ChainEntry, 0, len(events))
 	for i := range events {
 		e := events[i]
@@ -110,41 +131,5 @@ func (s *AuditService) VerifyIntegrityDetailed() ([]domain.ChainViolation, error
 			Matches:    e.HashMatches(),
 		})
 	}
-
-	return domain.VerifyChainDetailed(entries), nil
-}
-
-// GetVelocity returns the average verified tasks per day over the last 7 days.
-func (s *AuditService) GetVelocity() (float64, error) {
-	events, err := s.repo.LoadEvents()
-	if err != nil {
-		return 0, err
-	}
-
-	if len(events) == 0 {
-		return 0, nil
-	}
-
-	var firstVerify time.Time
-	verifiedCount := 0
-
-	for _, e := range events {
-		if e.Action == "task.transition" && e.Metadata["status"] == "verified" {
-			if firstVerify.IsZero() {
-				firstVerify = e.Timestamp
-			}
-			verifiedCount++
-		}
-	}
-
-	if verifiedCount == 0 {
-		return 0, nil
-	}
-
-	days := time.Since(firstVerify).Hours() / 24.0
-	if days < 1 {
-		days = 1 // Floor at 1 day to avoid infinity/large spikes
-	}
-
-	return float64(verifiedCount) / days, nil
+	return entries
 }

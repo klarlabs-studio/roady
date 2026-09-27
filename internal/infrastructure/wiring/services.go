@@ -1,11 +1,10 @@
 package wiring
 
 import (
-	"context"
 	"fmt"
+	"path/filepath"
 
 	"github.com/felixgeelhaar/roady/pkg/application"
-	"github.com/felixgeelhaar/roady/pkg/domain/events"
 	"github.com/felixgeelhaar/roady/pkg/storage"
 )
 
@@ -18,21 +17,12 @@ type AppServices struct {
 	Drift      *application.DriftService
 	Policy     *application.PolicyService
 	Task       *application.TaskService
-	Billing    *application.BillingService
 	Git        *application.GitService
-	Sync       *application.SyncService
 	Audit      *application.EventSourcedAuditService // Event-sourced audit with dispatcher and projections
-	Usage      *application.UsageService             // Usage tracking service (separate from audit)
-	Forecast   *application.ForecastService
-	Dependency *application.DependencyService
-	Debt       *application.DebtService // Debt analysis service (Horizon 5)
-	Plugin     *application.PluginService
-	Team       *application.TeamService
-	Report     *application.ReportService     // Stakeholder progress reports
-	Prompt     *application.PromptService     // Builds model prompts; Roady runs no inference
-	AuditTrail *application.AuditTrailService // Evidence trails for GRC review
-	Dispatch   *application.DispatchService   // Hands a ready task to a subagent
-	Publisher  *storage.InMemoryEventPublisher
+	Prompt     *application.PromptService            // Builds model prompts; Roady runs no inference
+	AuditTrail *application.AuditTrailService        // Evidence trails for GRC review
+	Dispatch   *application.DispatchService          // Hands a ready task to a subagent
+	Capture    *application.CaptureService           // One write for intent of any size
 }
 
 // BuildAppServices constructs the workbench of services for a repo root.
@@ -62,23 +52,10 @@ func buildServices(workspace *Workspace) (*AppServices, error) {
 	if err != nil {
 		return nil, fmt.Errorf("create event store: %w", err)
 	}
-	publisher := storage.NewInMemoryEventPublisher()
-
-	// Create event-sourced audit service with dispatcher and projections
-	auditSvc, err := application.NewEventSourcedAuditService(eventStore, publisher)
-	if err != nil {
-		return nil, fmt.Errorf("create event-sourced audit: %w", err)
-	}
+	auditSvc := application.NewEventSourcedAuditService(eventStore)
 	// Every event this process records carries the agent and session behind
 	// it, so an audit trail can answer which agent did what.
 	auditSvc.SetProvenance(AmbientProvenance())
-
-	// Create and wire event dispatcher with handlers
-	dispatcher := events.NewEventDispatcher()
-	dispatcher.Register(events.NewLoggingHandler(nil).Registration())
-	dispatcher.Register(events.NewDriftWarningHandler(nil, nil).Registration())
-	dispatcher.Register(events.NewTaskTransitionHandler(nil).Registration())
-	auditSvc.SetDispatcher(dispatcher)
 
 	// Create services in dependency order
 	policySvc := application.NewPolicyService(workspace.Repo)
@@ -90,41 +67,11 @@ func buildServices(workspace *Workspace) (*AppServices, error) {
 	driftSvc := application.NewDriftService(workspace.Repo, auditSvc, storage.NewCodebaseInspector(), policySvc)
 	// Staleness detection needs to know how far the repository has moved.
 	driftSvc.SetActivityInspector(storage.NewGitActivityInspector(workspace.Repo.Root()))
-	debtSvc := application.NewDebtService(driftSvc, auditSvc)
-
-	// Create velocity projection for forecasting and hydrate from stored events
-	velocityProjection := events.NewExtendedVelocityProjection(7, 14, 30)
-	if storedEvents, err := workspace.Repo.LoadEvents(); err == nil {
-		for _, ev := range storedEvents {
-			baseEvent := &events.BaseEvent{
-				Type:      ev.Action,
-				Timestamp: ev.Timestamp,
-				Metadata:  ev.Metadata,
-			}
-			_ = velocityProjection.Apply(baseEvent)
-		}
+	// The root project's roadmap is rendered to ROADMAP.md at the repository
+	// root; a hand edit there is drift.
+	if !workspace.Repo.IsSubProject() {
+		driftSvc.SetRoadmapPath(filepath.Join(workspace.Repo.Root(), application.RoadmapFile))
 	}
-
-	// Subscribe velocity projection to live events via publisher
-	publisher.Subscribe(func(e *events.BaseEvent) error {
-		return velocityProjection.Apply(e)
-	})
-
-	// Subscribe webhook notifier to live events if configured
-	if workspace.Notifier != nil {
-		notifier := workspace.Notifier
-		publisher.Subscribe(func(e *events.BaseEvent) error {
-			notifier.Notify(context.Background(), e)
-			return nil
-		})
-	}
-
-	forecastSvc := application.NewForecastService(velocityProjection, workspace.Repo)
-
-	// Create dependency service. DependencyService resolves cross-repo deps via
-	// the workspace root (not the project base), so sub-projects share the same
-	// dependency search root as the repo they live in.
-	depSvc := application.NewDependencyService(workspace.Repo, workspace.Repo.Root())
 
 	dispatchSvc := application.NewDispatchService(workspace.Repo, planSvc, taskSvc)
 	// Attribute a dispatched claim to the subagent, not to the dispatcher.
@@ -138,21 +85,12 @@ func buildServices(workspace *Workspace) (*AppServices, error) {
 		Drift:      driftSvc,
 		Policy:     policySvc,
 		Task:       taskSvc,
-		Billing:    application.NewBillingService(workspace.Repo, auditSvc),
+		Capture:    application.NewCaptureService(workspace.Repo, auditSvc),
 		Git:        application.NewGitService(workspace.Repo, taskSvc),
-		Sync:       application.NewSyncServiceWithPlugins(workspace.Repo, workspace.Repo, taskSvc),
 		Audit:      auditSvc,
-		Usage:      workspace.Usage,
-		Forecast:   forecastSvc,
-		Dependency: depSvc,
-		Debt:       debtSvc,
-		Plugin:     application.NewPluginService(workspace.Repo),
-		Team:       application.NewTeamService(workspace.Repo, auditSvc),
-		Report:     application.NewReportService(planSvc, forecastSvc, driftSvc, debtSvc, auditSvc),
 		Prompt:     application.NewPromptService(workspace.Repo),
 		AuditTrail: application.NewAuditTrailService(auditSvc, workspace.Audit, planSvc, workspace.Repo),
 		Dispatch:   dispatchSvc,
-		Publisher:  publisher,
 	}
 
 	return services, nil

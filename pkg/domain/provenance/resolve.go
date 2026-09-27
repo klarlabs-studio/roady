@@ -20,6 +20,7 @@ type Resolver struct {
 
 	once      sync.Once
 	sessionID string
+	given     bool
 }
 
 // NewResolver creates a resolver for the given surface. getenv and newID are
@@ -39,15 +40,17 @@ func (r *Resolver) Resolve() Context {
 	r.once.Do(func() {
 		if v := strings.TrimSpace(r.getenv(EnvSessionID)); v != "" {
 			r.sessionID = v
+			r.given = true
 			return
 		}
 		r.sessionID = r.newID()
 	})
 
 	return Context{
-		SessionID: r.sessionID,
-		Agent:     r.resolveAgent(),
-		Surface:   r.surface,
+		SessionID:    r.sessionID,
+		Agent:        r.resolveAgent(),
+		Surface:      r.surface,
+		SessionGiven: r.given,
 	}
 }
 

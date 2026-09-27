@@ -1,0 +1,4 @@
+max_wip: 3
+max_wip_per_owner: 0
+allow_ai: true
+verify_requires_evidence: true

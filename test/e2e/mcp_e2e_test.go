@@ -131,16 +131,6 @@ features:
 	_, violations := services.Policy.CheckCompliance()
 	// Violations may exist, just ensure it doesn't error
 
-	// Test 10: Get usage
-	t.Log("Testing get usage...")
-	usage, err := services.Plan.GetUsage()
-	if err != nil {
-		t.Fatalf("GetUsage failed: %v", err)
-	}
-	if usage == nil {
-		t.Error("Expected usage stats")
-	}
-
 	// Test 11: Get project snapshot
 	t.Log("Testing project snapshot...")
 	snapshot, err := services.Plan.GetProjectSnapshot(ctx)

@@ -35,7 +35,15 @@ type TaskResult struct {
 	StartedAt      *time.Time `json:"started_at,omitempty"`   // When task moved to in_progress
 	CompletedAt    *time.Time `json:"completed_at,omitempty"` // When task moved to done/verified
 	ElapsedMinutes int        `json:"elapsed_minutes"`        // Total elapsed time in minutes
-	RateID         string     `json:"rate_id,omitempty"`      // Rate used for billing
+
+	// Checks records every run of the task's acceptance check, newest last.
+	Checks []CheckResult `json:"checks,omitempty"`
+
+	// Lease is the claim on an in-progress task; nil when none was taken.
+	Lease *Lease `json:"lease,omitempty"`
+
+	// Block says why a blocked task is blocked; nil when not blocked.
+	Block *Block `json:"block,omitempty"`
 }
 
 // ExternalRef links a Roady task to an external system (Linear, Jira, etc.)
@@ -72,6 +80,13 @@ func (s *ExecutionState) GetTaskResult(taskID string) (TaskResult, bool) {
 func (s *ExecutionState) SetTaskStatus(taskID string, status TaskStatus) {
 	result := s.TaskStates[taskID]
 	result.Status = status
+	// A claim is on work in progress; moving on ends it.
+	if status != StatusInProgress {
+		result.Lease = nil
+	}
+	if status != StatusBlocked {
+		result.Block = nil
+	}
 	s.TaskStates[taskID] = result
 	s.UpdatedAt = time.Now()
 }
@@ -94,20 +109,6 @@ func (s *ExecutionState) AddEvidence(taskID string, evidence string) {
 		result.Status = StatusPending
 	}
 	result.Evidence = append(result.Evidence, evidence)
-	s.TaskStates[taskID] = result
-	s.UpdatedAt = time.Now()
-}
-
-// SetExternalRef sets an external reference for a task.
-func (s *ExecutionState) SetExternalRef(taskID string, provider string, ref ExternalRef) {
-	result := s.TaskStates[taskID]
-	if result.Status == "" {
-		result.Status = StatusPending
-	}
-	if result.ExternalRefs == nil {
-		result.ExternalRefs = make(map[string]ExternalRef)
-	}
-	result.ExternalRefs[provider] = ref
 	s.TaskStates[taskID] = result
 	s.UpdatedAt = time.Now()
 }

@@ -10,7 +10,7 @@ Get a comprehensive overview of the project status including spec, plan, and dri
 ## What it does
 1. Runs `roady status` for task overview
 2. Checks for drift with `roady drift detect`
-3. Shows AI usage with `roady usage`
+3. Runs `roady next` for the current task and what done means
 
 ## Example output
 ```
@@ -22,6 +22,7 @@ Ready: 2 | In Progress: 1 | Done: 8 | Blocked: 1
 === Drift Check ===
 No drift detected ✓
 
-=== AI Usage ===
-Tokens: 45,000 / 100,000 (45%)
+=== Next ===
+task-api-auth [in_progress, high] Token refresh
+Done when: `go test ./auth -run TestRefresh` passes
 ```
