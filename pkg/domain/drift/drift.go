@@ -25,6 +25,7 @@ const (
 	CategoryImplementation DriftCategory = "IMPLEMENTATION" // Code reality doesn't match state
 	CategoryStale          DriftCategory = "STALE"          // The artifact is internally consistent but the repository has moved past it
 	CategoryRegression     DriftCategory = "REGRESSION"     // A verified task's acceptance check fails now
+	CategoryConflict       DriftCategory = "CONFLICT"       // An agent reported work it cannot do as specified; a person decides
 )
 
 type Severity string

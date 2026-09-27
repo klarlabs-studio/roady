@@ -61,6 +61,20 @@ It does not trust an earlier pass: verification is a claim about the current
 state. A `manual` check needs a confirmation already recorded with
 `roady task check <id> --confirm`.
 
+## When a task cannot be done as specified
+
+An agent that cannot meet a check honestly should say so instead of
+bending the check or the test. `roady task block <id> --reason
+spec-conflict -e "<what conflicts>"` (or `--reason cannot-complete`) blocks
+the task with that reason; MCP: `roady_task` action `block` with `reason`
+and `evidence`. The detail is required. Until a person resolves it —
+changes the requirement, re-scopes the task, or `roady task unblock`s it —
+it is listed under "Needs a decision" in `roady status`, the brief says
+decisions are waiting, and `roady drift detect` reports it as `CONFLICT`
+(high). The brief tells every agent this exit exists: offering one is what
+keeps agents from gaming impossible tasks (ImpossibleBench: test
+manipulation fell from 54% to 9%).
+
 ## Catching regressions: `roady drift detect --checks`
 
 Verification proves a task at the commit it was verified at; the code keeps

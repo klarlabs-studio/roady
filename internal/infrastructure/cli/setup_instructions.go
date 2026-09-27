@@ -35,7 +35,9 @@ This project keeps its plan in roady (` + "`.roady/`" + `), not in markdown file
 - **Lifecycle:** ` + "`roady task start <id>`" + ` → commit with ` + "`[roady:<id>]`" + ` in the
   message → ` + "`roady git sync`" + ` → ` + "`roady task check <id>`" + `.
 - **Done means the task's acceptance check passes**, not that code was written.
-  A task you cannot finish as specified: say so and ` + "`roady task block <id> -e \"<reason>\"`" + `.
+  A task you cannot finish as specified: say so with
+  ` + "`roady task block <id> --reason spec-conflict|cannot-complete -e \"<what is wrong>\"`" + `
+  and move on — a person decides. Never weaken a check or a test to pass.
 ` + instructionsEnd + "\n"
 
 // writeInstructionBlock puts the roady block into root/name: replaced in
@@ -217,9 +219,10 @@ the user approves it, before starting the work.
 1. Commit with `+"`[roady:<task-id>]`"+` in the message, then `+"`roady git sync`"+`.
 2. `+"`roady task check <task-id>`"+` runs the acceptance check and records the result.
 3. Only a passing check is done. If the task cannot be done as specified,
-   say so and `+"`roady task block <task-id> -e \"<reason>\"`"+` rather than
-   weakening the check; changing the check of started work is refused unless
-   a person overrides it.
+   say so with `+"`roady task block <task-id> --reason spec-conflict -e \"<what conflicts>\"`"+`
+   (or `+"`--reason cannot-complete`"+`) rather than weakening the check. A person
+   resolves it; it shows in status and drift until then. Changing the check of
+   started work is refused unless a person overrides it.
 
 ## Don't
 

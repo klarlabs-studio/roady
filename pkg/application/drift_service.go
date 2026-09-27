@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/felixgeelhaar/roady/pkg/domain"
@@ -125,6 +126,10 @@ func (s *DriftService) DetectDrift(ctx context.Context) (*drift.Report, error) {
 		report.Issues = append(report.Issues, RoadmapDrift(s.roadmapPath, spec)...)
 	}
 
+	// 2c. Work an agent could not do as specified. It stays drift until a
+	// person changes the requirement, re-scopes the task, or unblocks it.
+	report.Issues = append(report.Issues, needsDecisionIssues(state)...)
+
 	// 3. Policy vs State (Policy Drift)
 	violations, _ := s.policy.CheckCompliance()
 	if policyIssues := s.detector.DetectPolicyDrift(violations); len(policyIssues) > 0 {
@@ -209,4 +214,37 @@ func (s *DriftService) RecordSemanticDrift(ctx context.Context, judgements []dri
 	}
 
 	return report, nil
+}
+
+func needsDecisionIssues(state *planning.ExecutionState) []drift.Issue {
+	if state == nil {
+		return nil
+	}
+	blocks := state.NeedsDecision()
+	ids := make([]string, 0, len(blocks))
+	for id := range blocks {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	issues := make([]drift.Issue, 0, len(ids))
+	for _, id := range ids {
+		b := blocks[id]
+		typ, what := drift.DriftTypeSpec, "conflicts with the spec"
+		if b.Kind == planning.BlockCannotComplete {
+			typ, what = drift.DriftTypePlan, "cannot be completed as specified"
+		}
+		msg := fmt.Sprintf("%s %s", id, what)
+		if b.By != "" {
+			msg += " (reported by " + b.By + ")"
+		}
+		if b.Detail != "" {
+			msg += ": " + b.Detail
+		}
+		issues = append(issues, drift.Issue{
+			ID: "needs-decision-" + id, Type: typ, Category: drift.CategoryConflict, Severity: drift.SeverityHigh,
+			ComponentID: id, Message: msg,
+			Hint: fmt.Sprintf("A person decides: change the requirement (roady capture / roady edit), split or move the task, or `roady task unblock %s` if it can be done after all.", id),
+		})
+	}
+	return issues
 }

@@ -299,6 +299,12 @@ func (c *Coordinator) CompleteTask(ctx context.Context, taskID, evidence string)
 
 // BlockTask blocks a task with a reason.
 func (c *Coordinator) BlockTask(ctx context.Context, taskID, reason string) error {
+	return c.BlockTaskWith(ctx, taskID, planning.Block{Detail: reason, At: time.Now()})
+}
+
+// BlockTaskWith blocks a task and records why.
+func (c *Coordinator) BlockTaskWith(ctx context.Context, taskID string, why planning.Block) error {
+	reason := why.Detail
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -321,6 +327,9 @@ func (c *Coordinator) BlockTask(ctx context.Context, taskID, reason string) erro
 	}
 
 	state.SetTaskStatus(taskID, planning.StatusBlocked)
+	result := state.TaskStates[taskID]
+	result.Block = &why
+	state.TaskStates[taskID] = result
 	if err := c.stateRepo.Save(ctx, state); err != nil {
 		return err
 	}

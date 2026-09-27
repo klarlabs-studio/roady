@@ -275,3 +275,25 @@ func TestDriftDetectWithChecksOverMCP(t *testing.T) {
 		t.Fatalf("detect with checks: %s", resultText(res))
 	}
 }
+
+func TestBlockWithReasonOverMCP(t *testing.T) {
+	server := setupCoordinatorTestServer(t)
+	ctx := context.Background()
+	repo := storage.NewFilesystemRepository(server.root)
+	plan, _ := repo.LoadPlan()
+	id := plan.Tasks[0].ID
+	if res, _ := server.handleTask(ctx, TaskArgs{Action: "start", TaskID: id, Agent: "codex"}); isToolError(res) {
+		t.Fatal(resultText(res))
+	}
+	if res, _ := server.handleTask(ctx, TaskArgs{Action: "block", TaskID: id, Reason: "spec-conflict"}); !isToolError(res) {
+		t.Errorf("a conflict without a detail must be refused: %s", resultText(res))
+	}
+	res, _ := server.handleTask(ctx, TaskArgs{Action: "block", TaskID: id, Reason: "cannot-complete", Evidence: "no credentials", Agent: "codex"})
+	if isToolError(res) || !strings.Contains(resultText(res), "A person will resolve it") {
+		t.Fatalf("block: %s", resultText(res))
+	}
+	st, _ := server.handleStatus(ctx, StatusArgs{})
+	if !strings.Contains(resultText(st), "Needs a decision (1)") {
+		t.Errorf("status: %s", resultText(st))
+	}
+}

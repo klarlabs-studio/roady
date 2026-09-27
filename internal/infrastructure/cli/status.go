@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/felixgeelhaar/roady/internal/infrastructure/wiring"
+	"github.com/felixgeelhaar/roady/pkg/application"
 	"github.com/felixgeelhaar/roady/pkg/domain/planning"
 	"github.com/felixgeelhaar/roady/pkg/domain/spec"
 	"github.com/spf13/cobra"
@@ -55,6 +56,8 @@ type statusJSONOutput struct {
 	Features int              `json:"features"`
 	Plan     *planJSONOutput  `json:"plan,omitempty"`
 	Drift    *driftJSONOutput `json:"drift,omitempty"`
+	// NeedsDecision lists tasks an agent could not do as specified.
+	NeedsDecision []application.NeedsDecision `json:"needs_decision,omitempty"`
 }
 
 type planJSONOutput struct {
@@ -174,6 +177,7 @@ func outputStatusJSON(productSpec *spec.ProductSpec, plan *planning.Plan, state 
 		}
 
 		output.Plan = planOutput
+		output.NeedsDecision = application.NeedsDecisions(state)
 	}
 
 	if driftCount > 0 {
@@ -255,6 +259,10 @@ func outputStatusText(cmd *cobra.Command, productSpec *spec.ProductSpec, plan *p
 
 	if len(filteredTasks) == 0 && hasActiveFilters() {
 		fmt.Println("  No tasks match the current filters.")
+	}
+
+	if nd := application.RenderNeedsDecisions(application.NeedsDecisions(state)); nd != "" {
+		fmt.Print("\n" + nd)
 	}
 
 	// Drift warning

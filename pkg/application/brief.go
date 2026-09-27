@@ -32,6 +32,8 @@ type TaskBrief struct {
 	LastCheck  *planning.CheckResult `json:"last_check,omitempty"`
 	// Claim is the owner's lease on the active task, when there is one.
 	Claim *planning.Lease `json:"claim,omitempty"`
+	// NeedsDecision lists tasks agents reported they cannot do as specified.
+	NeedsDecision []NeedsDecision `json:"needs_decision,omitempty"`
 }
 
 // BriefTask is the task the brief is about.
@@ -163,13 +165,25 @@ func (s *TaskService) Brief(ctx context.Context, owner string) (*TaskBrief, erro
 		if task.Check != nil {
 			brief.Rules = append(brief.Rules, fmt.Sprintf("prove it with `roady task check %s` before claiming done", focus.ID))
 		}
+		// The honest exit: without one, an agent facing impossible work
+		// tends to bend the check instead of saying so.
+		brief.Rules = append(brief.Rules, fmt.Sprintf("if it cannot be done as specified, say so: `roady task block %s --reason spec-conflict|cannot-complete -e \"why\"`, never weaken a check to pass", focus.ID))
 	}
 	brief.Rules = append(brief.Rules, "record new plans or tasks with `roady capture`, not in markdown files")
+	brief.NeedsDecision = NeedsDecisions(state)
 	return brief, nil
 }
 
 // Render formats the brief for injection into an agent's context.
 func (b *TaskBrief) Render() string {
+	out := b.render()
+	if n := len(b.NeedsDecision); n > 0 {
+		out += fmt.Sprintf("- %d task(s) wait on a person's decision (spec-conflict / cannot-complete); see `roady status`\n", n)
+	}
+	return out
+}
+
+func (b *TaskBrief) render() string {
 	var w strings.Builder
 	switch b.Mode {
 	case "none":

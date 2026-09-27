@@ -652,6 +652,9 @@ func (s *Server) handleStatus(ctx context.Context, args StatusArgs) (any, error)
 			"counts":         counts,
 			"tasks":          tasks,
 		}
+		if nd := application.NeedsDecisions(state); len(nd) > 0 {
+			output["needs_decision"] = nd
+		}
 		// A machine reader gets the same signal the text path prints, rather
 		// than a clean object that implies a healthy project.
 		if err := specHealth(svc); err != nil {
@@ -671,6 +674,9 @@ func (s *Server) handleStatus(ctx context.Context, args StatusArgs) (any, error)
 	// Text output
 	statusStr := fmt.Sprintf("Tasks: %d total\n- Done: %d\n- In Progress: %d\n- Pending: %d\n- Blocked: %d",
 		len(plan.Tasks), counts["done"]+counts["verified"], counts["in_progress"], counts["pending"], counts["blocked"])
+	if nd := application.RenderNeedsDecisions(application.NeedsDecisions(state)); nd != "" {
+		statusStr += "\n\n" + strings.TrimRight(nd, "\n")
+	}
 
 	if len(statusFilters) > 0 || len(priorityFilters) > 0 || bool(args.Ready) || bool(args.Blocked) || bool(args.Active) {
 		statusStr += fmt.Sprintf("\n\nFiltered Tasks: %d", len(filtered))

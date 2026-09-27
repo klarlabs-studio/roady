@@ -325,3 +325,36 @@ func TestDriftChecksReportsARegression(t *testing.T) {
 		t.Errorf("without --checks nothing is re-run:\n%s", out)
 	}
 }
+
+// The honest exit from the terminal: block with a reason, see it in status
+// and drift, then resolve it.
+func TestBlockWithASpecConflict(t *testing.T) {
+	_, cleanup := withPlainTempDir(t)
+	defer cleanup()
+	t.Setenv("ROADY_USER", "tester")
+	if _, err := runRoady(t, "", "init", "conflict"); err != nil {
+		t.Fatal(err)
+	}
+	doc := "features:\n  - id: f\n    title: F\n    requirements:\n      - id: r\n        title: R\n"
+	if _, err := runRoady(t, doc, "capture"); err != nil {
+		t.Fatal(err)
+	}
+	for _, args := range [][]string{{"plan", "approve"}, {"task", "start", "task-r"},
+		{"task", "block", "task-r", "--reason", "spec-conflict", "-e", "R wants two things at once"}} {
+		if out, err := runRoady(t, "", args...); err != nil {
+			t.Fatalf("%v: %v\n%s", args, err, out)
+		}
+	}
+	if out, _ := runRoady(t, "", "status"); !strings.Contains(out, "Needs a decision (1)") || !strings.Contains(out, "task-r [spec-conflict] R wants two things at once") {
+		t.Errorf("status:\n%s", out)
+	}
+	if out, _ := runRoady(t, "", "drift", "detect"); !strings.Contains(out, "CONFLICT") {
+		t.Errorf("drift:\n%s", out)
+	}
+	if _, err := runRoady(t, "", "task", "unblock", "task-r"); err != nil {
+		t.Fatal(err)
+	}
+	if out, _ := runRoady(t, "", "status"); strings.Contains(out, "Needs a decision") {
+		t.Errorf("resolved, yet still listed:\n%s", out)
+	}
+}

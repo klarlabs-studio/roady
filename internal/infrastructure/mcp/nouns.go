@@ -69,7 +69,8 @@ func actionError(tool, action string) (any, error) {
 type TaskArgs struct {
 	Action    string `json:"action" jsonschema:"required,description=start|complete|block|unblock|stop|reopen|verify|check|dispatch|list|renew (keep your claim; starting a task claims it with an expiring lease)"`
 	TaskID    string `json:"task_id,omitempty" jsonschema:"description=The task (all actions but list)"`
-	Evidence  string `json:"evidence,omitempty" jsonschema:"description=Proof for complete/verify, e.g. a commit"`
+	Evidence  string `json:"evidence,omitempty" jsonschema:"description=Proof for complete/verify, e.g. a commit; for block, what is wrong"`
+	Reason    string `json:"reason,omitempty" jsonschema:"description=block: spec-conflict or cannot-complete when the task cannot be done as specified — say so instead of forcing it done; a person decides"`
 	Agent     string `json:"agent,omitempty" jsonschema:"description=Acting agent; for dispatch, the subagent taking the task"`
 	SessionID string `json:"session_id,omitempty" jsonschema:"description=Session ID recorded in the audit trail"`
 	DryRun    bool   `json:"dry_run,omitempty" jsonschema:"description=dispatch: build the brief without claiming"`
@@ -84,6 +85,8 @@ var taskTransitions = map[string]bool{"start": true, "complete": true, "block": 
 
 func (s *Server) handleTask(ctx context.Context, a TaskArgs) (any, error) {
 	switch {
+	case a.Action == "block" && a.Reason != "":
+		return s.handleBlockWithReason(a)
 	case taskTransitions[a.Action]:
 		return s.handleTransitionTask(ctx, TransitionTaskArgs{TaskID: a.TaskID, Event: a.Action, Evidence: a.Evidence,
 			SessionID: a.SessionID, Agent: a.Agent, ProjectPath: a.ProjectPath, Project: a.Project})
@@ -371,4 +374,26 @@ func (s *Server) handleRenewClaim(a TaskArgs) (any, error) {
 		return mcpErr(err.Error()), nil
 	}
 	return lease, nil
+}
+
+// handleBlockWithReason is the agent's honest exit from work it cannot do as
+// specified: the task is blocked with a reason a person resolves.
+func (s *Server) handleBlockWithReason(a TaskArgs) (any, error) {
+	svc, err := s.servicesForPath(a.ProjectPath, a.Project)
+	if err != nil {
+		return mcpErrCause("Failed to load project at the given path.", err), nil
+	}
+	actor := a.Agent
+	if actor == "" {
+		actor = "ai-agent"
+	}
+	if a.SessionID != "" || a.Agent != "" {
+		previous := svc.Audit.Provenance()
+		svc.Audit.SetProvenance(previous.WithSession(a.SessionID, a.Agent))
+		defer svc.Audit.SetProvenance(previous)
+	}
+	if err := svc.Task.BlockWithReason(a.TaskID, a.Reason, a.Evidence, actor); err != nil {
+		return mcpErr(err.Error()), nil
+	}
+	return fmt.Sprintf("Task %s blocked (%s). A person will resolve it; it shows in status and drift until then. Pick another task with roady_next.", a.TaskID, a.Reason), nil
 }

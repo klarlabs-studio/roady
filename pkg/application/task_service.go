@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/felixgeelhaar/roady/pkg/domain"
@@ -79,16 +80,7 @@ func (s *TaskService) TransitionTask(taskID string, event string, actor string, 
 		})
 
 	case "block":
-		err := s.coordinator.BlockTask(ctx, taskID, evidence)
-		if err != nil {
-			return s.mapCoordinatorError(err, event)
-		}
-		return s.audit.Log("task.transition", actor, map[string]interface{}{
-			"task_id": taskID,
-			"event":   event,
-			"status":  string(planning.StatusBlocked),
-			"reason":  evidence,
-		})
+		return s.BlockWithReason(taskID, "", evidence, actor)
 
 	case "unblock":
 		err := s.coordinator.UnblockTask(ctx, taskID)
@@ -343,4 +335,33 @@ func (s *TaskService) VerifyTask(ctx context.Context, taskID, verifier string) e
 // GetCoordinator returns the underlying project coordinator for advanced operations.
 func (s *TaskService) GetCoordinator() *project.Coordinator {
 	return s.coordinator
+}
+
+// BlockWithReason blocks a task and records why. kind spec-conflict or
+// cannot-complete is the honest exit from work that cannot be done as
+// specified: it needs a detail saying what is wrong, and it is raised as
+// drift until a person resolves it.
+func (s *TaskService) BlockWithReason(taskID, kind, detail, actor string) error {
+	k, err := planning.ParseBlockKind(kind)
+	if err != nil {
+		return err
+	}
+	detail = strings.TrimSpace(detail)
+	if k.NeedsDecision() && detail == "" {
+		return fmt.Errorf("say what is wrong: a %s block needs a detail a person can act on", k)
+	}
+	why := planning.Block{Kind: k, Detail: detail, By: actor, At: time.Now()}
+	if err := s.coordinator.BlockTaskWith(context.Background(), taskID, why); err != nil {
+		return s.mapCoordinatorError(err, "block")
+	}
+	meta := map[string]interface{}{
+		"task_id": taskID,
+		"event":   "block",
+		"status":  string(planning.StatusBlocked),
+		"reason":  detail,
+	}
+	if k != "" {
+		meta["kind"] = string(k)
+	}
+	return s.audit.Log("task.transition", actor, meta)
 }

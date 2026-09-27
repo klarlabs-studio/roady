@@ -68,6 +68,9 @@ removed; git history has them.
 - `verify_requires_evidence` in `policy.yaml`: a task is verified only with a
   passing check and a linked commit, unless a person overrides it on the
   record.
+- `roady task block <id> --reason spec-conflict|cannot-complete -e "<why>"`
+  is an agent's honest exit from work it cannot do as specified: a person
+  decides, and status, the brief and drift show it until then.
 - `roady drift detect --checks` re-runs the acceptance checks of verified
   tasks and reports one that fails now as a regression, with the commit it
   last passed at.

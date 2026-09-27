@@ -72,6 +72,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `2h`, `off` disables): the task goes back to pending, `task.claim_expired`
   is recorded, and it no longer counts against WIP limits. state.json is
   now replaced atomically, so a reader never sees half a file.
+- **An honest exit from impossible work.** `roady task block <id> --reason
+  spec-conflict|cannot-complete -e "<what is wrong>"` (MCP `roady_task`
+  block with `reason`) lets an agent say a task cannot be done as specified
+  instead of forcing it done. The block is recorded with who and why; it is
+  listed under "Needs a decision" in `roady status`, counted in the brief,
+  and reported as `CONFLICT` drift (high) until a person changes the
+  requirement, re-scopes the task or unblocks it. The brief and the agent
+  instructions tell every agent the exit exists and never to weaken a check.
 - **Drift catches regressions.** `roady drift detect --checks` (MCP
   `roady_drift` detect with `checks: true`) re-runs the acceptance check of
   every verified task against the current code. A check that fails now is

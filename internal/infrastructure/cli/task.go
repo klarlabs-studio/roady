@@ -21,6 +21,7 @@ var taskCmd = &cobra.Command{
 func createTaskCommand(use, short, event string) *cobra.Command {
 	var evidence string
 	var override string
+	var blockReason string
 	cmd := &cobra.Command{
 		Use:   use,
 		Short: short,
@@ -50,6 +51,10 @@ func createTaskCommand(use, short, event string) *cobra.Command {
 				if err != nil {
 					return MapError(fmt.Errorf("failed to start task: %w", err))
 				}
+			} else if event == "block" {
+				if err := service.BlockWithReason(taskID, blockReason, evidence, actor); err != nil {
+					return MapError(fmt.Errorf("failed to block task: %w", err))
+				}
 			} else if event == "verify" && override != "" {
 				// A person verifying without the evidence the policy asks
 				// for; recorded as an override with its reason.
@@ -67,6 +72,19 @@ func createTaskCommand(use, short, event string) *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVarP(&evidence, "evidence", "e", "", "Evidence for the task completion (e.g. commit hash, URL)")
+	if event == "block" {
+		cmd.Flags().StringVar(&blockReason, "reason", "", "spec-conflict or cannot-complete when the task cannot be done as specified: a person decides, and drift reports it until then. Say what is wrong with -e")
+		cmd.Long = `Block a task. An ordinary block means waiting on something.
+
+When a task cannot be done as specified, block it with a reason instead of
+forcing it done — bending a check or a test to pass is worse than saying so:
+
+  roady task block task-x --reason spec-conflict -e "R2 requires sync writes, R5 forbids them"
+  roady task block task-x --reason cannot-complete -e "needs production credentials"
+
+A person resolves it: changes the requirement, re-scopes the task, or
+unblocks it. Until then it shows in status and drift.`
+	}
 	if event == "verify" {
 		cmd.Flags().StringVar(&override, "override", "", "Verify without the evidence verify_requires_evidence asks for, recording this reason. Does not override a failing check.")
 	}

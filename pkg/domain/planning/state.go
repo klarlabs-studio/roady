@@ -41,6 +41,9 @@ type TaskResult struct {
 
 	// Lease is the claim on an in-progress task; nil when none was taken.
 	Lease *Lease `json:"lease,omitempty"`
+
+	// Block says why a blocked task is blocked; nil when not blocked.
+	Block *Block `json:"block,omitempty"`
 }
 
 // ExternalRef links a Roady task to an external system (Linear, Jira, etc.)
@@ -80,6 +83,9 @@ func (s *ExecutionState) SetTaskStatus(taskID string, status TaskStatus) {
 	// A claim is on work in progress; moving on ends it.
 	if status != StatusInProgress {
 		result.Lease = nil
+	}
+	if status != StatusBlocked {
+		result.Block = nil
 	}
 	s.TaskStates[taskID] = result
 	s.UpdatedAt = time.Now()
