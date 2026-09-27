@@ -21,6 +21,9 @@ drifted away.
 - `roady doctor` fails a spec that `roady spec validate` rejects. A spec with
   no id or title printed `Project:  (v0.1.0)` in status while doctor said
   everything looked good.
+- `roady git sync` completes every task a commit names. A subject with
+  `[roady:a] [roady:b] [roady:c]` completed only `a`, and a subject
+  containing `|` lost the markers after it.
 - `roady goal import` of a roadmap organised another way (by phase, say)
   names the sections it found and what it expects, instead of only "no goals
   found".

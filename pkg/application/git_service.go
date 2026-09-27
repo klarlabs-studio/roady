@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"regexp"
 	"strings"
 	"time"
 
@@ -47,55 +48,56 @@ func (s *GitService) SyncMarkers(n int) ([]string, error) {
 	results := []string{}
 
 	for _, line := range lines {
-		parts := strings.Split(line, "|")
-		if len(parts) < 2 {
+		// The subject is everything after the first separator; a subject may
+		// itself contain one.
+		hash, message, ok := strings.Cut(line, "|")
+		if !ok {
 			continue
 		}
-		hash, message := parts[0], parts[1]
-
-		if strings.Contains(message, "[roady:") {
-			start := strings.Index(message, "[roady:") + 7
-			end := strings.Index(message[start:], "]")
-			if end != -1 {
-				taskID := message[start : start+end]
-
-				// A task completed before its commit existed still needs the
-				// commit as evidence: skipping it left completed work with no
-				// linked commit, which verify_requires_evidence then refused.
-				if linked, done := s.linkCommitToFinishedTask(taskID, hash); done {
-					if linked {
-						results = append(results, fmt.Sprintf("Task %s: linked %s as evidence (already %s)", taskID, hash[:8], s.statusOf(taskID)))
-					} else {
-						results = append(results, fmt.Sprintf("Task %s: %s already linked", taskID, hash[:8]))
-					}
-					continue
-				}
-
-				// A commit naming a task nobody started is still the work:
-				// start it first rather than skip it. Dependencies, approval
-				// and claims guard the start as they would any other.
-				started := false
-				if st := s.statusOf(taskID); st == string(planning.StatusPending) {
-					if err := s.taskSvc.TransitionTask(taskID, "start", "git-automation", ""); err != nil {
-						results = append(results, fmt.Sprintf("Task %s: skip (never started, and cannot start: %v)", taskID, err))
-						continue
-					}
-					started = true
-				}
-				err := s.taskSvc.TransitionTask(taskID, "complete", "git-automation", "Commit: "+hash)
-				switch {
-				case err != nil:
-					results = append(results, fmt.Sprintf("Task %s: skip (%v)", taskID, err))
-				case started:
-					results = append(results, fmt.Sprintf("Task %s: started and completed via %s (it was never started)", taskID, hash[:8]))
-				default:
-					results = append(results, fmt.Sprintf("Task %s: completed via %s", taskID, hash[:8]))
-				}
-			}
+		// A commit may name several tasks; each is completed.
+		for _, m := range roadyMarker.FindAllStringSubmatch(message, -1) {
+			results = append(results, s.syncTask(m[1], hash))
 		}
 	}
 
 	return results, nil
+}
+
+// roadyMarker matches a [roady:<task-id>] marker in a commit subject.
+var roadyMarker = regexp.MustCompile(`\[roady:([^\]\s]+)\]`)
+
+// syncTask applies one marker: it links the commit to a finished task, or
+// starts (when never started) and completes an open one, and says which.
+func (s *GitService) syncTask(taskID, hash string) string {
+	// A task completed before its commit existed still needs the commit as
+	// evidence: skipping it left completed work with no linked commit, which
+	// verify_requires_evidence then refused.
+	if linked, done := s.linkCommitToFinishedTask(taskID, hash); done {
+		if linked {
+			return fmt.Sprintf("Task %s: linked %s as evidence (already %s)", taskID, hash[:8], s.statusOf(taskID))
+		}
+		return fmt.Sprintf("Task %s: %s already linked", taskID, hash[:8])
+	}
+
+	// A commit naming a task nobody started is still the work: start it first
+	// rather than skip it. Dependencies, approval and claims guard the start as
+	// they would any other.
+	started := false
+	if st := s.statusOf(taskID); st == string(planning.StatusPending) {
+		if err := s.taskSvc.TransitionTask(taskID, "start", "git-automation", ""); err != nil {
+			return fmt.Sprintf("Task %s: skip (never started, and cannot start: %v)", taskID, err)
+		}
+		started = true
+	}
+	err := s.taskSvc.TransitionTask(taskID, "complete", "git-automation", "Commit: "+hash)
+	switch {
+	case err != nil:
+		return fmt.Sprintf("Task %s: skip (%v)", taskID, err)
+	case started:
+		return fmt.Sprintf("Task %s: started and completed via %s (it was never started)", taskID, hash[:8])
+	default:
+		return fmt.Sprintf("Task %s: completed via %s", taskID, hash[:8])
+	}
 }
 
 // linkCommitToFinishedTask records hash as evidence on a task that is already
