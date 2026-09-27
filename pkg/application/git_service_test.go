@@ -131,3 +131,46 @@ func TestSyncCompletesUnstartedTask(t *testing.T) {
 		t.Errorf("t2 must wait for its dependency:\n%s", out)
 	}
 }
+
+// A commit that names three tasks completes all three; git sync used to read
+// only the first marker. A subject containing the log separator keeps its
+// markers too.
+func TestGitService_SyncEveryMarker(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not available")
+	}
+	dir := t.TempDir()
+	run := func(args ...string) {
+		t.Helper()
+		cmd := exec.Command("git", append([]string{"-C", dir}, args...)...)
+		cmd.Env = append(os.Environ(), "GIT_AUTHOR_NAME=t", "GIT_AUTHOR_EMAIL=t@t", "GIT_COMMITTER_NAME=t", "GIT_COMMITTER_EMAIL=t@t")
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+	}
+	run("init", "-q")
+	run("commit", "-q", "--allow-empty", "-m", "fix: three findings [roady:a] [roady:b] [roady:c]")
+	run("commit", "-q", "--allow-empty", "-m", "fix: a | b split [roady:d]")
+	t.Chdir(dir)
+
+	repo := &MockRepo{
+		Plan: &planning.Plan{
+			ID: "p1", ApprovalStatus: planning.ApprovalApproved,
+			Tasks: []planning.Task{{ID: "a", Title: "A"}, {ID: "b", Title: "B"}, {ID: "c", Title: "C"}, {ID: "d", Title: "D"}},
+		},
+		State:  planning.NewExecutionState("p1"),
+		Policy: &domain.PolicyConfig{MaxWIP: 5},
+	}
+	audit := application.NewAuditService(repo)
+	gitSvc := application.NewGitService(repo, application.NewTaskService(repo, audit, application.NewPolicyService(repo)))
+
+	results, err := gitSvc.SyncMarkers(5)
+	if err != nil {
+		t.Fatalf("sync: %v", err)
+	}
+	for _, id := range []string{"a", "b", "c", "d"} {
+		if st := repo.State.TaskStates[id].Status; st != planning.StatusDone {
+			t.Errorf("%s is %s after sync, want done\n%s", id, st, strings.Join(results, "\n"))
+		}
+	}
+}
