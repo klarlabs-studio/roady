@@ -20,6 +20,8 @@ removed; git history has them.
   ideas), shipped goals with their milestone, and what is out of scope.
   Features link to the goal they serve; `roady goal list` shows each goal's
   progress. Goals order work, so moving one never reopens the plan's approval.
+  `roady goal render` writes ROADMAP.md from them, and drift reports a hand
+  edit to that file.
 - `roady plan import <file>` turns a plan an agent already wrote — Claude
   Code plan mode, Kiro `tasks.md`, a Codex ExecPlan, any markdown plan — into
   tasks ([plan-import.md](plan-import.md)).

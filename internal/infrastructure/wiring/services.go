@@ -2,6 +2,7 @@ package wiring
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/felixgeelhaar/roady/pkg/application"
 	"github.com/felixgeelhaar/roady/pkg/storage"
@@ -66,6 +67,11 @@ func buildServices(workspace *Workspace) (*AppServices, error) {
 	driftSvc := application.NewDriftService(workspace.Repo, auditSvc, storage.NewCodebaseInspector(), policySvc)
 	// Staleness detection needs to know how far the repository has moved.
 	driftSvc.SetActivityInspector(storage.NewGitActivityInspector(workspace.Repo.Root()))
+	// The root project's roadmap is rendered to ROADMAP.md at the repository
+	// root; a hand edit there is drift.
+	if !workspace.Repo.IsSubProject() {
+		driftSvc.SetRoadmapPath(filepath.Join(workspace.Repo.Root(), application.RoadmapFile))
+	}
 
 	dispatchSvc := application.NewDispatchService(workspace.Repo, planSvc, taskSvc)
 	// Attribute a dispatched claim to the subagent, not to the dispatcher.

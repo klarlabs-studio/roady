@@ -36,10 +36,19 @@ type DriftService struct {
 	// activity is optional; a nil inspector skips the staleness check
 	// rather than reporting a plan as stale on no evidence.
 	activity RepoActivityInspector
+
+	// roadmapPath is the rendered ROADMAP.md, or empty to skip that check.
+	roadmapPath string
 }
 
 // SetActivityInspector supplies the repository-movement signal used for
 // staleness detection.
+// SetRoadmapPath names the rendered ROADMAP.md to check against the goals.
+// Empty (the default) skips the check.
+func (s *DriftService) SetRoadmapPath(path string) {
+	s.roadmapPath = path
+}
+
 func (s *DriftService) SetActivityInspector(a RepoActivityInspector) {
 	s.activity = a
 }
@@ -108,6 +117,12 @@ func (s *DriftService) DetectDrift(ctx context.Context) (*drift.Report, error) {
 	// 2. Code vs State (Implementation Drift)
 	if codeIssues := s.detector.DetectCodeDrift(plan, state, s.inspector); len(codeIssues) > 0 {
 		report.Issues = append(report.Issues, codeIssues...)
+	}
+
+	// 2b. Rendered documents vs their source: a ROADMAP.md edited by hand
+	// or left behind by the goals.
+	if s.roadmapPath != "" {
+		report.Issues = append(report.Issues, RoadmapDrift(s.roadmapPath, spec)...)
 	}
 
 	// 3. Policy vs State (Policy Drift)

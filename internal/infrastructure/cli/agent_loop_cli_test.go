@@ -26,7 +26,8 @@ func runRoady(t *testing.T, stdin string, args ...string) (string, error) {
 	moveReq, moveFeature = "", ""
 	goalID, goalDesc, goalHorizon, goalStatus, goalMilestone, goalTitle = "", "", "", "", "", ""
 	goalFeatures, goalListJSON = nil, false
-	for _, c := range []*cobra.Command{goalAddCmd, goalEditCmd, goalListCmd} {
+	goalRenderOut, goalRenderCheck, goalRenderForce = "", false, false
+	for _, c := range []*cobra.Command{goalAddCmd, goalEditCmd, goalListCmd, goalRenderCmd} {
 		c.Flags().VisitAll(func(f *pflag.Flag) { f.Changed = false })
 	}
 	var err error
@@ -206,5 +207,48 @@ func TestGoalCommands(t *testing.T) {
 	}
 	if _, err = runRoady(t, "", "goal", "edit", "goal-nope", "--horizon", "now"); err == nil {
 		t.Error("editing a missing goal should fail")
+	}
+}
+
+// ROADMAP.md from the goals: written, round-tripped by --check, a hand edit
+// reported by drift and refused by render until --force.
+func TestGoalRender(t *testing.T) {
+	dir, cleanup := withPlainTempDir(t)
+	defer cleanup()
+	t.Setenv("ROADY_USER", "tester")
+	if _, err := runRoady(t, "", "init", "roadmap"); err != nil {
+		t.Fatalf("init: %v", err)
+	}
+	if _, err := runRoady(t, "", "goal", "add", "Offline mode", "--horizon", "now", "--description", "Work without a network."); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := runRoady(t, "", "goal", "render", "--check"); err == nil {
+		t.Error("--check must fail before the roadmap is rendered")
+	}
+	out, err := runRoady(t, "", "goal", "render")
+	if err != nil || !strings.Contains(out, "Wrote") {
+		t.Fatalf("render: %v\n%s", err, out)
+	}
+	if out, err = runRoady(t, "", "goal", "render", "--check"); err != nil {
+		t.Fatalf("--check after render: %v\n%s", err, out)
+	}
+	if out, err = runRoady(t, "", "goal", "render", "--out", "-"); err != nil || !strings.Contains(out, "### Offline mode") {
+		t.Errorf("--out -: %v\n%s", err, out)
+	}
+
+	path := filepath.Join(dir, "ROADMAP.md")
+	raw, _ := os.ReadFile(path)
+	_ = os.WriteFile(path, []byte(strings.Replace(string(raw), "Work without a network.", "Work offline, always.", 1)), 0o644)
+	if out, _ = runRoady(t, "", "drift", "detect"); !strings.Contains(out, "edited by hand") {
+		t.Errorf("drift did not report the hand edit:\n%s", out)
+	}
+	if _, err = runRoady(t, "", "goal", "render"); err == nil || !strings.Contains(err.Error(), "edited by hand") {
+		t.Errorf("render must refuse to drop a hand edit: %v", err)
+	}
+	if _, err = runRoady(t, "", "goal", "render", "--force"); err != nil {
+		t.Errorf("render --force: %v", err)
+	}
+	if out, _ = runRoady(t, "", "drift", "detect"); strings.Contains(out, "ROADMAP") {
+		t.Errorf("a fresh render still reads as drift:\n%s", out)
 	}
 }

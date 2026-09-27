@@ -81,7 +81,8 @@ is pinned.
 
 All artifacts are git-friendly files:
 - `spec.yaml` - Product specification (goals, features, requirements). Goals
-  are the roadmap (`roady goal`); ROADMAP.md content belongs there
+  are the roadmap (`roady goal`). ROADMAP.md is rendered from them by
+  `roady goal render`; never edit it by hand (drift reports it)
 - `spec.lock.json` - Pinned spec snapshot for drift detection
 - `plan.json` - Task DAG with approval status
 - `state.json` - Execution state (task statuses, paths)

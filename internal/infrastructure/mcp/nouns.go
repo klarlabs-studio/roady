@@ -3,12 +3,15 @@ package mcp
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"sort"
 	"strings"
 
 	"github.com/felixgeelhaar/roady/pkg/application"
 	"github.com/felixgeelhaar/roady/pkg/domain/drift"
 	"github.com/felixgeelhaar/roady/pkg/domain/planning"
+	"github.com/felixgeelhaar/roady/pkg/domain/spec"
+	"github.com/felixgeelhaar/roady/pkg/storage"
 )
 
 // One tool per CLI noun, with the CLI's verbs as actions: `roady plan approve`
@@ -39,7 +42,7 @@ var NounActions = map[string][]string{
 	"roady_state":  {"get", "rebuild"},
 	"roady_policy": {"check"},
 	"roady_git":    {"sync"},
-	"roady_goal":   {"list", "add", "edit"},
+	"roady_goal":   {"list", "add", "edit", "render"},
 }
 
 // SingleTools are CLI commands without verbs, served as one tool each.
@@ -273,7 +276,7 @@ func (s *Server) handleGit(ctx context.Context, a VerbArgs) (any, error) {
 
 // GoalArgs is `roady goal <action>`.
 type GoalArgs struct {
-	Action      string   `json:"action" jsonschema:"required,description=list|add|edit"`
+	Action      string   `json:"action" jsonschema:"required,description=list|add|edit|render (write ROADMAP.md from the goals)"`
 	GoalID      string   `json:"goal_id,omitempty" jsonschema:"description=edit: the goal; add: its id (default goal-<title>)"`
 	Title       *string  `json:"title,omitempty" jsonschema:"description=add: required"`
 	Description *string  `json:"description,omitempty"`
@@ -282,6 +285,7 @@ type GoalArgs struct {
 	Milestone   *string  `json:"milestone,omitempty" jsonschema:"description=Release or checkpoint"`
 	Features    []string `json:"features,omitempty" jsonschema:"description=Feature ids to link to the goal"`
 	DryRun      bool     `json:"dry_run,omitempty"`
+	Force       bool     `json:"force,omitempty" jsonschema:"description=render: replace a ROADMAP.md edited by hand (needs the user's confirmation)"`
 	scope
 }
 
@@ -302,6 +306,8 @@ func (s *Server) handleGoal(ctx context.Context, a GoalArgs) (any, error) {
 		plan, _ := svc.Workspace.Repo.LoadPlan()
 		state, _ := svc.Workspace.Repo.LoadState()
 		return application.BuildRoadmap(sp, plan, state), nil
+	case "render":
+		return s.renderRoadmap(ctx, svc.Workspace.Repo, sp, a)
 	case "add":
 		doc, _, err = application.AddGoalDoc(sp, e)
 	case "edit":
@@ -317,4 +323,27 @@ func (s *Server) handleGoal(ctx context.Context, a GoalArgs) (any, error) {
 		return mcpErr(fmt.Sprintf("Failed to record the goal: %v", err)), nil
 	}
 	return result, nil
+}
+
+// renderRoadmap writes ROADMAP.md. Replacing a file edited by hand throws
+// away what the edit said, so force needs the user's confirmation.
+func (s *Server) renderRoadmap(ctx context.Context, repo *storage.FilesystemRepository, sp *spec.ProductSpec, a GoalArgs) (any, error) {
+	if repo.IsSubProject() {
+		return mcpErr("A sub-project's roadmap has no default file; render it with `roady goal render --out <file>`."), nil
+	}
+	path := filepath.Join(repo.Root(), application.RoadmapFile)
+	if a.DryRun {
+		return application.RenderRoadmapMarkdown(sp), nil
+	}
+	write := func() (any, error) {
+		res, err := application.WriteRoadmap(path, sp, a.Force)
+		if err != nil {
+			return mcpErr(err.Error()), nil
+		}
+		return res, nil
+	}
+	if a.Force {
+		return s.gated(ctx, a.scope, "goal render --force", "Replace ROADMAP.md, including edits made to it by hand, with the roadmap rendered from the goals?", write)
+	}
+	return write()
 }

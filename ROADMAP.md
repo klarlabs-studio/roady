@@ -1,15 +1,34 @@
-# Roady — Roadmap
+<!-- roady:roadmap sha256=7a152a1faef58a3f91e7c30eb38f88b116133b1a9916e185a3ceb9e422eca746 — generated from .roady/spec.yaml by `roady goal render`. Change goals with `roady goal`, not this file. -->
+# Roadmap
 
-> Public, opinionated, subject to change. Issues with the `roadmap`
-> label are the live tracking surface.
+## Now
 
-The CLI + MCP server is and stays free, MIT, and self-hostable. The
-roadmap below describes what's coming next on the open core, and the
-intended **open-core boundary** for a future hosted product.
+### The planning tool for AI: capture, keep, prove
 
----
+Roady is the plan an AI agent works from and the proof it did: capture intent at whatever size it arrives, keep the agent on it across sessions, compaction and parallel agents, and prove work done with acceptance checks and a hash-chained audit log. Everything outside that was removed.
 
-## Now (v0.22.x — shipped)
+The most useful input is field use: v0.18.0 came entirely from one person running Roady on a real 118-feature project for a day.
+
+Features: MCP surface is learnable, trimmable and honest (`mcp-surface`), Trust: done means proven (`trust`), Capture: intent at whatever size it arrives (`capture`), Keep: continuity across sessions, compaction and parallel agents (`keep`), Focus and proof of adoption (`focus`)
+
+## Later
+
+### Roady Cloud
+
+_Idea — not yet agreed._
+
+Open-core boundary for a hosted product, no committed date. Intended scope:
+
+- **Hosted MCP**: managed multi-tenant MCP server so teams without a per-developer install can plug their agents into a shared workspace.
+- **Audit log retention** beyond what fits comfortably in `events.jsonl`, with structured search and export.
+- **SSO / RBAC / SCIM** for enterprise IdP integrations.
+- **SOC 2** compliance posture for the hosted plane.
+
+What stays open and free, forever: the full CLI and MCP server, and the `.roady/` file format. If Cloud lands, opting in is a `roady cloud login` away; opting out is the existing local workflow with no behavioural change.
+
+## Shipped
+
+### The MCP surface mirrors the CLI (v0.22.x)
 
 - **The MCP surface mirrors the CLI.** Twenty tools were renamed from
   verb-first (`roady_add_feature`) to noun-first (`roady_spec_add`), so
@@ -29,21 +48,21 @@ intended **open-core boundary** for a future hosted product.
   the wire format itself so a future dependency change cannot reintroduce it
   invisibly (#92).
 
-## Earlier (v0.21.0 — shipped)
+### Derived-state reconciliation (v0.21.0)
 
 - **Derived-state reconciliation** — `roady spec lock` re-captures the drift
   baseline from the current spec and reconciles execution state with it, and
   `spec validate` reports when they disagree instead of answering "valid".
   Found by adopting Roady in an existing project (#77).
 
-## Earlier (v0.20.0 — shipped)
+### Correctness sweep (v0.20.0)
 
 - **Correctness sweep** — one audit-chain verifier instead of two that
   disagreed on the same log; `roady_timeline` reading the same source as the
   CLI; dead AI telemetry removed; and the CLI help and docs corrected to
   describe a Roady that calls no model.
 
-## Earlier (v0.19.0 — shipped)
+### Semantic drift (v0.19.0)
 
 - **Semantic drift** — `roady drift semantic` frames the question of whether
   an implementation still means what its requirement says; the caller's model
@@ -51,19 +70,23 @@ intended **open-core boundary** for a future hosted product.
 - **CLI/MCP parity** — 69 tools; every CLI operation an agent should be able
   to perform is reachable over MCP.
 
-## Earlier (v0.18.0 — shipped)
+Features: Cross-project task dependencies (`cross-project-deps`), Per-task subagent dispatch (`subagent-dispatch`), Spec-to-PR loop (`spec-to-pr`), Drift explainer follow-ups (`drift-patch-prompt`), Cross-repo planning (`cross-repo-planning`)
+
+### Five field-reported defects (v0.18.0)
 
 - Five field-reported defects: id sanitisation, feature-link resolution,
   documentation written to the project rather than the server's cwd, paged
   task listings, and MCP errors carrying the actionable message.
 
-## Earlier (v0.17.0 — shipped)
+Features: Field-reported reliability (`field-reliability`)
+
+### `roady_audit_trail` over MCP (v0.17.0)
 
 - **`roady_audit_trail` over MCP** — the evidence trail was CLI-only, so
   the agents the GRC work targets could not ask "which agent worked on
   this, and what proves it" without shelling out. MCP schema 3.1.0.
 
-## Earlier (v0.16.0 — shipped)
+### Staleness drift (v0.16.0)
 
 - **Staleness drift** — `roady drift detect` reports a plan the repository
   has left behind, judged by commit volume rather than file timestamps.
@@ -75,7 +98,7 @@ intended **open-core boundary** for a future hosted product.
   change that invalidated history. Events now carry `hash_algo`.
 - **`plan prune` cleans execution state**, which it previously orphaned.
 
-## Earlier (v0.15.0 — shipped)
+### Roady runs no inference (v0.15.0)
 
 - **Roady runs no inference.** The provider clients are gone. The
   model-assisted operations return the assembled prompt plus the tool
@@ -87,7 +110,7 @@ intended **open-core boundary** for a future hosted product.
   protocol faults the transport replaced with "internal error".
 - MCP schema 3.0.0; `pkg/sdk` requires major 3.
 
-## Earlier (v0.14.0 — shipped)
+### Coordination (v0.14.0)
 
 - **Coordination**: owner-scoped task queries (`roady task mine |
   assigned <name> | unassigned`), per-owner WIP limits
@@ -102,7 +125,7 @@ intended **open-core boundary** for a future hosted product.
   stakeholders get a document rather than a server they must reach.
   `roady dashboard` remains as the TUI.
 
-## Recently (v0.11.x — shipped)
+### Nested sub-projects (v0.11.x)
 
 - **Nested sub-projects** under `.roady/projects/<name>/`. One repo
   hosts many projects in parallel; coding agents switch context with
@@ -111,7 +134,7 @@ intended **open-core boundary** for a future hosted product.
   [`docs/rfcs/0001-nested-projects.md`](docs/rfcs/0001-nested-projects.md).
 - `roady discover` and `roady org status` surface sub-projects.
 
-## Earlier (v0.10.x — shipped)
+### Eval harness and task provenance (v0.10.x)
 
 - Eval harness over heuristic + AI planners + drift corpus
 - Task provenance: `Origin` (heuristic / ai / human) + source citations
@@ -128,62 +151,18 @@ intended **open-core boundary** for a future hosted product.
 - `roady demo` for <1s aha; `roady init --interactive` default in TTY;
   empty-state ladder on `roady status`
 
-## Next
+### Multi-repo org dashboard (v0.6.0)
 
-Nothing declared. The roadmap below is what remains after v0.19.0 shipped the
-cross-project dependencies, subagent dispatch, spec-to-PR loop, drift patch
-prompts, cross-repo planning and semantic drift that were listed here.
+Multi-repo org dashboard, plugin contracts, notification webhooks, fsnotify watch, coordinator integration into CLI/MCP with snapshot and task queries.
 
-The most useful input now is field use: v0.18.0 came entirely from one person
-running Roady on a real 118-feature project for a day.
+### Horizons 5 & 6 (v0.5.0)
 
-## Later
-
-- **Plugin marketplace** for syncers and notifiers, opinionated quality
-  bar (signed binaries, contract tests must pass).
-
----
-
-## Roady Cloud (future, no committed date)
-
-Open-core boundary, intended scope:
-
-- **Hosted MCP** — managed multi-tenant MCP server so teams without
-  a per-developer install can plug their agents into a shared
-  workspace.
-- **Multi-repo org dashboard** with persistent storage and historical
-  metrics across all member projects.
-- **Audit log retention** beyond what fits comfortably in `events.jsonl`,
-  with structured search and export.
-- **SSO / RBAC / SCIM** for enterprise IdP integrations.
-- **SOC 2** compliance posture for the hosted plane.
-
-What stays open and free, forever:
-
-- The full CLI, MCP server, and every planning / drift / spec /
-  notify / billing capability.
-- The `.roady/` file format and all storage adapters.
-- Plugin contract tests + reference syncer plugins.
-
-If Cloud lands, opting in is a `roady cloud login` away. Opting out is
-the existing local workflow with no behavioural change.
-
----
+Horizons 5 & 6 — predictive analytics, domain hardening, event sourcing.
 
 ## Out of scope
 
-- **Matching Linear / Jira feature-for-feature.** No sprints, custom
-  fields, configurable workflows, or non-engineer intake queues. Roady
-  covers two of the jobs those tools do — coordinating who is on what,
-  and keeping stakeholders informed — with generated documents and push
-  notifications rather than an app. Where non-engineers create and
-  triage work daily, use a tracker; Roady syncs with it bidirectionally.
-- A web-based code editor or AI agent of our own.
-- Hosted general-purpose memory for non-coding workflows.
-- **Authenticated identity.** Actors and agents are asserted by the
-  caller and never verified. Roady's audit trail is tamper-evident about
-  what was recorded, not proof of who acted — see
-  [`docs/audit-grc.md`](docs/audit-grc.md).
-
-If you want any of these, Roady is the wrong tool — we are deliberately
-narrow.
+- **Matching Linear / Jira feature-for-feature** — No sprints, custom fields, configurable workflows, or non-engineer intake queues. Where non-engineers create and triage work daily, use a tracker.
+- **A web-based code editor or AI agent of our own**
+- **Hosted general-purpose memory for non-coding workflows**
+- **Authenticated identity** — Actors and agents are asserted by the caller and never verified. Roady's audit trail is tamper-evident about what was recorded, not proof of who acted; see docs/audit-grc.md.
+- **Plugin marketplace** — Was on Later: a marketplace for syncers and notifiers with signed binaries and contract tests. Tracker sync, notifications and the plugin system were removed as outside capture, keep and prove.

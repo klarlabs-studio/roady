@@ -228,7 +228,7 @@ command has an MCP equivalent:
 | `roady_spec` | `get` `add` `explain` `review` `validate` `analyze`* `import`* `lock`* |
 | `roady_drift` | `detect` `explain` `semantic` `record` `accept`* |
 | `roady_state` | `get` `rebuild`* |
-| `roady_goal` | `list` `add` `edit` — the roadmap |
+| `roady_goal` | `list` `add` `edit` `render` — the roadmap and ROADMAP.md |
 | `roady_audit` | `verify` `trail` |
 | `roady_policy` / `roady_git` | `check` / `sync` |
 | `roady_status` / `roady_query` / `roady_init` | Status, project context for a question, a new project |

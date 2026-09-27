@@ -286,7 +286,7 @@ func (s *Server) registerTools() {
 		Handler(s.handleCapture)
 
 	s.tool("roady_goal").
-		Description("roady goal: list (the roadmap: goals by horizon with their features and progress), add, edit (move between now/next/later, ship, link features). A goal can be only an idea.").
+		Description("roady goal: list (the roadmap: goals by horizon with their features and progress), add, edit (move between now/next/later, ship, link features), render (write ROADMAP.md; replacing hand edits needs the user). A goal can be only an idea.").
 		Handler(s.handleGoal)
 
 	s.tool("roady_task").

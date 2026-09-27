@@ -2,6 +2,9 @@ package cli
 
 import (
 	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/felixgeelhaar/roady/pkg/application"
 	"github.com/spf13/cobra"
@@ -14,6 +17,8 @@ var (
 	goalID, goalDesc, goalHorizon, goalStatus, goalMilestone, goalTitle string
 	goalFeatures                                                        []string
 	goalListJSON                                                        bool
+	goalRenderOut                                                       string
+	goalRenderCheck, goalRenderForce                                    bool
 )
 
 var goalCmd = &cobra.Command{
@@ -125,6 +130,66 @@ var goalEditCmd = &cobra.Command{
 	},
 }
 
+var goalRenderCmd = &cobra.Command{
+	Use:   "render",
+	Short: "Write ROADMAP.md from the goals",
+	Long: `Render the goals as ROADMAP.md at the repository root: now, next, later,
+ideas, shipped and out of scope, each goal with its milestone, description
+and features. Task progress is left out, so the file changes only when the
+roadmap does.
+
+The first line marks the file as generated and carries a hash of the rest,
+so ` + "`roady drift detect`" + ` reports an edit made to the file instead of to the goals,
+and a file the goals have moved past. A hand edit is not overwritten
+without --force: move it into the goals first.
+
+  roady goal render                 # write ROADMAP.md
+  roady goal render --out -         # print it
+  roady goal render --check         # exit 1 unless ROADMAP.md is up to date (CI)`,
+	Args: cobra.NoArgs,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ws, _, err := loadEditPlan()
+		if err != nil {
+			return err
+		}
+		sp, err := ws.Repo.LoadSpec()
+		if err != nil {
+			return MapError(err)
+		}
+		content := application.RenderRoadmapMarkdown(sp)
+		out := cmd.OutOrStdout()
+		if goalRenderOut == "-" {
+			_, err := fmt.Fprint(out, content)
+			return err
+		}
+		path := goalRenderOut
+		if path == "" {
+			if ws.Repo.IsSubProject() {
+				return fmt.Errorf("a sub-project's roadmap has no default file; say where with --out")
+			}
+			path = filepath.Join(ws.Repo.Root(), application.RoadmapFile)
+		}
+		if goalRenderCheck {
+			existing, err := os.ReadFile(path)
+			if err == nil && application.CompareRoadmap(string(existing), sp) == application.RoadmapInSync {
+				_, _ = fmt.Fprintf(out, "%s is up to date.\n", path)
+				return nil
+			}
+			return fmt.Errorf("%s is not up to date with the goals; run `roady goal render`", path)
+		}
+		res, err := application.WriteRoadmap(path, sp, goalRenderForce)
+		if err != nil {
+			return err
+		}
+		if res.Written {
+			_, _ = fmt.Fprintf(out, "Wrote %s.\n", path)
+		} else {
+			_, _ = fmt.Fprintf(out, "%s is already up to date.\n", path)
+		}
+		return nil
+	},
+}
+
 func addGoalFlags(c *cobra.Command) {
 	c.Flags().StringVar(&goalDesc, "description", "", "What the goal is for")
 	c.Flags().StringVar(&goalHorizon, "horizon", "", "now, next or later")
@@ -141,6 +206,9 @@ func init() {
 	addGoalFlags(goalEditCmd)
 	goalEditCmd.Flags().StringVar(&goalTitle, "title", "", "New title")
 	goalListCmd.Flags().BoolVar(&goalListJSON, "json", false, "Print the roadmap as JSON")
-	goalCmd.AddCommand(goalListCmd, goalAddCmd, goalEditCmd)
+	goalRenderCmd.Flags().StringVar(&goalRenderOut, "out", "", "Write here instead of ROADMAP.md at the repository root; - prints it")
+	goalRenderCmd.Flags().BoolVar(&goalRenderCheck, "check", false, "Write nothing; fail unless the file is up to date")
+	goalRenderCmd.Flags().BoolVar(&goalRenderForce, "force", false, "Replace a file that was edited by hand or not written by roady")
+	goalCmd.AddCommand(goalListCmd, goalAddCmd, goalEditCmd, goalRenderCmd)
 	RootCmd.AddCommand(goalCmd)
 }

@@ -61,6 +61,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   serve, and `roady goal list` shows each goal's progress from its tasks.
   Goals order work rather than define it, so they leave the spec hash and
   the plan's approval alone. Roady's own ROADMAP.md is recorded this way.
+- **ROADMAP.md is rendered from the goals.** `roady goal render` (MCP
+  `roady_goal` action `render`) writes it with a first-line marker carrying a
+  hash of the rest; `roady drift detect` reports a hand edit (`doc` drift)
+  and a file the goals have moved past, and `render --check` fails for CI.
+  A hand-edited file is not replaced without `--force`, which over MCP asks
+  the user. Roady's own ROADMAP.md is now generated.
 
 - **Setup for Codex, Gemini CLI, Cursor, OpenCode, Copilot and Kiro.** `roady
   setup <agent>` (or `all`) does for each what `setup claude-code` does,

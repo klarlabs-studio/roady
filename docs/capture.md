@@ -79,7 +79,17 @@ roady goal add "Offline mode" --horizon next --milestone v2.0
 roady goal edit goal-offline-mode --horizon now --feature sync
 roady goal edit goal-offline-mode --status shipped
 roady goal list        # now / next / later / ideas / shipped / out of scope, with progress
+roady goal render      # write ROADMAP.md from the goals
 ```
+
+`roady goal render` writes ROADMAP.md at the repository root. Its first line
+marks it as generated and carries a hash of the rest, so `roady drift detect`
+reports an edit made to the file instead of to the goals (and a file the
+goals have moved past). Render will not replace a hand-edited file, or one
+roady did not write, without `--force` — move what it says into goals first.
+`roady goal render --check` fails unless the file is up to date, for CI.
+Task progress is left out of the file, so it changes only when the roadmap
+does.
 
 Goals order work; they are not part of the intent a plan is approved for.
 Adding or moving a goal, or linking a feature to one, never returns an

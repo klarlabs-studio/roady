@@ -28,7 +28,7 @@ tools in all; every CLI project command has a tool or action.
 | `roady_state` | get, rebuild |
 | `roady_policy` | check |
 | `roady_git` | sync |
-| `roady_goal` | list, add, edit |
+| `roady_goal` | list, add, edit, render (`force` asks the user) |
 
 ### Removed
 

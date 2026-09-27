@@ -11,6 +11,7 @@ const (
 	DriftTypePlan   DriftType = "plan"   // Plan vs Spec
 	DriftTypeCode   DriftType = "code"   // Code vs Plan
 	DriftTypePolicy DriftType = "policy" // Policy vs State
+	DriftTypeDoc    DriftType = "doc"    // A document rendered from roady vs its source
 )
 
 type DriftCategory string

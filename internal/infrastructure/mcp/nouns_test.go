@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"testing"
@@ -202,5 +204,45 @@ func TestGoalToolRecordsTheRoadmap(t *testing.T) {
 	b, _ := json.Marshal(res)
 	if !strings.Contains(string(b), `"name":"Now"`) || !strings.Contains(string(b), "goal-offline-mode") {
 		t.Errorf("list = %s", b)
+	}
+}
+
+// Rendering the roadmap over MCP writes ROADMAP.md; replacing a hand edit
+// is a decision for the user.
+func TestGoalRenderOverMCP(t *testing.T) {
+	server := setupCoordinatorTestServer(t)
+	ctx := context.Background()
+	str := func(s string) *string { return &s }
+	if res, _ := server.handleGoal(ctx, GoalArgs{Action: "add", Title: str("Offline mode"), Horizon: str("now")}); isToolError(res) {
+		t.Fatal(resultText(res))
+	}
+	if res, _ := server.handleGoal(ctx, GoalArgs{Action: "render", DryRun: true}); !strings.Contains(resultText(res), "### Offline mode") {
+		t.Errorf("dry run: %s", resultText(res))
+	}
+	if res, _ := server.handleGoal(ctx, GoalArgs{Action: "render"}); isToolError(res) {
+		t.Fatalf("render: %s", resultText(res))
+	}
+	path := filepath.Join(server.root, "ROADMAP.md")
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = os.WriteFile(path, append(raw, []byte("\nhand edit\n")...), 0o644)
+	if res, _ := server.handleGoal(ctx, GoalArgs{Action: "render"}); !isToolError(res) {
+		t.Errorf("a hand edit must not be replaced without force: %s", resultText(res))
+	}
+	server.confirm = func(context.Context, string) error { return errors.New("declined") }
+	if res, _ := server.handleGoal(ctx, GoalArgs{Action: "render", Force: true}); !strings.Contains(resultText(res), "roady goal render --force") {
+		t.Errorf("force without the user: %s", resultText(res))
+	}
+	if b, _ := os.ReadFile(path); !strings.Contains(string(b), "hand edit") {
+		t.Error("a declined force still replaced the file")
+	}
+	server.confirm = func(context.Context, string) error { return nil }
+	if res, _ := server.handleGoal(ctx, GoalArgs{Action: "render", Force: true}); isToolError(res) {
+		t.Errorf("confirmed force: %s", resultText(res))
+	}
+	if b, _ := os.ReadFile(path); strings.Contains(string(b), "hand edit") {
+		t.Error("a confirmed force left the hand edit in place")
 	}
 }
