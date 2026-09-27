@@ -446,6 +446,30 @@
           "estimate": "0.5d",
           "depends_on": [],
           "source": {}
+        },
+        {
+          "id": "shared-state-canonical-path",
+          "title": "Every worktree names the shared state file the same way",
+          "description": "A checkout opened through a symlink (/var on macOS) and a linked worktree reported the same state.json under two paths.",
+          "priority": "medium",
+          "estimate": "",
+          "depends_on": [],
+          "source": {},
+          "check": {
+            "run": "go test ./pkg/storage -run 'TestGitCommonDir|TestStateIsSharedAcrossWorktrees'"
+          }
+        },
+        {
+          "id": "cask-binaries-match-builds",
+          "title": "The Homebrew cask links only binaries the release builds",
+          "description": "v0.25.0 dropped the plugin builds but the cask still listed them, so brew install and upgrade failed on a missing symlink source.",
+          "priority": "high",
+          "estimate": "",
+          "depends_on": [],
+          "source": {},
+          "check": {
+            "run": "go test ./cmd/roady -run TestReleaseCaskShipsOnlyBuiltBinaries"
+          }
         }
       ],
       "source": {},
