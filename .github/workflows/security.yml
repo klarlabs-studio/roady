@@ -17,9 +17,9 @@ on:
   push:
     branches: [main]
     paths-ignore: ["**.md", "docs/**", "LICENSE"]
+  # No paths-ignore on PRs: Security (nox) is a required check (see ci.yml).
   pull_request:
     branches: [main]
-    paths-ignore: ["**.md", "docs/**", "LICENSE"]
 
 concurrency:
   group: security-${{ github.workflow }}-${{ github.ref }}
