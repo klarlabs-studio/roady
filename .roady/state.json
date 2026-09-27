@@ -1,6 +1,6 @@
 {
   "project_id": "agent-handoff",
-  "version": 427,
+  "version": 430,
   "task_states": {
     "task-acceptance-checks": {
       "status": "verified",
@@ -2055,22 +2055,41 @@
       ]
     },
     "task-task-list-command": {
+      "status": "done",
+      "path": "",
+      "owner": "Claude",
+      "evidence": [
+        "Commit: d5641818e0574dc0678427195c1621b4776711ad"
+      ],
+      "started_at": "2026-09-27T16:59:59.379592088+02:00",
+      "completed_at": "2026-09-27T17:00:54.590382578+02:00",
+      "elapsed_minutes": 0,
+      "checks": [
+        {
+          "kind": "run",
+          "command": "go test ./internal/infrastructure/cli/ -run TestTaskListCommand -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "d5641818e0574dc0678427195c1621b4776711ad",
+          "by": "Claude",
+          "at": "2026-09-27T17:00:54.609191472+02:00",
+          "duration": "753ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/internal/infrastructure/cli\t0.008s\n"
+        }
+      ]
+    },
+    "task-unlinked-features-capped": {
       "status": "in_progress",
       "path": "",
       "owner": "Claude",
-      "started_at": "2026-09-27T16:59:59.379592088+02:00",
+      "started_at": "2026-09-27T17:01:02.051505598+02:00",
       "elapsed_minutes": 0,
       "lease": {
         "holder": "Claude",
-        "session": "64971bf4-2c09-4e4d-a68b-03575e3860fd",
-        "expires_at": "2026-09-27T18:59:59.379592234+02:00",
-        "renewed_at": "2026-09-27T16:59:59.379592234+02:00"
+        "session": "c7fdd252-1fb8-44ab-9186-3ca566969480",
+        "expires_at": "2026-09-27T19:01:02.051505825+02:00",
+        "renewed_at": "2026-09-27T17:01:02.051505825+02:00"
       }
-    },
-    "task-unlinked-features-capped": {
-      "status": "pending",
-      "path": "",
-      "elapsed_minutes": 0
     },
     "task-unplanned-tasks": {
       "status": "verified",
@@ -2174,5 +2193,5 @@
       "elapsed_minutes": 4
     }
   },
-  "updated_at": "2026-09-27T16:59:59.379592088+02:00"
+  "updated_at": "2026-09-27T17:01:02.051505598+02:00"
 }

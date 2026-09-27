@@ -154,3 +154,16 @@ func TestShippedGoalsNewestFirst(t *testing.T) {
 		t.Errorf("shipped order %v", ids)
 	}
 }
+
+func TestRoadmapUnlinkedIsCapped(t *testing.T) {
+	sp := &spec.ProductSpec{Goals: []spec.Goal{{ID: "g", Title: "G", Horizon: spec.HorizonNow}}}
+	for _, id := range []string{"a", "b", "c", "d", "e", "f", "g1", "h", "i", "j", "k"} {
+		sp.Features = append(sp.Features, spec.Feature{ID: id, Title: id})
+	}
+	var b bytes.Buffer
+	application.BuildRoadmap(sp, nil, nil).Render(&b)
+	out := b.String()
+	if !strings.Contains(out, "11 features serve no goal: a, b, c, d, e, f, g1, h, … 3 more") || strings.Contains(out, ", k") {
+		t.Errorf("unlinked line:\n%s", out)
+	}
+}

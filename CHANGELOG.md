@@ -24,6 +24,8 @@ v0.25.0 against a project that had stopped using roady for markdown notes.
 - A done or verified task whose feature the spec no longer has is history:
   drift reports it at `info` instead of `medium`, and `roady plan prune`
   keeps it. Open orphans are unchanged.
+- `roady goal list` names the first few features that serve no goal and
+  counts the rest, instead of printing every one (87 on nexa).
 - `roady drift detect` folds more than a few informational issues of one
   kind into a single line; `--output json` still lists each.
 
