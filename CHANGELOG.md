@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.24.0] - 2026-09-27
+
+Roady becomes the planning tool for AI: capture intent at any size, keep the
+agent on it across sessions, compaction and parallel agents, and prove work
+done. Breaking: the MCP surface is one tool per CLI noun (schema 5.0.0), and
+everything outside capture, keep and prove was removed — read **Removed**
+before upgrading.
+
 ### Removed
 
 - **MCP: one tool per CLI noun, with the verbs as actions.** Fourteen tools —
@@ -1533,7 +1541,8 @@ See [GitHub release notes](https://github.com/felixgeelhaar/roady/releases/tag/v
 - Resilience via `fortify` integration for filesystem retries
 - State management via `statekit` FSM for task transitions
 
-[Unreleased]: https://github.com/felixgeelhaar/roady/compare/v0.10.0...HEAD
+[Unreleased]: https://github.com/felixgeelhaar/roady/compare/v0.24.0...HEAD
+[0.24.0]: https://github.com/felixgeelhaar/roady/compare/v0.23.0...v0.24.0
 [0.10.0]: https://github.com/felixgeelhaar/roady/compare/v0.9.2...v0.10.0
 [0.9.2]: https://github.com/felixgeelhaar/roady/compare/v0.9.1...v0.9.2
 [0.9.1]: https://github.com/felixgeelhaar/roady/compare/v0.9.0...v0.9.1

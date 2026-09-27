@@ -1,4 +1,4 @@
-<!-- roady:roadmap sha256=f0039a3141ae6791aae1e7e73f35818bb27b464880d89b9646b9ccda3199a187 — generated from .roady/spec.yaml by `roady goal render`. Change goals with `roady goal`, not this file. -->
+<!-- roady:roadmap sha256=95ab6b8325dd428cb97ba55a808719bd355014aaf2c74d185e9aac496daa985f — generated from .roady/spec.yaml by `roady goal render`. Change goals with `roady goal`, not this file. -->
 # Roadmap
 
 ## Now
@@ -27,6 +27,10 @@ Open-core boundary for a hosted product, no committed date. Intended scope:
 What stays open and free, forever: the full CLI and MCP server, and the `.roady/` file format. If Cloud lands, opting in is a `roady cloud login` away; opting out is the existing local workflow with no behavioural change.
 
 ## Shipped
+
+### The planning tool for AI (v0.24.0)
+
+Capture, keep, prove. One MCP tool per CLI noun, with decisions confirmed by the user in their client; `roady capture` and single-task edits; goals, decisions and a ROADMAP.md rendered from them; plan import from agent plan files and hooks for Claude Code, Codex, Gemini, Cursor, OpenCode, Copilot and Kiro; task claims with expiring leases, shared across worktrees; acceptance checks, regression drift, an honest exit for impossible work, task history and local adoption stats. Billing, teams, tracker sync, messaging, debt, forecasting and dashboards were removed.
 
 ### Audit verification tells history it cannot check from alteration (v0.23.0)
 
