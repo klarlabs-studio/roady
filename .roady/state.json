@@ -1,6 +1,6 @@
 {
   "project_id": "agent-handoff",
-  "version": 307,
+  "version": 330,
   "task_states": {
     "task-acceptance-checks": {
       "status": "verified",
@@ -46,6 +46,29 @@
           "at": "2026-09-27T14:15:40.628803611+02:00",
           "duration": "672ms",
           "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.121s\nok  \tgithub.com/felixgeelhaar/roady/pkg/domain/planning\t0.003s\nok  \tgithub.com/felixgeelhaar/roady/pkg/domain/spec\t0.003s\n"
+        },
+        {
+          "kind": "run",
+          "command": "go test ./pkg/application/ -run 'RunCheck|ManualCheck|Verify' -count=1 \u0026\u0026 go test ./pkg/domain/planning/ ./pkg/domain/spec/ -run 'Check|Hash' -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "29b23c0bd59d8241f950a4249c512ff7a9f6f58f",
+          "dirty": true,
+          "by": "Claude",
+          "at": "2026-09-27T15:12:36.722272478+02:00",
+          "duration": "806ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.119s\nok  \tgithub.com/felixgeelhaar/roady/pkg/domain/planning\t0.003s\nok  \tgithub.com/felixgeelhaar/roady/pkg/domain/spec\t0.002s\n"
+        },
+        {
+          "kind": "run",
+          "command": "go test ./pkg/application/ -run 'RunCheck|ManualCheck|Verify' -count=1 \u0026\u0026 go test ./pkg/domain/planning/ ./pkg/domain/spec/ -run 'Check|Hash' -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "6d32f30ec0b50474ef74484ce178db9f8b96c94a",
+          "by": "Claude",
+          "at": "2026-09-27T15:13:03.447807475+02:00",
+          "duration": "708ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.137s\nok  \tgithub.com/felixgeelhaar/roady/pkg/domain/planning\t0.003s\nok  \tgithub.com/felixgeelhaar/roady/pkg/domain/spec\t0.003s\n"
         }
       ]
     },
@@ -103,6 +126,29 @@
           "at": "2026-09-27T14:15:41.307848021+02:00",
           "duration": "913ms",
           "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/domain\t0.002s\nok  \tgithub.com/felixgeelhaar/roady/internal/infrastructure/cli\t0.006s\n"
+        },
+        {
+          "kind": "run",
+          "command": "go test ./pkg/domain/ -run 'TestRemovedEntryEvidencesAlteration|TestViolationKindClassification' -count=1 \u0026\u0026 go test ./internal/infrastructure/cli/ -run TestAuditVerdict -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "29b23c0bd59d8241f950a4249c512ff7a9f6f58f",
+          "dirty": true,
+          "by": "Claude",
+          "at": "2026-09-27T15:12:37.534988532+02:00",
+          "duration": "1.028s",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/domain\t0.003s\nok  \tgithub.com/felixgeelhaar/roady/internal/infrastructure/cli\t0.006s\n"
+        },
+        {
+          "kind": "run",
+          "command": "go test ./pkg/domain/ -run 'TestRemovedEntryEvidencesAlteration|TestViolationKindClassification' -count=1 \u0026\u0026 go test ./internal/infrastructure/cli/ -run TestAuditVerdict -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "6d32f30ec0b50474ef74484ce178db9f8b96c94a",
+          "by": "Claude",
+          "at": "2026-09-27T15:13:04.162172858+02:00",
+          "duration": "997ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/domain\t0.003s\nok  \tgithub.com/felixgeelhaar/roady/internal/infrastructure/cli\t0.006s\n"
         }
       ]
     },
@@ -150,6 +196,29 @@
           "at": "2026-09-27T14:15:42.227467124+02:00",
           "duration": "601ms",
           "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/domain\t0.002s\nok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.093s\n"
+        },
+        {
+          "kind": "run",
+          "command": "go test ./pkg/domain/ -run MissingFromBaseline -count=1 \u0026\u0026 go test ./pkg/application/ -run 'Baseline|CommittedFile' -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "29b23c0bd59d8241f950a4249c512ff7a9f6f58f",
+          "dirty": true,
+          "by": "Claude",
+          "at": "2026-09-27T15:12:38.575326817+02:00",
+          "duration": "594ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/domain\t0.002s\nok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.090s\n"
+        },
+        {
+          "kind": "run",
+          "command": "go test ./pkg/domain/ -run MissingFromBaseline -count=1 \u0026\u0026 go test ./pkg/application/ -run 'Baseline|CommittedFile' -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "6d32f30ec0b50474ef74484ce178db9f8b96c94a",
+          "by": "Claude",
+          "at": "2026-09-27T15:13:05.167925971+02:00",
+          "duration": "653ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/domain\t0.002s\nok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.094s\n"
         }
       ]
     },
@@ -207,6 +276,29 @@
           "by": "Claude",
           "at": "2026-09-27T14:15:42.835606466+02:00",
           "duration": "314ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.008s\n"
+        },
+        {
+          "kind": "run",
+          "command": "go test ./pkg/application/ -run Capture -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "29b23c0bd59d8241f950a4249c512ff7a9f6f58f",
+          "dirty": true,
+          "by": "Claude",
+          "at": "2026-09-27T15:12:39.176689394+02:00",
+          "duration": "310ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.008s\n"
+        },
+        {
+          "kind": "run",
+          "command": "go test ./pkg/application/ -run Capture -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "6d32f30ec0b50474ef74484ce178db9f8b96c94a",
+          "by": "Claude",
+          "at": "2026-09-27T15:13:05.827227096+02:00",
+          "duration": "331ms",
           "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.008s\n"
         }
       ]
@@ -282,9 +374,28 @@
       "elapsed_minutes": 0
     },
     "task-dogfood-roadmap": {
-      "status": "pending",
+      "status": "done",
       "path": "",
-      "elapsed_minutes": 0
+      "owner": "Claude",
+      "evidence": [
+        "Commit: 6d32f30ec0b50474ef74484ce178db9f8b96c94a"
+      ],
+      "started_at": "2026-09-27T15:09:47.455009869+02:00",
+      "completed_at": "2026-09-27T15:13:02.554121389+02:00",
+      "elapsed_minutes": 3,
+      "checks": [
+        {
+          "kind": "run",
+          "command": "go run ./cmd/roady goal render --check \u0026\u0026 go run ./cmd/roady drift detect --checks \u0026\u0026 test ! -e docs/backlog.md",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "6d32f30ec0b50474ef74484ce178db9f8b96c94a",
+          "by": "Claude",
+          "at": "2026-09-27T15:13:02.599431251+02:00",
+          "duration": "6.639s",
+          "output": "/home/claude/felixgeelhaar/roady/ROADMAP.md is up to date.\nRe-ran the checks of 10 verified task(s); 0 fail now.\nNo drift detected. Project is in a healthy state.\n"
+        }
+      ]
     },
     "task-drift-reruns-checks": {
       "status": "done",
@@ -354,6 +465,29 @@
           "at": "2026-09-27T14:15:43.156277784+02:00",
           "duration": "415ms",
           "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.101s\n"
+        },
+        {
+          "kind": "run",
+          "command": "go test ./pkg/application/ -run 'Evidence|Override|SyncLinksCommit' -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "29b23c0bd59d8241f950a4249c512ff7a9f6f58f",
+          "dirty": true,
+          "by": "Claude",
+          "at": "2026-09-27T15:12:39.494261457+02:00",
+          "duration": "426ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.104s\n"
+        },
+        {
+          "kind": "run",
+          "command": "go test ./pkg/application/ -run 'Evidence|Override|SyncLinksCommit' -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "6d32f30ec0b50474ef74484ce178db9f8b96c94a",
+          "by": "Claude",
+          "at": "2026-09-27T15:13:06.166554126+02:00",
+          "duration": "422ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.108s\n"
         }
       ]
     },
@@ -436,6 +570,29 @@
           "at": "2026-09-27T14:15:43.578242599+02:00",
           "duration": "332ms",
           "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.010s\n"
+        },
+        {
+          "kind": "run",
+          "command": "go test ./pkg/application/ -run 'Loosen|CheckChanges|CheckChange|Locking|SpecLockNotices|RemovingStartedCheck' -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "29b23c0bd59d8241f950a4249c512ff7a9f6f58f",
+          "dirty": true,
+          "by": "Claude",
+          "at": "2026-09-27T15:12:39.927183408+02:00",
+          "duration": "318ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.010s\n"
+        },
+        {
+          "kind": "run",
+          "command": "go test ./pkg/application/ -run 'Loosen|CheckChanges|CheckChange|Locking|SpecLockNotices|RemovingStartedCheck' -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "6d32f30ec0b50474ef74484ce178db9f8b96c94a",
+          "by": "Claude",
+          "at": "2026-09-27T15:13:06.597176812+02:00",
+          "duration": "356ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.011s\n"
         }
       ]
     },
@@ -555,6 +712,29 @@
           "at": "2026-09-27T14:15:43.917330292+02:00",
           "duration": "423ms",
           "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.080s\n"
+        },
+        {
+          "kind": "run",
+          "command": "go test ./pkg/application/ -run 'MarkdownImport|SpecService' -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "29b23c0bd59d8241f950a4249c512ff7a9f6f58f",
+          "dirty": true,
+          "by": "Claude",
+          "at": "2026-09-27T15:12:40.252518175+02:00",
+          "duration": "392ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.075s\n"
+        },
+        {
+          "kind": "run",
+          "command": "go test ./pkg/application/ -run 'MarkdownImport|SpecService' -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "6d32f30ec0b50474ef74484ce178db9f8b96c94a",
+          "by": "Claude",
+          "at": "2026-09-27T15:13:06.960947795+02:00",
+          "duration": "411ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.077s\n"
         }
       ]
     },
@@ -659,6 +839,29 @@
           "at": "2026-09-27T14:15:44.349092043+02:00",
           "duration": "707ms",
           "output": "ok  \tgithub.com/felixgeelhaar/roady/internal/infrastructure/mcp\t0.009s\n"
+        },
+        {
+          "kind": "run",
+          "command": "go test -tags mcpwire ./internal/infrastructure/mcp/ -run TestToolErrorOnTheWire -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "29b23c0bd59d8241f950a4249c512ff7a9f6f58f",
+          "dirty": true,
+          "by": "Claude",
+          "at": "2026-09-27T15:12:40.65220787+02:00",
+          "duration": "723ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/internal/infrastructure/mcp\t0.030s\n"
+        },
+        {
+          "kind": "run",
+          "command": "go test -tags mcpwire ./internal/infrastructure/mcp/ -run TestToolErrorOnTheWire -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "6d32f30ec0b50474ef74484ce178db9f8b96c94a",
+          "by": "Claude",
+          "at": "2026-09-27T15:13:07.379862362+02:00",
+          "duration": "715ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/internal/infrastructure/mcp\t0.029s\n"
         }
       ]
     },
@@ -809,6 +1012,29 @@
           "at": "2026-09-27T14:15:45.062516061+02:00",
           "duration": "344ms",
           "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.007s\n"
+        },
+        {
+          "kind": "run",
+          "command": "go test ./pkg/application/ -run 'ApprovalFollowsScope|KeepsApprovalWhenIntentUnchanged' -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "29b23c0bd59d8241f950a4249c512ff7a9f6f58f",
+          "dirty": true,
+          "by": "Claude",
+          "at": "2026-09-27T15:12:41.383496254+02:00",
+          "duration": "323ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.009s\n"
+        },
+        {
+          "kind": "run",
+          "command": "go test ./pkg/application/ -run 'ApprovalFollowsScope|KeepsApprovalWhenIntentUnchanged' -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "6d32f30ec0b50474ef74484ce178db9f8b96c94a",
+          "by": "Claude",
+          "at": "2026-09-27T15:13:08.104460893+02:00",
+          "duration": "335ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.007s\n"
         }
       ]
     },
@@ -946,6 +1172,29 @@
           "by": "Claude",
           "at": "2026-09-27T14:15:45.415261241+02:00",
           "duration": "710ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/internal/infrastructure/cli\t0.008s\n"
+        },
+        {
+          "kind": "run",
+          "command": "go test ./internal/infrastructure/cli/ -run RegisterClaudeCodeMCP -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "29b23c0bd59d8241f950a4249c512ff7a9f6f58f",
+          "dirty": true,
+          "by": "Claude",
+          "at": "2026-09-27T15:12:41.714728951+02:00",
+          "duration": "672ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/internal/infrastructure/cli\t0.009s\n"
+        },
+        {
+          "kind": "run",
+          "command": "go test ./internal/infrastructure/cli/ -run RegisterClaudeCodeMCP -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "6d32f30ec0b50474ef74484ce178db9f8b96c94a",
+          "by": "Claude",
+          "at": "2026-09-27T15:13:08.44609637+02:00",
+          "duration": "785ms",
           "output": "ok  \tgithub.com/felixgeelhaar/roady/internal/infrastructure/cli\t0.008s\n"
         }
       ]
@@ -1151,5 +1400,5 @@
       "elapsed_minutes": 4
     }
   },
-  "updated_at": "2026-09-27T14:53:55.442426321+02:00"
+  "updated_at": "2026-09-27T15:13:02.554122112+02:00"
 }

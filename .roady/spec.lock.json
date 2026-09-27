@@ -1,7 +1,7 @@
 {
   "id": "agent-handoff",
   "title": "Roady: Agent Handoff \u0026 Cross-Project Planning",
-  "description": "Roady planning system roadmap:\n- v0.5.0 (complete): Horizons 5 \u0026 6 — predictive analytics, domain hardening, event sourcing.\n- v0.6.0 (complete): Multi-repo org dashboard, plugin contracts, notification webhooks, fsnotify watch,\n  coordinator integration into CLI/MCP with snapshot and task queries.\n- v0.7.0 (complete): Org policy inheritance, cross-project drift, plugin registry and health,\n  Slack/realtime notifications, watch auto-sync and patterns.\n- v0.8.0 (complete): Developer experience polish, API/SDK stability, multi-user collaboration,\n  AI-powered workflows, interactive D3 MCP app visualizations.\n- v0.9.0 (complete): Expert-review-driven refinements — sharpen onboarding, reduce CLI\n  cognitive load, ship a pre-seeded demo, fix empty-state UX.\n- v0.10.0 (complete): AI quality and telemetry — eval harness over the planning\n  pipeline (heuristic + AI mock + drift corpus), Task.Origin provenance, source-doc\n  citations through spec analyze, CompletionResponse confidence + sources +\n  streaming OnToken contract, MCP tool consolidation (roady_tasks +\n  roady_cost_estimate), naming standardisation aliases, roady notify namespace\n  unification, AI command progress feedback with SIGINT cancellation.\n- v0.11.0 (complete): Positioning and narrative cleanup — single ICP picked\n  (devs using AI coding agents), category named (\"Planning memory for AI\n  coding agents\"), README hero rewritten, feature museum moved to\n  docs/advanced.md, docs/vs.md competitive comparison + docs/positioning.md\n  one-pager + ROADMAP.md sketch shipped, Astro website hero / definition /\n  features sections realigned to match.\n    - v0.12.0 (complete): Live Kanban dashboard, cross-project board, SSE updates,\n      dashboard auth token.\n    - v0.13.x (complete): Release pipeline — dedicated release workflow, cask\n      publishing, cleared goreleaser deprecations.\n    - v0.14.0 (complete): Coordination and stakeholder reporting without a UI —\n      owner-scoped task queries, per-owner WIP limits, enforceable team roles,\n      `roady report`, `roady notify digest`, agent/session provenance on every\n      event, `roady audit trail`, bidirectional tracker sync, parallel-safe\n      event logs with `roady state rebuild`. Web dashboard removed.\n    - v0.15.0 (complete): Roady stopped calling language models. Provider clients\n      removed; the model-assisted operations return assembled prompts plus the\n      tool that accepts the result. MCP tool failures became readable results\n      rather than masked protocol faults. MCP schema 3.0.0.\n    - v0.16.0 (complete): staleness drift detection, audit-verification\n      correctness (three causes, none of them tampering), and plan prune\n      cleaning execution state.\n    - v0.17.0 (complete): roady_audit_trail exposed over MCP; schema 3.1.0.\n    - Planned (unversioned until it ships): the features below.\n    - Direction (2026-09): roady becomes the record agents plan into (capture, keep, prove); see features trust, capture,\n      keep and focus.\n",
+  "description": "Roady is the planning tool for AI coding agents: it captures intent at any size, keeps the agent on it across sessions, compaction and parallel agents, and proves work done with acceptance checks and a hash-chained audit log. The roadmap is the goals below; ROADMAP.md is rendered from them.",
   "goals": [
     {
       "id": "goal-planning-for-ai",
@@ -153,6 +153,61 @@
       "title": "Plugin marketplace",
       "description": "Was on Later: a marketplace for syncers and notifiers with signed binaries and contract tests. Tracker sync, notifications and the plugin system were removed as outside capture, keep and prove.",
       "status": "out_of_scope",
+      "source": {}
+    },
+    {
+      "id": "goal-release-0-7-0",
+      "title": "Org policy inheritance and cross-project drift",
+      "description": "Org policy inheritance, cross-project drift, plugin registry and health, Slack/realtime notifications, watch auto-sync and patterns.",
+      "status": "shipped",
+      "milestone": "v0.7.0",
+      "source": {}
+    },
+    {
+      "id": "goal-release-0-8-0",
+      "title": "Developer experience and API/SDK stability",
+      "description": "Developer experience polish, API/SDK stability, multi-user collaboration, AI-powered workflows, interactive D3 MCP app visualizations.",
+      "status": "shipped",
+      "milestone": "v0.8.0",
+      "source": {}
+    },
+    {
+      "id": "goal-release-0-9-0",
+      "title": "Expert-review-driven refinements",
+      "description": "Sharper onboarding, less CLI cognitive load, a pre-seeded demo, fixed empty-state UX.",
+      "status": "shipped",
+      "milestone": "v0.9.0",
+      "source": {}
+    },
+    {
+      "id": "goal-release-0-12-0",
+      "title": "Live Kanban dashboard",
+      "description": "Live Kanban dashboard, cross-project board, SSE updates, dashboard auth token.",
+      "status": "shipped",
+      "milestone": "v0.12.0",
+      "source": {}
+    },
+    {
+      "id": "goal-release-0-13-x",
+      "title": "Release pipeline",
+      "description": "Dedicated release workflow, cask publishing, cleared goreleaser deprecations.",
+      "status": "shipped",
+      "milestone": "v0.13.x",
+      "source": {}
+    },
+    {
+      "id": "goal-no-mcp-app-visualizations",
+      "title": "Interactive D3 visualizations in MCP apps",
+      "description": "Was in the backlog (docs/backlog.md) — D3 charts embedded in MCP apps for status, plan, state, drift, spec, policy and git sync. The MCP apps were removed when the server was cut to what agents use; people read roady through the CLI and ROADMAP.md.",
+      "status": "out_of_scope",
+      "source": {}
+    },
+    {
+      "id": "goal-release-0-23-0",
+      "title": "Audit verification tells history it cannot check from alteration",
+      "description": "`roady audit verify` reports entries it cannot check (unhashed, or hashed before `hash_algo` existed) apart from evidence of alteration, with a reason on every finding.",
+      "status": "shipped",
+      "milestone": "v0.23.0",
       "source": {}
     }
   ],
