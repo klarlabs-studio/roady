@@ -446,6 +446,10 @@ func (s *CaptureService) applyFeatures(features []CaptureFeature, sp *spec.Produ
 					Reason: fmt.Sprintf("already belongs to feature %q; requirement IDs are unique across the spec", owner)})
 				continue
 			}
+			if cr.Title != nil && planning.IsStatusTitle(*cr.Title) {
+				result.Rejected = append(result.Rejected, CaptureRejection{Item: "requirement:" + rid, Reason: statusTitleReason(*cr.Title, "task-"+rid)})
+				continue
+			}
 			ri := requirementIndex(sp.Features[fi], rid)
 			if ri < 0 {
 				if cr.Title == nil || strings.TrimSpace(*cr.Title) == "" {
@@ -561,6 +565,10 @@ func (s *CaptureService) applyTasks(tasks []CaptureTask, sp *spec.ProductSpec, p
 			featureID = *ct.FeatureID
 		}
 
+		if ct.Title != nil && planning.IsStatusTitle(*ct.Title) {
+			result.Rejected = append(result.Rejected, CaptureRejection{Item: item, Reason: statusTitleReason(*ct.Title, id)})
+			continue
+		}
 		ti := taskIndex(plan, id)
 		if ti < 0 {
 			if ct.Title == nil || strings.TrimSpace(*ct.Title) == "" {
@@ -862,4 +870,10 @@ func jsonValue(v any) any {
 	var out any
 	_ = json.Unmarshal(b, &out)
 	return out
+}
+
+// statusTitleReason explains why a status word is refused as a title and
+// what the caller most likely meant.
+func statusTitleReason(title, taskID string) string {
+	return fmt.Sprintf("%q is a status, not a title: it would replace what the task is. To record progress use `roady task complete %s` (MCP roady_task action complete); a title says what the work is", strings.TrimSpace(title), taskID)
 }
