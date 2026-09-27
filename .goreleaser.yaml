@@ -78,22 +78,18 @@ homebrew_casks:
     homepage: "https://felixgeelhaar.github.io/roady/"
     description: "A planning-first system of record for software work."
     license: "MIT"
+    # Only binaries a build above produces. v0.25.0 removed the plugin builds
+    # and left them here, and brew then failed every install and upgrade on the
+    # first missing symlink source. release_config_test.go holds this list to
+    # the builds.
     binaries:
       - roady
-      - roady-plugin-linear
-      - roady-plugin-jira
-      - roady-plugin-github
-      - roady-plugin-asana
-      - roady-plugin-notion
-      - roady-plugin-trello
-      - roady-plugin-mock
     hooks:
       post:
         # The release archives are not notarized, so Gatekeeper quarantines
         # every binary on first run. A formula was never subject to this; a cask
-        # is, so without this the CLI and all seven plugins refuse to start.
-        # Stripped across staged_path rather than per-binary because there are
-        # eight of them.
+        # is, so without this the CLI refuses to start. Stripped across
+        # staged_path so a binary added later is covered too.
         install: |
           if OS.mac?
             system_command "xattr", args: ["-dr", "com.apple.quarantine", staged_path]

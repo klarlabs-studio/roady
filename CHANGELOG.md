@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `brew install` and `brew upgrade` of the roady cask work again. v0.25.0
+  stopped building the plugin binaries but the cask still linked all seven,
+  so Homebrew aborted on the first missing one. A test now holds the cask's
+  binaries to what the release builds.
 - Every worktree reports the same path for the shared execution state. A
   checkout opened through a symlink (`/var` on macOS is one, to
   `/private/var`) named the common git dir differently from a linked
