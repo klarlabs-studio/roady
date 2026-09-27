@@ -650,9 +650,25 @@
       "check": {
         "run": "go test ./internal/infrastructure/mcp/ -run 'TestServer_ServesTheAgentLoopOnly|TestServer_GovernanceIsNotAnAgentTool|TestEveryToolIsAnnotated' -count=1"
       }
+    },
+    {
+      "id": "task-mcp-noun-parity",
+      "title": "MCP parity by CLI noun, with user approval for decisions",
+      "description": "One MCP tool per CLI noun (init, next, status, query, capture, task, plan, spec, drift, audit, state, policy, git) with the CLI's verbs as actions, so every project operation is reachable over MCP. Decisions and destructive operations (plan approve/reject/prune, drift accept, spec lock/import/analyze, state rebuild) proceed only when the user confirms in their client (MCP elicitation); otherwise they are refused. Done when: every CLI verb has an MCP action, gated actions refuse without confirmation, and dead code is gone.",
+      "priority": "high",
+      "estimate": "",
+      "depends_on": [
+        "task-mcp-agent-loop"
+      ],
+      "feature_id": "capture",
+      "origin": "human",
+      "source": {},
+      "check": {
+        "run": "go test ./internal/infrastructure/mcp/ -run 'TestServer_ToolPerCLINoun|TestEveryNounActionDispatches|TestGatedActionsNeedTheUser' -count=1 \u0026\u0026 go test ./internal/infrastructure/cli/ -run TestEveryCLICommandHasAnMCPTool -count=1"
+      }
     }
   ],
   "approval_status": "approved",
   "created_at": "2026-01-31T18:00:00+01:00",
-  "updated_at": "2026-09-27T08:07:27.702918304+02:00"
+  "updated_at": "2026-09-27T08:31:24.284928414+02:00"
 }

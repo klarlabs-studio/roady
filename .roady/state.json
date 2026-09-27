@@ -1,6 +1,6 @@
 {
   "project_id": "agent-handoff",
-  "version": 270,
+  "version": 273,
   "task_states": {
     "task-acceptance-checks": {
       "status": "verified",
@@ -512,6 +512,30 @@
       "completed_at": "2026-08-10T16:37:14.146302+02:00",
       "elapsed_minutes": 0
     },
+    "task-mcp-noun-parity": {
+      "status": "done",
+      "path": "",
+      "owner": "Claude",
+      "evidence": [
+        "Commit: 4c32c5bbb45fddf55092484f8f2f4c9b011fd18f"
+      ],
+      "started_at": "2026-09-27T08:16:29.818073787+02:00",
+      "completed_at": "2026-09-27T08:31:19.775156821+02:00",
+      "elapsed_minutes": 14,
+      "checks": [
+        {
+          "kind": "run",
+          "command": "go test ./internal/infrastructure/mcp/ -run 'TestServer_ToolPerCLINoun|TestEveryNounActionDispatches|TestGatedActionsNeedTheUser' -count=1 \u0026\u0026 go test ./internal/infrastructure/cli/ -run TestEveryCLICommandHasAnMCPTool -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "4c32c5bbb45fddf55092484f8f2f4c9b011fd18f",
+          "by": "Claude",
+          "at": "2026-09-27T08:31:24.302261506+02:00",
+          "duration": "2.093s",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/internal/infrastructure/mcp\t0.018s\nok  \tgithub.com/felixgeelhaar/roady/internal/infrastructure/cli\t0.005s\n"
+        }
+      ]
+    },
     "task-mcp-tool-profiles": {
       "status": "verified",
       "path": "",
@@ -855,5 +879,5 @@
       "elapsed_minutes": 4
     }
   },
-  "updated_at": "2026-09-27T08:07:27.688273488+02:00"
+  "updated_at": "2026-09-27T08:31:19.775157516+02:00"
 }
