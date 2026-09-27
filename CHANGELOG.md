@@ -10,6 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Adopting roady in a project that already has history. Found by running
 v0.25.0 against a project that had stopped using roady for markdown notes.
 
+### Added
+
+- Capture refuses a task or requirement title that is only a status word
+  (`done`, `verified`, `in progress`…) and says to use `roady task complete`
+  instead. An agent that retitled tasks to mark them finished left nexa with
+  89 tasks called "done". `roady doctor` names tasks already titled that way.
+
 ### Changed
 
 - A done or verified task whose feature the spec no longer has is history:

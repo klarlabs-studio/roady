@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/felixgeelhaar/roady/internal/infrastructure/wiring"
 	"github.com/felixgeelhaar/roady/pkg/application"
@@ -105,6 +106,13 @@ var doctorCmd = &cobra.Command{
 			return nil
 		})
 
+		if plan, err := repo.LoadPlan(); err == nil && plan != nil {
+			if ids := application.StatusTitledTasks(plan); len(ids) > 0 {
+				fmt.Printf("⚠️  %d task(s) are titled with a status word, so what they are was overwritten: %s\n   Retitle each with `roady edit <id> --title \"...\"`; record progress with `roady task complete`.\n",
+					len(ids), sampleIDs(ids, 5))
+			}
+		}
+
 		if hasIssues {
 			fmt.Println("\nissues found! Please fix them before continuing.")
 			return fmt.Errorf("doctor found issues")
@@ -116,4 +124,12 @@ var doctorCmd = &cobra.Command{
 
 func init() {
 	RootCmd.AddCommand(doctorCmd)
+}
+
+// sampleIDs names the first n ids and counts the rest.
+func sampleIDs(ids []string, n int) string {
+	if len(ids) <= n {
+		return strings.Join(ids, ", ")
+	}
+	return fmt.Sprintf("%s, … %d more", strings.Join(ids[:n], ", "), len(ids)-n)
 }
