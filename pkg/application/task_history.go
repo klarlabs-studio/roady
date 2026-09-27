@@ -225,7 +225,7 @@ func RenderHistory(taskID string, entries []HistoryEntry) string {
 // sameStep reports whether two entries record one transition: the same
 // verb, one of them from the coordinator's terse event.
 func sameStep(a, b HistoryEntry) bool {
-	verb := func(e HistoryEntry) string { return strings.Fields(e.What + " ")[0] }
+	verb := func(e HistoryEntry) string { return strings.TrimRight(strings.Fields(e.What + " ")[0], ":") }
 	terse := func(e HistoryEntry) bool { return e.Action != "task.transition" }
 	return verb(a) == verb(b) && (terse(a) || terse(b)) && !strings.HasPrefix(a.What, "created") && !strings.HasPrefix(a.What, "edited")
 }

@@ -56,6 +56,16 @@ func TestTaskHistoryShowsSplitsAndEdits(t *testing.T) {
 			t.Errorf("history lacks %q:\n%s", want, text)
 		}
 	}
+	if err := svc.TransitionTask(ids[1], "start", "codex", ""); err != nil {
+		t.Fatal(err)
+	}
+	if err := svc.TransitionTask(ids[1], "complete", "codex", "abc123"); err != nil {
+		t.Fatal(err)
+	}
+	h2, _ := svc.TaskHistory(ids[1])
+	if t2 := application.RenderHistory(ids[1], h2); strings.Count(t2, "complete") != 1 || !strings.Contains(t2, "complete: abc123") {
+		t.Errorf("a completion is shown once, with its evidence:\n%s", t2)
+	}
 	if strings.Count(text, "start") != 1 {
 		t.Errorf("a start is shown once:\n%s", text)
 	}
