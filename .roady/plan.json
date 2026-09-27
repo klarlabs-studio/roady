@@ -900,9 +900,23 @@
       "check": {
         "run": "go test ./pkg/application ./internal/infrastructure/cli -run 'GoalImport.*Sections'"
       }
+    },
+    {
+      "id": "task-git-sync-every-marker",
+      "title": "git sync completes every task a commit names (Adopting roady in a lived-in project)",
+      "description": "A commit tagged [roady:a] [roady:b] [roady:c] completed only a; git sync read the first marker in the subject. A subject containing | was also cut short.",
+      "priority": "medium",
+      "estimate": "",
+      "depends_on": [],
+      "feature_id": "adoption",
+      "origin": "heuristic",
+      "source": {},
+      "check": {
+        "run": "go test ./pkg/application -run 'TestGitService_SyncEveryMarker'"
+      }
     }
   ],
   "approval_status": "pending",
   "created_at": "2026-01-31T18:00:00+01:00",
-  "updated_at": "2026-09-27T22:37:54.280859+02:00"
+  "updated_at": "2026-09-27T22:46:48.940834+02:00"
 }
