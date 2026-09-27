@@ -143,6 +143,7 @@ func outputStatusJSON(productSpec *spec.ProductSpec, plan *planning.Plan, state 
 
 	if plan != nil {
 		counts := countTasksByStatus(plan, state)
+		accepted := countAccepted(plan, state)
 		totalDone := counts[planning.StatusDone] + counts[planning.StatusVerified]
 		progress := 0.0
 		if len(plan.Tasks) > 0 {
@@ -159,6 +160,10 @@ func outputStatusJSON(productSpec *spec.ProductSpec, plan *planning.Plan, state 
 				"in_progress": counts[planning.StatusInProgress],
 				"done":        counts[planning.StatusDone],
 				"verified":    counts[planning.StatusVerified],
+				// Accepted tasks are done tasks a person took as done without
+				// verification; the rest of done awaits verification.
+				"accepted":              accepted,
+				"awaiting_verification": counts[planning.StatusDone] - accepted,
 			},
 		}
 
@@ -212,7 +217,11 @@ func outputStatusText(cmd *cobra.Command, productSpec *spec.ProductSpec, plan *p
 	fmt.Printf("- Pending:     %d\n", counts[planning.StatusPending])
 	fmt.Printf("- Blocked:     %d\n", counts[planning.StatusBlocked])
 	fmt.Printf("- In Progress: %d\n", counts[planning.StatusInProgress])
-	fmt.Printf("- Done:        %d (awaiting verification)\n", counts[planning.StatusDone])
+	accepted := countAccepted(plan, state)
+	fmt.Printf("- Done:        %d (awaiting verification)\n", counts[planning.StatusDone]-accepted)
+	if accepted > 0 {
+		fmt.Printf("- Accepted:    %d (done, accepted without verification)\n", accepted)
+	}
 	fmt.Printf("- Verified:    %d\n", counts[planning.StatusVerified])
 
 	if len(plan.Tasks) > 0 {
@@ -369,6 +378,21 @@ func countTasksByStatus(plan *planning.Plan, state *planning.ExecutionState) map
 		counts[status]++
 	}
 	return counts
+}
+
+// countAccepted counts the plan's done tasks that were accepted without
+// verification (roady task accept).
+func countAccepted(plan *planning.Plan, state *planning.ExecutionState) int {
+	if state == nil {
+		return 0
+	}
+	n := 0
+	for _, t := range plan.Tasks {
+		if state.TaskStates[t.ID].IsAccepted() {
+			n++
+		}
+	}
+	return n
 }
 
 // getTaskStatus returns the current status of a task

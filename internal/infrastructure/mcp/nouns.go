@@ -35,7 +35,7 @@ type scope struct {
 // It is the one place the surface is declared, so a parity test can hold the
 // CLI and MCP to each other.
 var NounActions = map[string][]string{
-	"roady_task":   {"start", "complete", "block", "unblock", "stop", "reopen", "verify", "check", "dispatch", "list", "renew", "history"},
+	"roady_task":   {"start", "complete", "block", "unblock", "stop", "reopen", "verify", "check", "dispatch", "list", "renew", "history", "accept"},
 	"roady_plan":   {"get", "generate", "approve", "reject", "prune", "prioritize", "decompose", "import"},
 	"roady_spec":   {"get", "add", "analyze", "explain", "import", "lock", "review", "validate"},
 	"roady_drift":  {"detect", "accept", "explain", "semantic", "record"},
@@ -54,6 +54,7 @@ var GatedActions = map[string][]string{
 	"roady_plan":  {"approve", "reject", "prune"},
 	"roady_spec":  {"analyze", "import", "lock"},
 	"roady_drift": {"accept"},
+	"roady_task":  {"accept"},
 	"roady_state": {"rebuild"},
 }
 
@@ -68,17 +69,19 @@ func actionError(tool, action string) (any, error) {
 
 // TaskArgs is `roady task <action>`.
 type TaskArgs struct {
-	Action    string `json:"action" jsonschema:"required,description=start|complete|block|unblock|stop|reopen|verify|check|dispatch|list|renew (keep your claim; starting a task claims it with an expiring lease)|history (what happened to it)"`
-	TaskID    string `json:"task_id,omitempty" jsonschema:"description=The task (all actions but list)"`
-	Evidence  string `json:"evidence,omitempty" jsonschema:"description=Proof for complete/verify, e.g. a commit; for block, what is wrong"`
-	Reason    string `json:"reason,omitempty" jsonschema:"description=block: spec-conflict or cannot-complete when the task cannot be done as specified — say so instead of forcing it done; a person decides"`
-	Agent     string `json:"agent,omitempty" jsonschema:"description=Acting agent; for dispatch, the subagent taking the task"`
-	SessionID string `json:"session_id,omitempty" jsonschema:"description=Session ID recorded in the audit trail"`
-	DryRun    bool   `json:"dry_run,omitempty" jsonschema:"description=dispatch: build the brief without claiming"`
-	Status    string `json:"status,omitempty" jsonschema:"description=list: ready (default), in_progress, blocked, unassigned or all"`
-	Owner     string `json:"owner,omitempty" jsonschema:"description=list: only this owner's tasks"`
-	Limit     int    `json:"limit,omitempty" jsonschema:"description=list: page size"`
-	Offset    int    `json:"offset,omitempty" jsonschema:"description=list: page start"`
+	Action    string   `json:"action" jsonschema:"required,description=start|complete|block|unblock|stop|reopen|verify|check|dispatch|list|renew (keep your claim; starting a task claims it with an expiring lease)|history (what happened to it)|accept (take finished tasks as done without verification; needs the user's confirmation)"`
+	TaskID    string   `json:"task_id,omitempty" jsonschema:"description=The task (all actions but list and accept)"`
+	TaskIDs   []string `json:"task_ids,omitempty" jsonschema:"description=accept: the finished tasks"`
+	AllDone   bool     `json:"all_done,omitempty" jsonschema:"description=accept: every done task that is not verified or accepted"`
+	Evidence  string   `json:"evidence,omitempty" jsonschema:"description=Proof for complete/verify, e.g. a commit; for block, what is wrong"`
+	Reason    string   `json:"reason,omitempty" jsonschema:"description=block: spec-conflict or cannot-complete when the task cannot be done as specified — say so instead of forcing it done; a person decides. accept: why they are taken as done without verification (required)"`
+	Agent     string   `json:"agent,omitempty" jsonschema:"description=Acting agent; for dispatch, the subagent taking the task"`
+	SessionID string   `json:"session_id,omitempty" jsonschema:"description=Session ID recorded in the audit trail"`
+	DryRun    bool     `json:"dry_run,omitempty" jsonschema:"description=dispatch: build the brief without claiming"`
+	Status    string   `json:"status,omitempty" jsonschema:"description=list: ready (default), in_progress, blocked, unassigned or all"`
+	Owner     string   `json:"owner,omitempty" jsonschema:"description=list: only this owner's tasks"`
+	Limit     int      `json:"limit,omitempty" jsonschema:"description=list: page size"`
+	Offset    int      `json:"offset,omitempty" jsonschema:"description=list: page start"`
 	scope
 }
 
@@ -106,6 +109,8 @@ func (s *Server) handleTask(ctx context.Context, a TaskArgs) (any, error) {
 			return mcpErr(err.Error()), nil
 		}
 		return application.RenderHistory(a.TaskID, entries), nil
+	case a.Action == "accept":
+		return s.handleAcceptFinished(ctx, a)
 	case a.Action == "renew":
 		return s.handleRenewClaim(a)
 	case a.Action == "list":
@@ -440,4 +445,29 @@ func (s *Server) importRoadmap(capture *application.CaptureService, root string,
 		return mcpErr(fmt.Sprintf("Failed to record the goals: %v", err)), nil
 	}
 	return map[string]any{"result": result, "skipped_sections": imp.Skipped}, nil
+}
+
+// handleAcceptFinished is roady_task accept: the user decides whether finished
+// work is taken as done without verification, never the agent alone.
+func (s *Server) handleAcceptFinished(ctx context.Context, a TaskArgs) (any, error) {
+	what := fmt.Sprintf("%d finished tasks (%s)", len(a.TaskIDs), strings.Join(a.TaskIDs, ", "))
+	if a.AllDone {
+		what = "every finished task awaiting verification"
+	}
+	question := fmt.Sprintf("Accept %s as done without verification? Reason: %q. They stop being reported as awaiting verification; this is not verification.", what, a.Reason)
+	return s.gated(ctx, a.scope, "task accept", question, func() (any, error) {
+		svc, err := s.servicesForPath(a.ProjectPath, a.Project)
+		if err != nil {
+			return mcpErrCause("Failed to load project at the given path.", err), nil
+		}
+		actor := a.Agent
+		if actor == "" {
+			actor = "user"
+		}
+		accepted, err := svc.Task.AcceptFinished(ctx, a.TaskIDs, a.AllDone, actor, a.Reason)
+		if err != nil {
+			return mcpErr(err.Error()), nil
+		}
+		return fmt.Sprintf("Accepted %d tasks as done without verification: %s", len(accepted), strings.Join(accepted, ", ")), nil
+	})
 }

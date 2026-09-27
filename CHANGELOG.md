@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `roady task accept <ids…> | --all-done --reason "…"` (MCP `roady_task`
+  action `accept`, with the user's confirmation) takes finished tasks as done
+  without verification. Adopting roady in a project with history left every
+  earlier completion "awaiting verification" forever, 140 on nexa, since
+  nothing can prove work finished before it had a check. Status counts
+  accepted tasks on their own line; they are not verified, can still be, and
+  reopening ends the acceptance. Who, why and when go in the state and the
+  audit trail. MCP schema 5.2.0.
+
 ## [0.26.1] - 2026-09-27
 
 ### Fixed

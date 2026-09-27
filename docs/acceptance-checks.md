@@ -131,6 +131,26 @@ shown the task is not done. Overrides are CLI-only; there is no MCP equivalent.
 Without the policy, a task that has a check is still gated on it; a task
 without one verifies as before.
 
+### Work finished before roady: `roady task accept`
+
+Adopting roady in a project with history leaves every earlier completion
+done but unverified: it was finished before it had a check, and nothing can
+prove it now. Verifying them all with overrides would make "verified" mean
+nothing. Accept them instead:
+
+```bash
+roady task accept --all-done --reason "finished before adopting roady"
+roady task accept task-a task-b --reason "shipped in v1.2, no checks then"
+```
+
+An accepted task stays done. `roady status` counts it on its own line rather
+than as awaiting verification, and it is not counted as verified. The state
+and the audit log record who accepted it, why and when, and `roady task
+history` shows it. It can still be verified later; reopening it ends the
+acceptance. It is all or nothing: if a named task is not done, none is
+accepted. Over MCP (`roady_task` action `accept`) it needs the user's
+confirmation.
+
 ## Changing a check after work started
 
 Once a task is in progress, blocked, done or verified, removing or changing

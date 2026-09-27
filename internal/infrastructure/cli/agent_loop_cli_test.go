@@ -23,6 +23,7 @@ func runRoady(t *testing.T, stdin string, args ...string) (string, error) {
 	addID, addReq, addFeature, addDesc, addPriority, addEstimate, addGoal = "", "", "", "", "", "", ""
 	addAfter, addBefore, addCheckRun, addCheckManual = nil, nil, "", ""
 	splitSequential = false
+	taskAcceptAllDone, taskAcceptReason = false, ""
 	moveReq, moveFeature = "", ""
 	goalID, goalDesc, goalHorizon, goalStatus, goalMilestone, goalTitle = "", "", "", "", "", ""
 	goalFeatures, goalListJSON, taskHistoryJSON, statsJSON = nil, false, false, false
