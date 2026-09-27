@@ -67,8 +67,10 @@ func TestAddTaskDoc(t *testing.T) {
 		t.Errorf("collision id = %s", id3)
 	}
 
-	if _, _, err := application.AddTaskDoc(repo.Plan, application.AddTask{Title: "Nowhere"}); err == nil {
-		t.Error("a task with no home must be refused before capture")
+	// With nowhere to belong, a task is unplanned work, not an error.
+	if doc, id, err := application.AddTaskDoc(repo.Plan, application.AddTask{Title: "Nowhere", Goal: "g"}); err != nil ||
+		doc.Tasks[0].FeatureID != nil || doc.Tasks[0].Requirement != nil || *doc.Tasks[0].Goal != "g" || id != "task-nowhere" {
+		t.Errorf("unplanned add: %+v %s %v", doc, id, err)
 	}
 	if _, _, err := application.AddTaskDoc(repo.Plan, application.AddTask{Title: "X", Feature: "base", Before: []string{"nope"}}); err == nil {
 		t.Error("--before an unknown task must be refused")

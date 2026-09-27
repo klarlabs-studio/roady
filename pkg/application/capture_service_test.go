@@ -139,7 +139,7 @@ func TestCaptureRejections(t *testing.T) {
 			{ID: "a", Title: str("A"), FeatureID: str("base"), DependsOn: &cycleA},
 			{ID: "b", Title: str("B"), FeatureID: str("base"), DependsOn: &cycleB},
 		}}, "cycle"},
-		{"orphan task", application.CaptureDoc{Tasks: []application.CaptureTask{{ID: "a", Title: str("A")}}}, "requirement or feature_id"},
+		{"unknown goal", application.CaptureDoc{Tasks: []application.CaptureTask{{ID: "a", Title: str("A"), Goal: str("goal-missing")}}}, "goal \"goal-missing\" does not exist"},
 		{"unknown feature", application.CaptureDoc{Tasks: []application.CaptureTask{{ID: "a", Title: str("A"), FeatureID: str("zzz")}}}, "does not exist"},
 		{"untitled", application.CaptureDoc{Features: []application.CaptureFeature{{ID: "new"}}}, "needs a title"},
 		{"bad priority", application.CaptureDoc{Tasks: []application.CaptureTask{{ID: "a", Title: str("A"), FeatureID: str("base"), Priority: str("urgent")}}}, "priority"},

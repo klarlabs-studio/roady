@@ -17,6 +17,8 @@ func severityRank(s Severity) int {
 		return 1
 	case SeverityMedium:
 		return 2
+	case SeverityInfo:
+		return 4
 	default:
 		return 3
 	}
@@ -25,6 +27,8 @@ func severityRank(s Severity) int {
 // ParseSeverity reads a severity threshold supplied by a caller.
 func ParseSeverity(raw string) (Severity, error) {
 	switch Severity(strings.ToLower(strings.TrimSpace(raw))) {
+	case SeverityInfo:
+		return SeverityInfo, nil
 	case SeverityLow:
 		return SeverityLow, nil
 	case SeverityMedium:
@@ -34,7 +38,7 @@ func ParseSeverity(raw string) (Severity, error) {
 	case SeverityCritical:
 		return SeverityCritical, nil
 	default:
-		return "", fmt.Errorf("unknown severity %q: use low, medium, high, or critical", raw)
+		return "", fmt.Errorf("unknown severity %q: use info, low, medium, high, or critical", raw)
 	}
 }
 

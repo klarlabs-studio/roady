@@ -55,3 +55,11 @@ func TestLeaseLifecycle(t *testing.T) {
 		t.Error("leaving in_progress kept the lease")
 	}
 }
+
+func TestPruneKeepsUnplannedWork(t *testing.T) {
+	tasks := []Task{{ID: "task-r", FeatureID: "f"}, {ID: "task-chore"}, {ID: "task-gone", FeatureID: "deleted"}}
+	got := (&PlanReconciler{}).FilterValidTasks(tasks, map[string]bool{"task-r": true}, map[string]bool{"f": true})
+	if len(got) != 2 || got[1].ID != "task-chore" {
+		t.Errorf("kept %+v", got)
+	}
+}

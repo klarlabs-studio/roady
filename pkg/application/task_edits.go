@@ -28,6 +28,9 @@ type AddTask struct {
 	Priority string
 	Estimate string
 	Check    *planning.Check
+	// Goal attaches the task to a roadmap goal. With no requirement,
+	// feature or --after to place it, the task is unplanned work.
+	Goal string
 }
 
 // AddTaskDoc builds the capture for a new task and returns its id.
@@ -54,13 +57,11 @@ func AddTaskDoc(plan *planning.Plan, a AddTask) (CaptureDoc, string, error) {
 			}
 		}
 	}
-	if feature == "" && requirement == "" {
-		if existing, ok := findTask(plan, id); !ok || existing.FeatureID == "" {
-			return CaptureDoc{}, "", fmt.Errorf("say where %q belongs: --req <requirement>, --feature <feature>, or --after <task> to join that task's feature", title)
-		}
-	}
 
 	ct := CaptureTask{ID: id, Title: &title}
+	if a.Goal != "" {
+		ct.Goal = strPtr(a.Goal)
+	}
 	if requirement != "" {
 		ct.Requirement = &requirement
 	}

@@ -60,8 +60,9 @@ type CaptureRequirement struct {
 	Goal        *string     `json:"goal,omitempty" yaml:"goal,omitempty" jsonschema:"description=ID of a goal other than its feature's"`
 }
 
-// CaptureTask upserts a task. A new task needs a title and either a
-// requirement or a feature_id to belong to.
+// CaptureTask upserts a task. A new task needs a title. With a requirement
+// or feature_id it traces to the spec; without, it is unplanned work — in
+// the inbox, or under a goal.
 type CaptureTask struct {
 	ID          string          `json:"id" yaml:"id" jsonschema:"description=Task ID"`
 	Title       *string         `json:"title,omitempty" yaml:"title,omitempty" jsonschema:"description=Task title (required for a new task)"`
@@ -71,6 +72,7 @@ type CaptureTask struct {
 	DependsOn   *[]string       `json:"depends_on,omitempty" yaml:"depends_on,omitempty" jsonschema:"description=IDs of tasks this one depends on (replaces the current list)"`
 	FeatureID   *string         `json:"feature_id,omitempty" yaml:"feature_id,omitempty" jsonschema:"description=Feature the task belongs to"`
 	Requirement *string         `json:"requirement,omitempty" yaml:"requirement,omitempty" jsonschema:"description=Requirement the task serves; implies its feature"`
+	Goal        *string         `json:"goal,omitempty" yaml:"goal,omitempty" jsonschema:"description=Goal for unplanned work (a task with no requirement or feature)"`
 	Check       *planning.Check `json:"check,omitempty" yaml:"check,omitempty" jsonschema:"description=Acceptance check for this task: run or manual"`
 	// Source cites where the task came from (doc:line), e.g. a step in an
 	// imported plan file.
@@ -469,10 +471,6 @@ func (s *CaptureService) applyTasks(tasks []CaptureTask, sp *spec.ProductSpec, p
 				result.Rejected = append(result.Rejected, CaptureRejection{Item: item, Reason: "a new task needs a title"})
 				continue
 			}
-			if featureID == "" {
-				result.Rejected = append(result.Rejected, CaptureRejection{Item: item, Reason: "a new task needs a requirement or feature_id to belong to"})
-				continue
-			}
 			plan.Tasks = append(plan.Tasks, planning.Task{ID: id, DependsOn: []string{}, Origin: origin})
 			ti = len(plan.Tasks) - 1
 			t.created(item)
@@ -490,6 +488,13 @@ func (s *CaptureService) applyTasks(tasks []CaptureTask, sp *spec.ProductSpec, p
 		}
 		if featureID != "" {
 			task.FeatureID = featureID
+		}
+		if ct.Goal != nil {
+			if g := strings.TrimSpace(*ct.Goal); g != "" && sp.GoalIndex(g) < 0 {
+				result.Rejected = append(result.Rejected, CaptureRejection{Item: item, Reason: fmt.Sprintf("goal %q does not exist", g)})
+				continue
+			}
+			task.Goal = strings.TrimSpace(*ct.Goal)
 		}
 		if ct.Check != nil {
 			c := *ct.Check

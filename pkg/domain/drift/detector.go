@@ -76,6 +76,24 @@ func (d *DriftDetector) DetectPlanDrift(s *spec.ProductSpec, plan *planning.Plan
 	// Detect orphan tasks
 	if plan != nil {
 		for _, t := range plan.Tasks {
+			// A task with no feature was added on purpose outside the spec —
+			// a quick fix, a chore. That is worth knowing, not pruning.
+			if t.FeatureID == "" && !specRequirementIDs[t.ID] {
+				where := "the inbox"
+				if t.Goal != "" {
+					where = "goal " + t.Goal
+				}
+				issues = append(issues, Issue{
+					ID:          fmt.Sprintf("unplanned-task-%s", t.ID),
+					Type:        DriftTypePlan,
+					Category:    CategoryUnplanned,
+					Severity:    SeverityInfo,
+					ComponentID: t.ID,
+					Message:     fmt.Sprintf("Task '%s' (ID: %s) is unplanned work in %s: it serves no feature or requirement.", t.Title, t.ID, where),
+					Hint:        fmt.Sprintf("Fine as it is. To trace it to intent, `roady move %s --req <requirement>` or `--feature <feature>`.", t.ID),
+				})
+				continue
+			}
 			// A task is an orphan only if it doesn't match a Requirement AND doesn't match a Feature
 			if !specRequirementIDs[t.ID] && !specFeatureIDs[t.FeatureID] {
 				issues = append(issues, Issue{

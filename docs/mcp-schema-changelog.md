@@ -63,7 +63,10 @@ Every per-verb tool: `roady_task_transition`, `roady_task_check`,
 - No tool carries a `ui://roady/*` resource; the MCP App UIs are removed.
 - `ROADY_MCP_TOOLS` and its groups are gone; every tool is listed.
 - `roady_capture` takes `goals` (id, title, description, horizon, status,
-  milestone), and features and requirements take `goal`.
+  milestone), and features and requirements take `goal`. A task needs no
+  requirement or feature (unplanned work) and takes `goal`.
+- Drift issues can carry severity `info` (below `low`) and category
+  `UNPLANNED`.
 
 ## v4.0.0 — Narrowed to capture, keep, prove
 

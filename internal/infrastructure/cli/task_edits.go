@@ -20,6 +20,7 @@ var (
 
 	addID, addReq, addFeature, addDesc, addPriority, addEstimate string
 	addAfter, addBefore                                          []string
+	addGoal                                                      string
 	addCheckRun, addCheckManual                                  string
 
 	editTitle, editDesc, editPriority, editEstimate string
@@ -94,7 +95,9 @@ var addCmd = &cobra.Command{
   roady add "Load test the endpoint" --after task-rate-limits --before task-release
 
 The task belongs to --req (which implies its feature) or --feature; with
-neither, it joins the feature of the first --after task. --after tasks become
+neither, it joins the feature of the first --after task. With none of them it
+is unplanned work — a chore or quick fix outside the spec — kept in the
+inbox, or under a roadmap goal with --goal; drift notes it but never prunes it. --after tasks become
 its dependencies; --before tasks come to depend on it. The id is
 task-<title>, or --id. Adding the same title again changes nothing.`,
 	Args: cobra.ExactArgs(1),
@@ -109,7 +112,7 @@ task-<title>, or --id. Adding the same title again changes nothing.`,
 		}
 		doc, id, err := application.AddTaskDoc(plan, application.AddTask{
 			Title: args[0], ID: addID, Description: addDesc, Requirement: addReq, Feature: addFeature,
-			After: addAfter, Before: addBefore, Priority: addPriority, Estimate: addEstimate, Check: check,
+			After: addAfter, Before: addBefore, Priority: addPriority, Estimate: addEstimate, Check: check, Goal: addGoal,
 		})
 		if err != nil {
 			return err
@@ -219,6 +222,7 @@ func init() {
 	f.StringVar(&addReq, "req", "", "Requirement the task serves (implies its feature)")
 	f.StringVar(&addFeature, "feature", "", "Feature the task belongs to")
 	f.StringVarP(&addDesc, "description", "d", "", "Task description")
+	f.StringVar(&addGoal, "goal", "", "Roadmap goal for unplanned work (a task with no --req or --feature)")
 	f.StringSliceVar(&addAfter, "after", nil, "Tasks this one depends on (comma-separated or repeated)")
 	f.StringSliceVar(&addBefore, "before", nil, "Tasks that should depend on this one")
 	f.StringVarP(&addPriority, "priority", "p", "", "low, medium or high")

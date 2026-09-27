@@ -72,6 +72,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `2h`, `off` disables): the task goes back to pending, `task.claim_expired`
   is recorded, and it no longer counts against WIP limits. state.json is
   now replaced atomically, so a reader never sees half a file.
+- **Unplanned work has a place.** `roady add "<title>"` with no `--req` or
+  `--feature` (and tasks in a capture without either) now succeeds: the
+  task is unplanned work in the inbox, or under a roadmap goal with
+  `--goal`, where the goal's progress counts it. Drift reports it as
+  `UNPLANNED` with the new `info` severity, which no `--fail-on` gate trips,
+  instead of as an orphan to prune; `plan prune` keeps it. A task whose
+  feature was deleted is still an orphan.
 - **An honest exit from impossible work.** `roady task block <id> --reason
   spec-conflict|cannot-complete -e "<what is wrong>"` (MCP `roady_task`
   block with `reason`) lets an agent say a task cannot be done as specified

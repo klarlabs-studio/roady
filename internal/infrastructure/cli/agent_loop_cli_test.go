@@ -20,7 +20,7 @@ func runRoady(t *testing.T, stdin string, args ...string) (string, error) {
 	editDryRun, editJSON, captureDryRun, captureJSON, captureFile = false, false, false, false, ""
 	planImportDryRun, planImportJSON, planImportParallel, planImportIncludeDone = false, false, false, false
 	planImportFeature, planImportFormat = "", "auto"
-	addID, addReq, addFeature, addDesc, addPriority, addEstimate = "", "", "", "", "", ""
+	addID, addReq, addFeature, addDesc, addPriority, addEstimate, addGoal = "", "", "", "", "", "", ""
 	addAfter, addBefore, addCheckRun, addCheckManual = nil, nil, "", ""
 	splitSequential = false
 	moveReq, moveFeature = "", ""
@@ -356,5 +356,46 @@ func TestBlockWithASpecConflict(t *testing.T) {
 	}
 	if out, _ := runRoady(t, "", "status"); strings.Contains(out, "Needs a decision") {
 		t.Errorf("resolved, yet still listed:\n%s", out)
+	}
+}
+
+// The done-when of task-unplanned-tasks: `roady add` with no --req succeeds,
+// drift classifies it as unplanned (informational, not failing), and prune
+// keeps it.
+func TestUnplannedTask(t *testing.T) {
+	_, cleanup := withPlainTempDir(t)
+	defer cleanup()
+	t.Setenv("ROADY_USER", "tester")
+	if _, err := runRoady(t, "", "init", "inbox"); err != nil {
+		t.Fatal(err)
+	}
+	doc := "goals:\n  - id: goal-hygiene\n    title: Hygiene\n    horizon: now\nfeatures:\n  - id: f\n    title: F\n    requirements:\n      - id: r\n        title: R\n"
+	if _, err := runRoady(t, doc, "capture"); err != nil {
+		t.Fatal(err)
+	}
+	if out, err := runRoady(t, "", "add", "Fix the typo in the README"); err != nil || !strings.Contains(out, "task-fix-the-typo-in-the-readme") {
+		t.Fatalf("add without --req: %v\n%s", err, out)
+	}
+	if out, err := runRoady(t, "", "add", "Bump dependencies", "--goal", "goal-hygiene"); err != nil {
+		t.Fatalf("add --goal: %v\n%s", err, out)
+	}
+
+	driftChecks = false
+	out, err := runRoady(t, "", "drift", "detect")
+	if err != nil {
+		t.Errorf("unplanned work must not fail drift: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "(plan/UNPLANNED)") || !strings.Contains(out, "unplanned work in the inbox") ||
+		!strings.Contains(out, "unplanned work in goal goal-hygiene") || strings.Contains(out, "ORPHAN") {
+		t.Errorf("drift:\n%s", out)
+	}
+	if out, _ = runRoady(t, "", "goal", "list"); !strings.Contains(out, "goal-hygiene  Hygiene  (0/1 tasks done)") {
+		t.Errorf("the goal does not count its unplanned task:\n%s", out)
+	}
+	if _, err := runRoady(t, "", "plan", "prune"); err != nil {
+		t.Fatal(err)
+	}
+	if out, _ = runRoady(t, "", "status"); !strings.Contains(out, "Fix the typo in the README") {
+		t.Errorf("prune dropped unplanned work:\n%s", out)
 	}
 }

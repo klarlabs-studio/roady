@@ -52,7 +52,10 @@ roady capture --dry-run < plan.yaml
   dependencies only when the capture states it, so edges set on a task
   directly survive an unrelated edit to its requirement.
 - **Extra tasks** name a `requirement` (which implies the feature) or a
-  `feature_id`, and a `title` when new.
+  `feature_id`, and a `title` when new. A task with neither is **unplanned
+  work** — a chore, a quick fix — kept in the inbox, or under a roadmap
+  `goal`. Drift notes it as `UNPLANNED` (severity `info`, below every gate)
+  instead of an orphan, and `plan prune` keeps it.
 - **All or nothing.** The resulting spec and plan are validated together —
   spec rules, dependencies that exist, no cycles, valid priorities and checks.
   If anything fails, nothing is written, and every rejection is reported with
@@ -128,7 +131,8 @@ roady move task-load-test --req perf-budget
 
 - **add** — the task belongs to `--req` (implying its feature) or
   `--feature`; with neither, it joins the feature of the first `--after`
-  task. `--after` tasks become its dependencies, `--before` tasks come to
+  task, and with none of those it is unplanned work (`--goal` files it under
+  a roadmap goal). `--after` tasks become its dependencies, `--before` tasks come to
   depend on it. Its id is `task-<title>` (or `--id`); adding the same title
   again changes nothing. `--check-run` / `--check-manual` give it a check.
 - **edit** — changes only the fields given. `--depends-on` replaces the

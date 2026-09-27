@@ -77,6 +77,9 @@ func BuildRoadmap(sp *spec.ProductSpec, plan *planning.Plan, state *planning.Exe
 			// A requirement's own task is task-<requirement id>; its goal link
 			// overrides the feature's.
 			g := featGoal[t.FeatureID]
+			if t.Goal != "" {
+				g = t.Goal
+			}
 			if rid := strings.TrimPrefix(t.ID, "task-"); reqGoal[rid] != "" {
 				g = reqGoal[rid]
 			}
