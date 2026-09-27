@@ -311,7 +311,10 @@
       "depends_on": [],
       "feature_id": "trust",
       "origin": "heuristic",
-      "source": {}
+      "source": {},
+      "check": {
+        "run": "go test ./pkg/application/ -run TestSpecConflictRaisesDriftUntilResolved -count=1 \u0026\u0026 go test ./internal/infrastructure/cli/ -run TestBlockWithASpecConflict -count=1 \u0026\u0026 go test ./internal/infrastructure/mcp/ -run TestBlockWithReasonOverMCP -count=1"
+      }
     },
     {
       "id": "task-capture-upsert",
@@ -685,5 +688,5 @@
   ],
   "approval_status": "approved",
   "created_at": "2026-01-31T18:00:00+01:00",
-  "updated_at": "2026-09-27T14:16:48.215096545+02:00"
+  "updated_at": "2026-09-27T14:30:09.515969236+02:00"
 }
