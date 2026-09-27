@@ -598,7 +598,10 @@
       ],
       "feature_id": "focus",
       "origin": "heuristic",
-      "source": {}
+      "source": {},
+      "check": {
+        "run": "sed -n '1,/^## What Roady is, and is not/p' README.md | grep -qiE 'billing|cost report|debt scor|org view|dashboard|tracker sync|jira|linear' \u0026\u0026 exit 1; grep -hoE '\"roady_(cost|debt|org|rate|team|sync|timeline|usage|forecast|messaging|plugin|report)[a-z_]*\"' internal/infrastructure/mcp/*.go | grep -q . \u0026\u0026 exit 1; exit 0"
+      }
     },
     {
       "id": "task-dogfood-roadmap",
@@ -703,5 +706,5 @@
   ],
   "approval_status": "approved",
   "created_at": "2026-01-31T18:00:00+01:00",
-  "updated_at": "2026-09-27T15:28:41.015884467+02:00"
+  "updated_at": "2026-09-27T15:32:19.987545594+02:00"
 }
