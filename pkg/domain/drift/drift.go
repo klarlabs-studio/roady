@@ -27,6 +27,7 @@ const (
 	CategoryRegression     DriftCategory = "REGRESSION"     // A verified task's acceptance check fails now
 	CategoryUnplanned      DriftCategory = "UNPLANNED"      // Work done outside the spec, on purpose; informational
 	CategoryConflict       DriftCategory = "CONFLICT"       // An agent reported work it cannot do as specified; a person decides
+	CategoryLink           DriftCategory = "LINK"           // A task names its feature by title or slug, not by id
 )
 
 type Severity string

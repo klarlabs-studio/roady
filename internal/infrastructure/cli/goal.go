@@ -223,13 +223,25 @@ Afterwards the goals are the roadmap: render the file from them with
 			return err
 		}
 		if len(imp.Doc.Goals) == 0 {
-			return fmt.Errorf("no goals found in %s: expected ## Now / Next / Later / Done sections with a ### heading or bullet per goal", args[0])
+			return noGoalsError(args[0], imp.Skipped)
 		}
 		if len(imp.Skipped) > 0 && !editJSON {
 			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Skipped sections that are not a horizon: %s\n", strings.Join(imp.Skipped, ", "))
 		}
 		return applyEditVia(cmd, ws, imp.Doc, false, fmt.Sprintf("Imported %d goal(s) from %s", len(imp.Doc.Goals), args[0]), application.ViaRoadmapImport)
 	},
+}
+
+// noGoalsError explains an import that found no goal. A roadmap organised
+// some other way — by phase, by quarter — has sections, just not horizons, and
+// naming the ones it has shows what to rename.
+func noGoalsError(file string, skipped []string) error {
+	const want = "goals go under ## Now, Next, Later, Ideas, Done (or Shipped) or Out of scope, a ### heading or bullet each"
+	if len(skipped) == 0 {
+		return fmt.Errorf("no goals found in %s: %s", file, want)
+	}
+	return fmt.Errorf("no goals found in %s: its sections (%s) are not horizons; %s. Rename the sections to horizons, or add goals with `roady goal add`",
+		file, sampleIDs(skipped, 5), want)
 }
 
 func addGoalFlags(c *cobra.Command) {

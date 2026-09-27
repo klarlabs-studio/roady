@@ -28,27 +28,7 @@ func resolveFeatureLinks(features []spec.Feature, tasks []planning.Task) []strin
 		return nil
 	}
 
-	ids := make(map[string]bool, len(features))
-	// byAlias maps every spelling of a feature Roady is willing to accept to
-	// its canonical id: the title, the id, and the slug of each. Keys are
-	// normalised so case and spacing do not orphan a task.
-	byAlias := make(map[string]string, len(features)*3)
-
-	for _, f := range features {
-		if f.ID == "" {
-			continue
-		}
-		ids[f.ID] = true
-		for _, alias := range []string{f.ID, f.Title, spec.Slugify(f.Title), spec.Slugify(f.ID)} {
-			if key := normaliseAlias(alias); key != "" {
-				// First feature to claim an alias keeps it, so an ambiguous
-				// title cannot silently steal another feature's tasks.
-				if _, taken := byAlias[key]; !taken {
-					byAlias[key] = f.ID
-				}
-			}
-		}
-	}
+	aliases := spec.NewFeatureAliases(features)
 
 	var warnings []string
 	for i := range tasks {
@@ -60,11 +40,11 @@ func resolveFeatureLinks(features []spec.Feature, tasks []planning.Task) []strin
 			continue
 		}
 
-		if ids[current] {
+		if aliases.IsID(current) {
 			continue
 		}
 
-		if canonical, ok := byAlias[normaliseAlias(current)]; ok {
+		if canonical, ok := aliases.Resolve(current); ok {
 			tasks[i].FeatureID = canonical
 			continue
 		}
@@ -79,8 +59,55 @@ func resolveFeatureLinks(features []spec.Feature, tasks []planning.Task) []strin
 	return warnings
 }
 
-// normaliseAlias reduces a spelling to the form used for matching. It is
-// deliberately more forgiving than Slugify: matching is a lookup, not an id.
-func normaliseAlias(s string) string {
-	return spec.Slugify(strings.TrimSpace(strings.ToLower(s)))
+// TitleLinkedTasks lists the plan's tasks whose feature_id names a feature by
+// its title or a slug rather than its id, mapped to the id it resolves to.
+// Plans written before writes repaired these links still hold them.
+func TitleLinkedTasks(sp *spec.ProductSpec, plan *planning.Plan) map[string]string {
+	if sp == nil || plan == nil {
+		return nil
+	}
+	aliases := spec.NewFeatureAliases(sp.Features)
+	out := map[string]string{}
+	for _, t := range plan.Tasks {
+		if t.FeatureID == "" || aliases.IsID(t.FeatureID) {
+			continue
+		}
+		if id, ok := aliases.Resolve(t.FeatureID); ok {
+			out[t.ID] = id
+		}
+	}
+	return out
+}
+
+// RepairFeatureLinks points title-linked tasks at their feature ids and
+// returns what it changed. The feature each task serves is the same before
+// and after, so the plan keeps its approval.
+func (s *PlanService) RepairFeatureLinks() (map[string]string, error) {
+	sp, err := s.repo.LoadSpec()
+	if err != nil {
+		return nil, fmt.Errorf("load spec: %w", err)
+	}
+	plan, err := s.repo.LoadPlan()
+	if err != nil {
+		return nil, fmt.Errorf("load plan: %w", err)
+	}
+	fixes := TitleLinkedTasks(sp, plan)
+	if len(fixes) == 0 {
+		return nil, nil
+	}
+	for i := range plan.Tasks {
+		if id, ok := fixes[plan.Tasks[i].ID]; ok {
+			plan.Tasks[i].FeatureID = id
+		}
+	}
+	if err := s.repo.SavePlan(plan); err != nil {
+		return nil, fmt.Errorf("save plan: %w", err)
+	}
+	if err := s.audit.Log("plan.links_repaired", "cli", map[string]any{
+		"plan_id": plan.ID,
+		"tasks":   fixes,
+	}); err != nil {
+		return fixes, fmt.Errorf("repaired, but the audit log was not written: %w", err)
+	}
+	return fixes, nil
 }

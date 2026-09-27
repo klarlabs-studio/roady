@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Found by trying roady on mcp-go, a second project that had used it and
+drifted away.
+
+### Fixed
+
+- Tasks that name their feature by its title instead of its id — every task
+  in plans written by older roady — are one `plan/LINK` drift issue, not
+  orphans "under a feature the spec no longer has": the features exist.
+  `roady doctor` names them and `roady doctor --fix` points them at the ids,
+  keeping the plan's approval and recording the repair in the audit log.
+  Writes already repaired these links; stored plans never were.
+- `roady doctor` fails a spec that `roady spec validate` rejects. A spec with
+  no id or title printed `Project:  (v0.1.0)` in status while doctor said
+  everything looked good.
+- `roady goal import` of a roadmap organised another way (by phase, say)
+  names the sections it found and what it expects, instead of only "no goals
+  found".
+
 ## [0.27.0] - 2026-09-27
 
 Adopting roady in a project with history, continued: finished work that

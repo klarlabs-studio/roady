@@ -42,7 +42,7 @@ func TestDoctorCmd_AllPass(t *testing.T) {
 		t.Fatalf("init repo: %v", err)
 	}
 
-	_ = repo.SaveSpec(&spec.ProductSpec{ID: "spec-1", Title: "Project"})
+	_ = repo.SaveSpec(&spec.ProductSpec{ID: "spec-1", Title: "Project", Features: []spec.Feature{{ID: "f", Title: "F"}}})
 	_ = repo.SavePlan(&planning.Plan{ID: "p1"})
 	state := planning.NewExecutionState("p1")
 	state.ProjectID = "p1"
