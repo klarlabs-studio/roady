@@ -707,6 +707,30 @@ features:
           depends_on: []
           check:
             run: go test ./pkg/domain/planning ./pkg/application ./internal/infrastructure/cli ./internal/infrastructure/mcp -run 'Accept'
+        - id: doctor-validates-spec
+          title: doctor fails a spec that spec validate rejects
+          description: 'mcp-go''s spec had no id or title; status printed "Project:  (v0.1.0)" and doctor said everything looks good, while spec validate failed.'
+          priority: medium
+          estimate: ""
+          depends_on: []
+          check:
+            run: go test ./internal/infrastructure/cli -run 'TestDoctor.*Spec'
+        - id: repair-stored-title-links
+          title: Repair tasks that link a feature by its title
+          description: Plans written by older roady store the feature title in feature_id (all 16 tasks on mcp-go). Writes repair it now, stored plans never are, so drift reports finished work as orphaned under features that exist. doctor names them and doctor --fix repairs them; drift says what is wrong.
+          priority: high
+          estimate: ""
+          depends_on: []
+          check:
+            run: go test ./pkg/application ./internal/infrastructure/cli ./pkg/domain/drift -run 'TitleLink'
+        - id: goal-import-explains-shape
+          title: goal import says what it found when a roadmap has no horizon sections
+          description: 'A roadmap organised by phases (## Phase 0..4) got only "no goals found"; name the ## sections it saw and what it expects.'
+          priority: low
+          estimate: ""
+          depends_on: []
+          check:
+            run: go test ./pkg/application ./internal/infrastructure/cli -run 'GoalImport.*Sections'
       goal: goal-adopt-existing-projects
 constraints:
     - id: backward-compat
