@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/felixgeelhaar/roady/pkg/application"
@@ -165,10 +164,12 @@ without --force: move it into the goals first.
 		}
 		path := goalRenderOut
 		if path == "" {
-			if ws.Repo.IsSubProject() {
-				return fmt.Errorf("a sub-project's roadmap has no default file; say where with --out")
+			pol, _ := ws.Repo.LoadPolicy()
+			p, ok := application.RoadmapPath(ws.Repo.Root(), pol, ws.Repo.IsSubProject())
+			if !ok {
+				return fmt.Errorf("a sub-project's roadmap has no default file; say where with --out, or set roadmap: in its policy.yaml")
 			}
-			path = filepath.Join(ws.Repo.Root(), application.RoadmapFile)
+			path = p
 		}
 		if goalRenderCheck {
 			existing, err := os.ReadFile(path)

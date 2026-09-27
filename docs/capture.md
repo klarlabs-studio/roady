@@ -91,6 +91,9 @@ reports an edit made to the file instead of to the goals (and a file the
 goals have moved past). Render will not replace a hand-edited file, or one
 roady did not write, without `--force` — move what it says into goals first.
 `roady goal render --check` fails unless the file is up to date, for CI.
+A project that keeps its roadmap elsewhere sets `roadmap: memory/roadmap.md`
+(relative to the repository root) in `.roady/policy.yaml`: render writes
+there, and drift checks that file instead of ROADMAP.md.
 Task progress is left out of the file, so it changes only when the roadmap
 does.
 

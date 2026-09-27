@@ -24,6 +24,9 @@ v0.25.0 against a project that had stopped using roady for markdown notes.
   `from_notes`) prints a prompt that turns planning notes — a decisions log,
   open threads — into a capture document for the caller's model to write.
   Roady still runs no inference.
+- `roadmap:` in `.roady/policy.yaml` names where `roady goal render` writes
+  the roadmap and which file drift checks against the goals, for projects
+  that keep it somewhere other than ROADMAP.md at the root.
 - `roady task list [--status …] [--limit N] [--json]`, the command agents
   try first; it used to print the help.
 

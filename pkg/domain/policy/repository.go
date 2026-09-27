@@ -39,6 +39,10 @@ type PolicyConfig struct {
 	// worktrees see the same claims and progress (the default in a git
 	// repository). false keeps it in .roady/state.json per checkout.
 	SharedState *bool `yaml:"shared_state,omitempty"`
+	// Roadmap is where `roady goal render` writes the roadmap and what drift
+	// checks against the goals, relative to the repository root. Empty means
+	// ROADMAP.md at the root (and no file for a sub-project).
+	Roadmap string `yaml:"roadmap,omitempty"`
 }
 
 // LeaseTTL returns the claim lease duration: def when unset, zero when off.
