@@ -34,7 +34,7 @@ type scope struct {
 // It is the one place the surface is declared, so a parity test can hold the
 // CLI and MCP to each other.
 var NounActions = map[string][]string{
-	"roady_task":   {"start", "complete", "block", "unblock", "stop", "reopen", "verify", "check", "dispatch", "list", "renew"},
+	"roady_task":   {"start", "complete", "block", "unblock", "stop", "reopen", "verify", "check", "dispatch", "list", "renew", "history"},
 	"roady_plan":   {"get", "generate", "approve", "reject", "prune", "prioritize", "decompose", "import"},
 	"roady_spec":   {"get", "add", "analyze", "explain", "import", "lock", "review", "validate"},
 	"roady_drift":  {"detect", "accept", "explain", "semantic", "record"},
@@ -67,7 +67,7 @@ func actionError(tool, action string) (any, error) {
 
 // TaskArgs is `roady task <action>`.
 type TaskArgs struct {
-	Action    string `json:"action" jsonschema:"required,description=start|complete|block|unblock|stop|reopen|verify|check|dispatch|list|renew (keep your claim; starting a task claims it with an expiring lease)"`
+	Action    string `json:"action" jsonschema:"required,description=start|complete|block|unblock|stop|reopen|verify|check|dispatch|list|renew (keep your claim; starting a task claims it with an expiring lease)|history (what happened to it)"`
 	TaskID    string `json:"task_id,omitempty" jsonschema:"description=The task (all actions but list)"`
 	Evidence  string `json:"evidence,omitempty" jsonschema:"description=Proof for complete/verify, e.g. a commit; for block, what is wrong"`
 	Reason    string `json:"reason,omitempty" jsonschema:"description=block: spec-conflict or cannot-complete when the task cannot be done as specified — say so instead of forcing it done; a person decides"`
@@ -95,6 +95,16 @@ func (s *Server) handleTask(ctx context.Context, a TaskArgs) (any, error) {
 	case a.Action == "dispatch":
 		return s.handleDispatchTask(ctx, DispatchTaskArgs{TaskID: a.TaskID, Agent: a.Agent, Session: a.SessionID,
 			DryRun: a.DryRun, ProjectPath: a.ProjectPath, Project: a.Project})
+	case a.Action == "history":
+		svc, err := s.servicesForPath(a.ProjectPath, a.Project)
+		if err != nil {
+			return mcpErrCause("Failed to load project at the given path.", err), nil
+		}
+		entries, err := svc.Task.TaskHistory(a.TaskID)
+		if err != nil {
+			return mcpErr(err.Error()), nil
+		}
+		return application.RenderHistory(a.TaskID, entries), nil
 	case a.Action == "renew":
 		return s.handleRenewClaim(a)
 	case a.Action == "list":

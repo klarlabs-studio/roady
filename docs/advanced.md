@@ -16,6 +16,9 @@ removed; git history has them.
 - `roady capture` records features, requirements and tasks in one write, from
   a single task to a whole plan ([capture.md](capture.md)). `roady add`,
   `edit`, `split` and `move` do the same for one task at a time.
+- `roady task history <id>` reads a task's history — created, edited
+  (field by field), split, moved, started, checked, blocked — back from the
+  event log.
 - `roady decide` records a decision (context, choice, consequences) linked
   to goals, features or requirements; `roady next` shows the ones behind the
   active task, and `--supersedes` replaces an old one.

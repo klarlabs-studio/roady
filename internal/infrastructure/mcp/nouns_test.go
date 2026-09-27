@@ -297,3 +297,12 @@ func TestBlockWithReasonOverMCP(t *testing.T) {
 		t.Errorf("status: %s", resultText(st))
 	}
 }
+
+func TestTaskHistoryOverMCP(t *testing.T) {
+	server := setupCoordinatorTestServer(t)
+	ctx := context.Background()
+	res, _ := server.handleTask(ctx, TaskArgs{Action: "history", TaskID: "t1"})
+	if isToolError(res) || !strings.Contains(resultText(res), "t1") {
+		t.Errorf("history: %s", resultText(res))
+	}
+}

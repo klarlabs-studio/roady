@@ -25,7 +25,7 @@ func TestDecisionsFor(t *testing.T) {
 
 func TestValidateDecisions(t *testing.T) {
 	sp := &ProductSpec{ID: "s", Title: "S",
-		Features:  []Feature{{ID: "f", Requirements: []Requirement{{ID: "r", Title: "R"}}}},
+		Features: []Feature{{ID: "f", Requirements: []Requirement{{ID: "r", Title: "R"}}}},
 		Decisions: []Decision{{ID: "a", Title: "A", Choice: "c"}, {ID: "a", Title: "A", Choice: "c"}, {ID: "b"},
 			{ID: "c", Title: "C", Choice: "x", Status: "maybe", Goals: []string{"nog"}, Features: []string{"nof"}, Requirements: []string{"nor"}, SupersededBy: "zzz"}},
 	}

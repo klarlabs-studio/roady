@@ -25,7 +25,7 @@ func runRoady(t *testing.T, stdin string, args ...string) (string, error) {
 	splitSequential = false
 	moveReq, moveFeature = "", ""
 	goalID, goalDesc, goalHorizon, goalStatus, goalMilestone, goalTitle = "", "", "", "", "", ""
-	goalFeatures, goalListJSON = nil, false
+	goalFeatures, goalListJSON, taskHistoryJSON = nil, false, false
 	goalRenderOut, goalRenderCheck, goalRenderForce = "", false, false
 	decideID, decideChoice, decideContext, decideConsequences, decideSupersedes = "", "", "", "", ""
 	decideGoals, decideFeatures, decideReqs, decideList = nil, nil, nil, false
@@ -457,5 +457,36 @@ func TestDoctorAuditJudgement(t *testing.T) {
 	_ = os.WriteFile(events, []byte(strings.Join(lines, "\n")+"\n"), 0o600)
 	if out, err := runRoady(t, "", "doctor"); err == nil || !strings.Contains(out, "may mean the log was altered") {
 		t.Errorf("an edited entry must fail doctor: %v\n%s", err, out)
+	}
+}
+
+// History from the terminal, and the log that carries it still verifies:
+// nested change records must hash the same after a reload.
+func TestTaskHistoryFromTheTerminal(t *testing.T) {
+	_, cleanup := withPlainTempDir(t)
+	defer cleanup()
+	t.Setenv("ROADY_USER", "tester")
+	if _, err := runRoady(t, "", "init", "history"); err != nil {
+		t.Fatal(err)
+	}
+	doc := "features:\n  - id: f\n    title: F\n    requirements:\n      - id: r\n        title: R\n"
+	for _, step := range []struct {
+		stdin string
+		args  []string
+	}{
+		{doc, []string{"capture"}},
+		{"", []string{"edit", "task-r", "--estimate", "4h"}},
+		{"", []string{"split", "task-r", "One", "Two"}},
+	} {
+		if out, err := runRoady(t, step.stdin, step.args...); err != nil {
+			t.Fatalf("%v: %v\n%s", step.args, err, out)
+		}
+	}
+	out, err := runRoady(t, "", "task", "history", "task-r")
+	if err != nil || !strings.Contains(out, `edited: estimate (none) → "4h"`) || !strings.Contains(out, "Split task-r into 2 parts") {
+		t.Errorf("history: %v\n%s", err, out)
+	}
+	if out, err := runRoady(t, "", "audit", "verify"); err != nil || strings.Contains(out, "altered") {
+		t.Errorf("the log with change records does not verify: %v\n%s", err, out)
 	}
 }

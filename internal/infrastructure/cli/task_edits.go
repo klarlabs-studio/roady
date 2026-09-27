@@ -40,7 +40,7 @@ func applyEdit(cmd *cobra.Command, ws *wiring.Workspace, doc application.Capture
 		actor = "unknown-human"
 	}
 	result, err := application.NewCaptureService(ws.Repo, ws.Audit).Capture(doc, application.CaptureOptions{
-		Actor: actor, DryRun: editDryRun, Origin: planning.OriginHuman, AllowCheckChange: allowChecks,
+		Actor: actor, DryRun: editDryRun, Origin: planning.OriginHuman, AllowCheckChange: allowChecks, Note: summary,
 	})
 	if err != nil {
 		return MapError(err)

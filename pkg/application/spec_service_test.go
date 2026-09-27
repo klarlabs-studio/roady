@@ -272,4 +272,3 @@ func TestSpecService_AnalyzePreservesExistingFeatureIDs(t *testing.T) {
 		t.Errorf("new feature id = %q, want %q", got, "brand-new-feature-v2")
 	}
 }
-

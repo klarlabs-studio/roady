@@ -98,6 +98,26 @@ Goals order work; they are not part of the intent a plan is approved for.
 Adding or moving a goal, or linking a feature to one, never returns an
 approved plan to pending, and does not show as spec drift.
 
+## History
+
+Every capture — and so every `add`, `edit`, `split`, `move`, `goal` and
+`decide` — appends a `plan.capture` event recording the fields it changed on
+each item (from → to), the full shape of anything it created, and what it
+was for ("Split task-x into 2 parts"). Transitions, checks, blocks and
+expired claims have events of their own. `roady task history <id>` (MCP
+`roady_task` action `history`) reads a task's story back:
+
+```text
+History of task-gen
+2026-09-27 15:16  felix   created: "Generate a PDF", feature pdf
+2026-09-27 15:16  felix   edited: estimate (none) → "2d"
+2026-09-27 15:16  felix   edited: depends on (none) → [task-gen-lay-out, task-gen-embed-fonts] (Split task-gen into 2 parts)
+2026-09-27 15:18  codex   start
+2026-09-27 15:40  codex   block (cannot-complete): no font license
+```
+
+plan.json holds only the latest shape; the history is never rewritten.
+
 ## Decisions
 
 A decision records a choice — `title`, `choice`, `context`,

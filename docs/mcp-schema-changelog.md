@@ -50,7 +50,7 @@ Every per-verb tool: `roady_task_transition`, `roady_task_check`,
   `start` claims the task with a lease (`agent` and `session_id` identify
   the holder); `renew` extends it; another agent starting a claimed task is
   refused with the holder and expiry. The brief from `roady_next` carries
-  `claim`. `block` takes `reason` (`spec-conflict`, `cannot-complete`) with
+  `claim`. `history` returns a task's history from the event log. `block` takes `reason` (`spec-conflict`, `cannot-complete`) with
   `evidence` as the detail; `roady_status` and the brief carry
   `needs_decision`, and `roady_drift` reports them as `CONFLICT`.
 - `roady_drift` `detect` takes `checks` (bool): re-run the acceptance checks

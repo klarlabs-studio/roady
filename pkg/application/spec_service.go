@@ -226,7 +226,6 @@ func (s *SpecService) AddFeature(title, description string) (*AddFeatureResult, 
 	return result, nil
 }
 
-
 // uniqueRequirementID returns id, suffixed if another feature in sp already
 // uses it.
 func uniqueRequirementID(sp *spec.ProductSpec, id string) string {

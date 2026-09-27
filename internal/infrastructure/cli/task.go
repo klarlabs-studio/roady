@@ -93,6 +93,36 @@ unblocks it. Until then it shows in status and drift.`
 
 var taskQueryJSON bool
 
+var taskHistoryJSON bool
+
+var taskHistoryCmd = &cobra.Command{
+	Use:   "history <task-id>",
+	Short: "What happened to a task: created, edited, split, moved, started, checked, blocked",
+	Long: `Read a task's history back from the event log. Every edit records the
+fields it changed, every transition and check its own event, so the history
+is complete even though plan.json only holds the latest shape.`,
+	Args: cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		root, err := getProjectRoot()
+		if err != nil {
+			return fmt.Errorf("resolve project path: %w", err)
+		}
+		ws := wiring.NewWorkspace(root)
+		svc := application.NewTaskService(ws.Repo, ws.Audit, application.NewPolicyService(ws.Repo))
+		entries, err := svc.TaskHistory(args[0])
+		if err != nil {
+			return MapError(err)
+		}
+		if taskHistoryJSON {
+			enc := json.NewEncoder(cmd.OutOrStdout())
+			enc.SetIndent("", "  ")
+			return enc.Encode(entries)
+		}
+		_, err = fmt.Fprint(cmd.OutOrStdout(), application.RenderHistory(args[0], entries))
+		return err
+	},
+}
+
 var taskRenewCmd = &cobra.Command{
 	Use:   "renew <task-id>",
 	Short: "Keep your claim on an in-progress task",
@@ -262,6 +292,8 @@ func listTasksForOwner(cmd *cobra.Command, owner, title string) error {
 func init() {
 	taskCmd.AddCommand(createTaskCommand("start", "Start a task (claims it; see `roady task renew`)", "start"))
 	taskCmd.AddCommand(taskRenewCmd)
+	taskHistoryCmd.Flags().BoolVar(&taskHistoryJSON, "json", false, "Print the history as JSON")
+	taskCmd.AddCommand(taskHistoryCmd)
 	taskCmd.AddCommand(createTaskCommand("block", "Block a task", "block"))
 	taskCmd.AddCommand(createTaskCommand("unblock", "Unblock a task", "unblock"))
 	taskCmd.AddCommand(createTaskCommand("complete", "Complete a task", "complete"))

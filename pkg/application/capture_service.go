@@ -142,6 +142,9 @@ type CaptureOptions struct {
 	// AllowCheckChange permits removing or changing the check of work
 	// already started. CLI only (--change-checks); never set from MCP.
 	AllowCheckChange bool
+	// Note says in words what the capture was for ("Split task-x into 3
+	// parts"); recorded with the event.
+	Note string
 }
 
 // Capture applies doc atomically: either every item is applied or none is.
@@ -221,12 +224,17 @@ func (s *CaptureService) Capture(doc CaptureDoc, opts CaptureOptions) (*CaptureR
 	}
 
 	if s.audit != nil {
-		if err := s.audit.Log("plan.capture", actor, map[string]any{
+		meta := map[string]any{
 			"plan_id":  nextPlan.ID,
 			"created":  result.Created,
 			"updated":  result.Updated,
 			"approval": result.PlanApproval,
-		}); err != nil {
+			"changes":  tracker.changes(),
+		}
+		if opts.Note != "" {
+			meta["note"] = opts.Note
+		}
+		if err := s.audit.Log("plan.capture", actor, meta); err != nil {
 			return result, fmt.Errorf("write audit log: %w", err)
 		}
 	}
@@ -622,9 +630,22 @@ func validPriority(p string) bool {
 type changeTracker struct {
 	state map[string]string // item -> created | updated | unchanged
 	order []string
+	// What changed, for the event log: field diffs of updated items and the
+	// full shape of created ones, so every edit is an appended record the
+	// plan's history can be read back from.
+	diffs map[string]map[string]FieldChange
+	snaps map[string]any
 }
 
-func newChangeTracker() *changeTracker { return &changeTracker{state: map[string]string{}} }
+// FieldChange is one field's value before and after an edit.
+type FieldChange struct {
+	From any `json:"from"`
+	To   any `json:"to"`
+}
+
+func newChangeTracker() *changeTracker {
+	return &changeTracker{state: map[string]string{}, diffs: map[string]map[string]FieldChange{}, snaps: map[string]any{}}
+}
 
 func (c *changeTracker) mark(item, st string) {
 	if _, seen := c.state[item]; !seen {
@@ -642,9 +663,11 @@ func (c *changeTracker) compare(item string, before, after any) bool {
 	changed := !sameJSON(before, after)
 	switch {
 	case c.state[item] == "created":
+		c.snaps[item] = jsonValue(after)
 		return true
 	case changed:
 		c.mark(item, "updated")
+		c.recordDiff(item, before, after)
 	case c.state[item] == "":
 		c.mark(item, "unchanged")
 	}
@@ -761,6 +784,69 @@ func cloneRequirement(r spec.Requirement) spec.Requirement {
 func cloneTask(t planning.Task) planning.Task {
 	var out planning.Task
 	b, _ := json.Marshal(t)
+	_ = json.Unmarshal(b, &out)
+	return out
+}
+
+// recordDiff merges the field-level difference of before and after into the
+// item's diff, keeping the earliest "from" when an item is touched twice.
+func (c *changeTracker) recordDiff(item string, before, after any) {
+	b, _ := jsonValue(before).(map[string]any)
+	a, _ := jsonValue(after).(map[string]any)
+	d := c.diffs[item]
+	if d == nil {
+		d = map[string]FieldChange{}
+		c.diffs[item] = d
+	}
+	keys := map[string]bool{}
+	for k := range b {
+		keys[k] = true
+	}
+	for k := range a {
+		keys[k] = true
+	}
+	for k := range keys {
+		if sameJSON(b[k], a[k]) {
+			continue
+		}
+		from := b[k]
+		if prev, ok := d[k]; ok {
+			from = prev.From
+		}
+		if sameJSON(from, a[k]) {
+			delete(d, k)
+			continue
+		}
+		d[k] = FieldChange{From: from, To: a[k]}
+	}
+}
+
+// changes lists what the capture did to each created or updated item, as
+// plain JSON values so the event hashes the same after a reload.
+func (c *changeTracker) changes() []any {
+	var out []map[string]any
+	for _, item := range c.order {
+		switch c.state[item] {
+		case "created":
+			out = append(out, map[string]any{"item": item, "change": "created", "as": c.snaps[item]})
+		case "updated":
+			if d := c.diffs[item]; len(d) > 0 {
+				out = append(out, map[string]any{"item": item, "change": "updated", "fields": d})
+			}
+		}
+	}
+	v, _ := jsonValue(out).([]any)
+	return v
+}
+
+// jsonValue round-trips v through JSON, yielding maps, slices, strings,
+// float64s, bools and nils only.
+func jsonValue(v any) any {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return nil
+	}
+	var out any
 	_ = json.Unmarshal(b, &out)
 	return out
 }

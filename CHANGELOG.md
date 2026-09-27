@@ -78,6 +78,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `2h`, `off` disables): the task goes back to pending, `task.claim_expired`
   is recorded, and it no longer counts against WIP limits. state.json is
   now replaced atomically, so a reader never sees half a file.
+- **Every plan edit is an appended record, and `roady task history <id>`
+  reads it back.** A capture's event (so every add, edit, split, move, goal
+  and decide) now carries the fields it changed on each item, from → to, the
+  full shape of anything it created, and a note of what it was for. `roady
+  task history` (MCP `roady_task` action `history`) shows a task's story —
+  created, edited, split, moved, started, checked, blocked, claims expired —
+  oldest first, one line each.
 - **Decision records.** `roady decide "<title>" --choice "…"` (MCP
   `roady_capture` with `decisions`) records a decision with its context and
   consequences, linked to the goals, features and requirements it
