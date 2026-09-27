@@ -1,9 +1,6 @@
 package mcp
 
 import (
-	"sync"
-
-	"go.klarlabs.de/mcp"
 	mcpserver "go.klarlabs.de/mcp/server"
 )
 
@@ -91,8 +88,3 @@ func (s *Server) tool(name string) *mcpserver.ToolBuilder {
 
 	return b
 }
-
-var (
-	discardOnce   sync.Once
-	discardServer *mcp.Server
-)

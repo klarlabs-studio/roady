@@ -1,13 +1,14 @@
 package storage
 
 import (
-	"github.com/felixgeelhaar/roady/pkg/domain"
-	"github.com/felixgeelhaar/roady/pkg/domain/planning"
-	"github.com/felixgeelhaar/roady/pkg/domain/spec"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/felixgeelhaar/roady/pkg/domain"
+	"github.com/felixgeelhaar/roady/pkg/domain/planning"
+	"github.com/felixgeelhaar/roady/pkg/domain/spec"
 )
 
 func TestFilesystemRepository_ResolvePath_Edge(t *testing.T) {

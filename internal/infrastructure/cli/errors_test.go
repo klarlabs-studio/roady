@@ -3,8 +3,9 @@ package cli
 import (
 	"errors"
 	"fmt"
-	"github.com/felixgeelhaar/roady/pkg/domain/project"
 	"testing"
+
+	"github.com/felixgeelhaar/roady/pkg/domain/project"
 )
 
 func TestCLIError(t *testing.T) {

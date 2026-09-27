@@ -2,13 +2,14 @@ package mcp
 
 import (
 	"context"
-	"github.com/felixgeelhaar/roady/pkg/domain"
-	"github.com/felixgeelhaar/roady/pkg/domain/planning"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/felixgeelhaar/roady/pkg/domain"
+	"github.com/felixgeelhaar/roady/pkg/domain/planning"
 
 	"github.com/felixgeelhaar/roady/pkg/domain/spec"
 	"github.com/felixgeelhaar/roady/pkg/storage"

@@ -5,7 +5,6 @@ import (
 	"os"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/felixgeelhaar/roady/pkg/domain"
 	"github.com/felixgeelhaar/roady/pkg/domain/planning"
@@ -42,53 +41,6 @@ func setupBasicRepo2(t *testing.T) *storage.FilesystemRepository {
 	_ = repo.SaveState(state)
 	_ = repo.SavePolicy(&domain.PolicyConfig{})
 	return repo
-}
-
-// setupDriftRepo2 creates a repo with spec/plan mismatch to produce drift.
-func setupDriftRepo2(t *testing.T) *storage.FilesystemRepository {
-	t.Helper()
-	repo := storage.NewFilesystemRepository(".")
-	if err := repo.Initialize(); err != nil {
-		t.Fatalf("init repo: %v", err)
-	}
-	_ = repo.SaveSpec(&spec.ProductSpec{
-		ID:    "s1",
-		Title: "Test Project",
-		Features: []spec.Feature{
-			{ID: "f1", Title: "Feature One", Requirements: []spec.Requirement{{ID: "r1", Title: "Req One"}}},
-			{ID: "f2", Title: "Feature Two", Requirements: []spec.Requirement{{ID: "r2", Title: "Req Two"}}},
-			{ID: "f3", Title: "Feature Three", Requirements: []spec.Requirement{{ID: "r3", Title: "Req Three"}}},
-		},
-	})
-	_ = repo.SavePlan(&planning.Plan{
-		ID: "p1",
-		Tasks: []planning.Task{
-			{ID: "t1", FeatureID: "f1", Title: "Task One", Priority: "high", Estimate: "medium"},
-		},
-	})
-	state := planning.NewExecutionState("p1")
-	state.ProjectID = "p1"
-	_ = repo.SaveState(state)
-	_ = repo.SavePolicy(&domain.PolicyConfig{})
-	return repo
-}
-
-// recordDriftEvent records a drift_detected event to the repo events.jsonl.
-func recordDriftEvent(t *testing.T, repo *storage.FilesystemRepository, ts time.Time, componentID, message string) {
-	t.Helper()
-	_ = repo.RecordEvent(domain.Event{
-		ID:        componentID + "-" + ts.Format("150405"),
-		Action:    "drift_detected",
-		Timestamp: ts,
-		Actor:     "test",
-		Metadata: map[string]any{
-			"component_id": componentID,
-			"drift_type":   "spec",
-			"category":     "MISSING",
-			"message":      message,
-			"issue_count":  1,
-		},
-	})
 }
 
 // ============================================================================

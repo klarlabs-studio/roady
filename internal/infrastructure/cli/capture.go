@@ -56,7 +56,7 @@ Reads from --file, or stdin when no file is given:
 		if err != nil {
 			return fmt.Errorf("resolve project path: %w", err)
 		}
-		var in io.Reader = cmd.InOrStdin()
+		in := cmd.InOrStdin()
 		if captureFile != "" && captureFile != "-" {
 			f, err := os.Open(captureFile) // #nosec G304 -- user-named input file
 			if err != nil {

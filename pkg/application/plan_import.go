@@ -220,7 +220,7 @@ func collectItems(lines []string, inSection func(title string) bool, nested bool
 			baseIndent = indent
 		}
 		text := strings.TrimSpace(m[3])
-		if indent > baseIndent && len(steps) > 0 && !(nested && m[2] != "") {
+		if indent > baseIndent && len(steps) > 0 && (!nested || m[2] == "") {
 			steps[len(steps)-1].desc = append(steps[len(steps)-1].desc, cleanInline(text))
 			continue
 		}

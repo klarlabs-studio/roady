@@ -46,24 +46,23 @@ func createTaskCommand(use, short, event string) *cobra.Command {
 				actor = "unknown-human"
 			}
 
-			if event == "start" {
-				err := service.StartTask(cmd.Context(), taskID, actor)
-				if err != nil {
+			switch {
+			case event == "start":
+				if err := service.StartTask(cmd.Context(), taskID, actor); err != nil {
 					return MapError(fmt.Errorf("failed to start task: %w", err))
 				}
-			} else if event == "block" {
+			case event == "block":
 				if err := service.BlockWithReason(taskID, blockReason, evidence, actor); err != nil {
 					return MapError(fmt.Errorf("failed to block task: %w", err))
 				}
-			} else if event == "verify" && override != "" {
+			case event == "verify" && override != "":
 				// A person verifying without the evidence the policy asks
 				// for; recorded as an override with its reason.
 				if err := service.VerifyWithOverride(cmd.Context(), taskID, actor, override); err != nil {
 					return MapError(fmt.Errorf("failed to verify task: %w", err))
 				}
-			} else {
-				err := service.TransitionTask(taskID, event, actor, evidence)
-				if err != nil {
+			default:
+				if err := service.TransitionTask(taskID, event, actor, evidence); err != nil {
 					return MapError(fmt.Errorf("failed to transition task: %w", err))
 				}
 			}

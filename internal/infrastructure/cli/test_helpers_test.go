@@ -70,24 +70,3 @@ func withPlainTempDir(t *testing.T) (string, func()) {
 		_ = os.RemoveAll(dir)
 	}
 }
-
-func findRepoRoot(t *testing.T) string {
-	t.Helper()
-
-	dir, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	for i := 0; i < 6; i++ {
-		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
-			return dir
-		}
-		parent := filepath.Dir(dir)
-		if parent == dir {
-			break
-		}
-		dir = parent
-	}
-	t.Fatal("could not locate repo root")
-	return ""
-}

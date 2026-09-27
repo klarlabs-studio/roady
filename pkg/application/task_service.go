@@ -240,10 +240,7 @@ func (s *TaskService) transitionWithFSM(taskID string, event string, actor strin
 }
 
 // StartTask starts a task using the coordinator with proper dependency validation.
-func (s *TaskService) StartTask(ctx context.Context, taskID, owner string) error {
-	if ctx == nil {
-		ctx = context.Background()
-	}
+func (s *TaskService) StartTask(_ context.Context, taskID, owner string) error {
 	// Claims that ran out no longer count against WIP or block a start.
 	_, _ = s.ReleaseExpiredClaims(owner)
 	if s.policy != nil {

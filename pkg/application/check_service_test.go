@@ -207,14 +207,14 @@ func TestEvidencePolicyAcceptsCommitAndPassingCheck(t *testing.T) {
 }
 
 func TestOverrideLiftsMissingEvidenceButNotAFailingCheck(t *testing.T) {
-	svc, repo, runner := evidenceService(&planning.Check{Run: "make test"}, "8cc57d2")
+	svc, _, runner := evidenceService(&planning.Check{Run: "make test"}, "8cc57d2")
 	runner.exit = 1
 	var failed *application.CheckFailedError
 	if err := svc.VerifyWithOverride(context.Background(), "t1", "felix", "shipped anyway"); !errors.As(err, &failed) {
 		t.Fatalf("an override must not verify over a failing check, got %v", err)
 	}
 
-	svc, repo, _ = evidenceService(nil)
+	svc, repo, _ := evidenceService(nil)
 	if err := svc.VerifyWithOverride(context.Background(), "t1", "felix", ""); err == nil {
 		t.Fatal("an override without a reason must be refused")
 	}

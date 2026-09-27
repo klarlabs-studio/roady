@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"os"
-	"os/exec"
 	"testing"
 
 	"github.com/felixgeelhaar/roady/pkg/application"
@@ -722,21 +721,3 @@ func TestInitService_InitializeProject_AlreadyInitialized(t *testing.T) {
 // ---- CompleteTask via billing with elapsed minutes > 0 and default rate ----
 
 // ---- Helper function ----
-
-func initTestGitRepo(t *testing.T, dir string) {
-	t.Helper()
-	cmds := [][]string{
-		{"git", "init"},
-		{"git", "config", "user.email", "test@test.com"},
-		{"git", "config", "user.name", "Test"},
-		{"git", "config", "commit.gpgsign", "false"},
-		{"git", "commit", "--allow-empty", "-m", "initial"},
-	}
-	for _, args := range cmds {
-		cmd := exec.Command(args[0], args[1:]...)
-		cmd.Dir = dir
-		if out, err := cmd.CombinedOutput(); err != nil {
-			t.Fatalf("git command %v failed: %s %v", args, string(out), err)
-		}
-	}
-}

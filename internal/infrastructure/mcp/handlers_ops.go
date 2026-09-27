@@ -3,12 +3,13 @@ package mcp
 import (
 	"context"
 	"fmt"
-	"github.com/felixgeelhaar/roady/pkg/application"
-	"github.com/felixgeelhaar/roady/pkg/domain/project"
-	"github.com/felixgeelhaar/roady/pkg/storage"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/felixgeelhaar/roady/pkg/application"
+	"github.com/felixgeelhaar/roady/pkg/domain/project"
+	"github.com/felixgeelhaar/roady/pkg/storage"
 )
 
 // capSlice returns at most maxResponseItems elements from a string slice.
