@@ -7,64 +7,12 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/felixgeelhaar/roady/pkg/domain/spec"
 	"github.com/felixgeelhaar/roady/pkg/storage"
 )
-
-func TestServerPlanEventsLogged(t *testing.T) {
-	root := t.TempDir()
-	repo := storage.NewFilesystemRepository(root)
-	if err := repo.Initialize(); err != nil {
-		t.Fatalf("initialize repo: %v", err)
-	}
-	if err := initProjectDir(root); err != nil {
-		t.Fatalf("init mock AI config: %v", err)
-	}
-
-	specFile := &spec.ProductSpec{
-		ID:    "event-spec",
-		Title: "Eventful Project",
-		Features: []spec.Feature{
-			{ID: "feature-a", Title: "Feature A"},
-		},
-	}
-	if err := repo.SaveSpec(specFile); err != nil {
-		t.Fatalf("save spec: %v", err)
-	}
-
-	server, err := NewServer(root)
-	if err != nil {
-		t.Fatalf("create server: %v", err)
-	}
-	ctx := context.Background()
-
-	if _, err := server.handleGeneratePlan(ctx, GeneratePlanArgs{}); err != nil {
-		t.Fatalf("generate plan failed: %v", err)
-	}
-	if _, err := server.handleApprovePlan(ctx, ApprovePlanArgs{}); err != nil {
-		t.Fatalf("approve plan failed: %v", err)
-	}
-
-	events, err := repo.LoadEvents()
-	if err != nil {
-		t.Fatalf("load events: %v", err)
-	}
-
-	found := map[string]bool{}
-	for _, ev := range events {
-		found[ev.Action] = true
-	}
-
-	for _, want := range []string{"plan.generate", "plan.approved"} {
-		if !found[want] {
-			t.Fatalf("expected event %s, got %v", want, events)
-		}
-	}
-}
 
 func TestInitHandlerCreatesProject(t *testing.T) {
 	root := t.TempDir()
@@ -225,59 +173,6 @@ func TestServicesForPath_CacheHitAndEviction(t *testing.T) {
 	}
 }
 
-func TestHandleGetSpec_WithProjectPath(t *testing.T) {
-	rootA := t.TempDir()
-	repoA := storage.NewFilesystemRepository(rootA)
-	if err := repoA.Initialize(); err != nil {
-		t.Fatalf("initialize repo A: %v", err)
-	}
-	if err := initProjectDir(rootA); err != nil {
-		t.Fatalf("init mock AI config: %v", err)
-	}
-	if err := repoA.SaveSpec(&spec.ProductSpec{ID: "project-a", Title: "Project A"}); err != nil {
-		t.Fatalf("save spec A: %v", err)
-	}
-
-	rootB := t.TempDir()
-	repoB := storage.NewFilesystemRepository(rootB)
-	if err := repoB.Initialize(); err != nil {
-		t.Fatalf("initialize repo B: %v", err)
-	}
-	if err := initProjectDir(rootB); err != nil {
-		t.Fatalf("init mock AI config B: %v", err)
-	}
-	if err := repoB.SaveSpec(&spec.ProductSpec{ID: "project-b", Title: "Project B"}); err != nil {
-		t.Fatalf("save spec B: %v", err)
-	}
-
-	// Server created at root A
-	server, err := NewServer(rootA)
-	if err != nil {
-		t.Fatalf("create server: %v", err)
-	}
-	ctx := context.Background()
-
-	// Default: returns A's spec
-	result, err := server.handleGetSpec(ctx, GetSpecArgs{})
-	if err != nil {
-		t.Fatalf("get spec default: %v", err)
-	}
-	specA := result.(*spec.ProductSpec)
-	if specA.Title != "Project A" {
-		t.Fatalf("expected Project A, got %s", specA.Title)
-	}
-
-	// Override: returns B's spec
-	result, err = server.handleGetSpec(ctx, GetSpecArgs{ProjectPath: rootB})
-	if err != nil {
-		t.Fatalf("get spec with override: %v", err)
-	}
-	specB := result.(*spec.ProductSpec)
-	if specB.Title != "Project B" {
-		t.Fatalf("expected Project B, got %s", specB.Title)
-	}
-}
-
 func TestGRPCServerStartsAndStops(t *testing.T) {
 	root := t.TempDir()
 	repo := storage.NewFilesystemRepository(root)
@@ -403,61 +298,12 @@ func TestServerHandlersExercise(t *testing.T) {
 	}
 	ctx := context.Background()
 
-	if _, err := server.handleGetSpec(ctx, GetSpecArgs{}); err != nil {
-		t.Fatalf("get spec: %v", err)
-	}
-	if _, err := server.handleGetPlan(ctx, GetPlanArgs{}); err != nil {
-		t.Fatalf("get plan: %v", err)
-	}
-	if _, err := server.handleGetState(ctx, GetStateArgs{}); err != nil {
-		t.Fatalf("get state: %v", err)
-	}
-
-	if _, err := server.handleGeneratePlan(ctx, GeneratePlanArgs{}); err != nil {
-		t.Fatalf("generate plan: %v", err)
-	}
-
-	if _, err := server.handleUpdatePlan(ctx, UpdatePlanArgs{
-		Tasks: []planning.Task{
-			{ID: "task-req-alpha", Title: "Alpha Task", FeatureID: "feature"},
-		},
-	}); err != nil {
-		t.Fatalf("update plan: %v", err)
-	}
-
 	if _, err := server.handleDetectDrift(ctx, DetectDriftArgs{}); err != nil {
 		t.Fatalf("detect drift: %v", err)
 	}
 
 	if _, err := server.handleStatus(ctx, StatusArgs{}); err != nil {
 		t.Fatalf("status: %v", err)
-	}
-
-	if _, err := server.handleCheckPolicy(ctx, CheckPolicyArgs{}); err != nil {
-		t.Fatalf("check policy: %v", err)
-	}
-
-	if _, err := server.handleExplainSpec(ctx, ExplainSpecArgs{}); err != nil {
-		t.Fatalf("explain spec: %v", err)
-	}
-
-	// A project with no drift legitimately has nothing to explain; the
-	// handler says so rather than assembling an empty prompt.
-	if _, err := server.handleExplainDrift(ctx, ExplainDriftArgs{}); err != nil &&
-		!strings.Contains(err.Error(), "no drift issues") {
-		t.Fatalf("explain drift: %v", err)
-	}
-
-	if _, err := server.handleAcceptDrift(ctx, AcceptDriftArgs{}); err != nil {
-		t.Fatalf("accept drift: %v", err)
-	}
-
-	if _, err := server.handleGitSync(ctx, GitSyncArgs{}); err != nil {
-		t.Fatalf("git sync: %v", err)
-	}
-
-	if _, err := server.handleApprovePlan(ctx, ApprovePlanArgs{}); err != nil {
-		t.Fatalf("approve plan: %v", err)
 	}
 
 	if _, err := server.handleTransitionTask(ctx, TransitionTaskArgs{
@@ -468,30 +314,12 @@ func TestServerHandlersExercise(t *testing.T) {
 		t.Fatalf("transition task: %v", err)
 	}
 
-	if _, err := server.handleAddFeature(ctx, AddFeatureArgs{
-		Title:       "extra",
-		Description: "details",
-	}); err != nil {
-		t.Fatalf("add feature: %v", err)
-	}
-
-	content, err := os.ReadFile(filepath.Join(root, "docs", "backlog.md"))
-	if err != nil {
-		t.Fatalf("read backlog: %v", err)
-	}
-	if !strings.Contains(string(content), "extra") {
-		t.Fatalf("backlog missing feature: %s", content)
-	}
-
 	if _, err := server.handleDetectDrift(ctx, DetectDriftArgs{}); err != nil {
-		t.Fatalf("detect drift after feature: %v", err)
+		t.Fatalf("detect drift after transition: %v", err)
 	}
 
 	if _, err := server.handleStatus(ctx, StatusArgs{}); err != nil {
 		t.Fatalf("status after transition: %v", err)
 	}
 
-	if _, err := server.handleExplainSpec(ctx, ExplainSpecArgs{}); err != nil {
-		t.Fatalf("explain spec post-change: %v", err)
-	}
 }

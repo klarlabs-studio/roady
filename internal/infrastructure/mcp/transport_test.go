@@ -128,27 +128,24 @@ func TestMCPStdioTransport(t *testing.T) {
 	if err != nil {
 		t.Fatalf("list tools: %v", err)
 	}
-	// The default surface lists the essential tools; roady_init is not
-	// among them but stays callable, which the call below also proves.
 	found := false
 	for _, tool := range tools {
-		if tool.Name == "roady_init" {
-			t.Errorf("roady_init is not an essential tool and should not be listed by default")
-		}
 		if tool.Name == "roady_next" {
 			found = true
 		}
 	}
 	if !found {
-		t.Fatalf("expected roady_next in the default tool list")
+		t.Fatalf("expected roady_next in the tool list")
 	}
 
-	result, err := mcpClient.CallTool(ctx, "roady_init", map[string]any{"name": "test"})
+	// A project that was never initialised gets an actionable answer, not a
+	// crash: roady_next reports there is nothing to work on.
+	result, err := mcpClient.CallTool(ctx, "roady_next", map[string]any{})
 	if err != nil {
-		t.Fatalf("call roady_init: %v", err)
+		t.Fatalf("call roady_next: %v", err)
 	}
-	if len(result.Content) == 0 || !strings.Contains(result.Content[0].Text, "Project test initialized") {
-		t.Fatalf("unexpected roady_init response: %+v", result.Content)
+	if len(result.Content) == 0 || !strings.Contains(result.Content[0].Text, "Roady") {
+		t.Fatalf("unexpected roady_next response: %+v", result.Content)
 	}
 }
 

@@ -138,7 +138,7 @@ roady plan generate --ai --json          # the request as JSON for an agent
 ```
 
 Requests that produce data Roady stores name the tool that accepts it
-(`decompose_spec` → `roady_plan_update`). No API key is needed for anything.
+(`decompose_spec` → `roady capture`). No API key is needed for anything.
 See [`docs/prompts.md`](docs/prompts.md).
 
 ## Nested sub-projects

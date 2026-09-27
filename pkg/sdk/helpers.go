@@ -63,24 +63,3 @@ func (c *Client) TransitionTaskTyped(ctx context.Context, req TransitionRequest)
 	}
 	return textResult(res)
 }
-
-// CheckPolicyTyped returns typed policy violations.
-func (c *Client) CheckPolicyTyped(ctx context.Context) ([]PolicyViolation, error) {
-	res, err := c.call(ctx, "roady_policy_check", nil)
-	if err != nil {
-		return nil, err
-	}
-	text, err := textResult(res)
-	if err != nil {
-		return nil, err
-	}
-	// The tool returns "No policy violations found." when clean
-	if text == "No policy violations found." {
-		return nil, nil
-	}
-	v, err := unmarshalText[[]PolicyViolation](res)
-	if err != nil {
-		return nil, err
-	}
-	return *v, nil
-}

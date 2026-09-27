@@ -68,7 +68,7 @@ roady mcp --transport http --addr :8080
 roady mcp --transport ws   --addr :8080
 ```
 
-Seven tools are listed by default; `ROADY_MCP_TOOLS=all` lists the rest. See
+Ten tools — the agent loop; governance and maintenance are CLI commands. See
 [mcp-guide.md](mcp-guide.md).
 
 ## Architecture
@@ -79,5 +79,5 @@ Seven tools are listed by default; `ROADY_MCP_TOOLS=all` lists the rest. See
 - `pkg/storage/` — file repository over `.roady/`.
 - `evals/` — regression corpus over the planning pipeline.
 
-Stack: `cobra`, `mcp-go`, `statekit`, `fortify`. MCP App UIs: Vue 3 + D3,
-compiled with Vite. See `docs/ddd-*.md` for the architecture write-up.
+Stack: `cobra`, `mcp-go`, `statekit`, `fortify`. See `docs/ddd-*.md` for the
+architecture write-up.

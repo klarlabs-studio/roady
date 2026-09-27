@@ -25,8 +25,8 @@ roady plan generate --ai --json   # the whole request as JSON
   "system": "You are a senior engineer breaking a specification into an executable plan.",
   "prompt": "Decompose this specification into concrete, implementable tasks...",
   "expected_format": "{\"tasks\": [{\"id\": \"task-...\", ...}]}",
-  "write_back": "roady_plan_update",
-  "guidance": "Produce the tasks yourself, then call roady_plan_update with them."
+  "write_back": "roady_capture",
+  "guidance": "Produce the tasks yourself, then record them with roady_capture (or `roady capture` on the CLI): the same JSON, validated all or nothing."
 }
 ```
 
@@ -43,14 +43,14 @@ Requests that produce data Roady stores name the tool that accepts it:
 
 | Operation | Write back with |
 | --- | --- |
-| `decompose_spec` | `roady_plan_update` |
+| `decompose_spec` | `roady capture` / `roady_capture` |
+| `semantic_drift` | `roady_drift_record_semantic` |
 | `explain_spec`, `review_spec`, `query_project`, `explain_drift` | nothing — for the reader |
 | `suggest_priorities` | nothing — applying them is a plan edit |
 
-Over MCP the same requests come back from `roady_plan_decompose`,
-`roady_spec_explain`, `roady_spec_review`, `roady_query`,
-`roady_plan_prioritize`, and `roady_drift_explain`. An agent runs the
-prompt on its own model and calls the named tool with the result.
+Over MCP, `roady_query` and `roady_drift_detect` with `semantic: true` return
+requests. The others are CLI commands: an agent with a model of its own
+rarely needs roady to write its prompt, and a person running `--ai` does.
 
 ## Policy still applies
 

@@ -81,8 +81,8 @@ roady spec review               # prints a review prompt
 roady drift semantic            # prints the semantic-drift question
 ```
 
-Write the answer back with the tool named in the request — `roady_plan_update`,
-`roady spec add`, `roady_drift_record_semantic`. See `docs/prompts.md`.
+Write the answer back with the tool named in the request — `roady capture`
+(MCP: `roady_capture`) or `roady_drift_record_semantic`. See `docs/prompts.md`.
 
 ## Shell Completion
 

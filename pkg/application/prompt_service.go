@@ -150,8 +150,8 @@ func (s *PromptService) DecomposeSpec(_ context.Context) (*prompt.Request, error
 		ExpectedFormat: `{"tasks": [{"id": "task-...", "title": "...", "description": "...", ` +
 			`"priority": "low|medium|high", "estimate": "4h", "feature_id": "...", ` +
 			`"depends_on": ["task-..."]}]}`,
-		WriteBack: "roady_plan_update",
-		Guidance:  "Produce the tasks yourself, then call roady_plan_update with them to store the plan.",
+		WriteBack: "roady_capture",
+		Guidance:  "Produce the tasks yourself, then record them with roady_capture (or `roady capture` on the CLI): the same JSON, validated all or nothing.",
 	}, nil
 }
 
@@ -264,7 +264,7 @@ func (s *PromptService) ExplainDrift(_ context.Context, report *drift.Report) (*
 		Operation: prompt.OpExplainDrift,
 		System:    "You explain divergence between a plan and reality to the engineer who has to fix it.",
 		Prompt:    b.String(),
-		Guidance:  "Answer this yourself. To record that the drift is intentional, use roady_drift_accept.",
+		Guidance:  "Answer this yourself. If the drift is intentional, a person records that with `roady drift accept`.",
 	}, nil
 }
 

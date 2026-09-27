@@ -58,21 +58,6 @@ type Task struct {
 	FeatureID   string   `json:"feature_id"`
 }
 
-// ExecutionState represents the current execution state.
-type ExecutionState struct {
-	ProjectID  string                `json:"project_id"`
-	TaskStates map[string]TaskResult `json:"task_states"`
-	UpdatedAt  time.Time             `json:"updated_at"`
-}
-
-// TaskResult represents the status of a single task.
-type TaskResult struct {
-	Status   string   `json:"status"`
-	Path     string   `json:"path"`
-	Owner    string   `json:"owner"`
-	Evidence []string `json:"evidence"`
-}
-
 // DriftReport represents a drift detection report.
 type DriftReport struct {
 	ID        string       `json:"id"`
@@ -121,42 +106,6 @@ type StatusTask struct {
 	Unlocked bool   `json:"unlocked,omitempty"`
 }
 
-// PrioritySuggestion represents an AI suggestion to change a task's priority.
-type PrioritySuggestion struct {
-	TaskID            string `json:"task_id"`
-	CurrentPriority   string `json:"current_priority"`
-	SuggestedPriority string `json:"suggested_priority"`
-	Reason            string `json:"reason"`
-}
-
-// PrioritySuggestions is the result of an AI priority analysis.
-type PrioritySuggestions struct {
-	Suggestions []PrioritySuggestion `json:"suggestions"`
-	Summary     string               `json:"summary"`
-}
-
-// ReviewFinding represents a single quality finding in a spec review.
-type ReviewFinding struct {
-	Category   string `json:"category"`
-	Severity   string `json:"severity"`
-	FeatureID  string `json:"feature_id"`
-	Title      string `json:"title"`
-	Suggestion string `json:"suggestion"`
-}
-
-// SpecReview represents the result of an AI quality review of a spec.
-type SpecReview struct {
-	Score    int             `json:"score"`
-	Summary  string          `json:"summary"`
-	Findings []ReviewFinding `json:"findings"`
-}
-
-// PolicyViolation represents a policy compliance violation.
-type PolicyViolation struct {
-	Rule    string `json:"rule"`
-	Message string `json:"message"`
-}
-
 // SchemaInfo describes the MCP schema version and deprecation info.
 type SchemaInfo struct {
 	SchemaVersion string            `json:"schema_version"`
@@ -172,17 +121,4 @@ type DeprecatedField struct {
 	Since     string `json:"since"`
 	RemovedIn string `json:"removed_in"`
 	Migration string `json:"migration"`
-}
-
-// SmartTask is a task with codebase-aware fields.
-type SmartTask struct {
-	Task
-	Files      []string `json:"files,omitempty"`
-	Complexity string   `json:"complexity,omitempty"`
-}
-
-// SmartPlan is a plan generated with codebase context.
-type SmartPlan struct {
-	Tasks   []SmartTask `json:"tasks"`
-	Summary string      `json:"summary"`
 }

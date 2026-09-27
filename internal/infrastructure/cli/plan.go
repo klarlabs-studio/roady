@@ -27,7 +27,7 @@ var planGenerateCmd = &cobra.Command{
 		// --ai no longer runs a model. Roady assembles the decomposition
 		// prompt and hands it back; the caller runs inference with whatever
 		// model it already has and returns the tasks through
-		// `roady_plan_update`.
+		// `roady capture` / `roady_capture`.
 		if useAI {
 			req, pErr := services.Prompt.DecomposeSpec(cmd.Context())
 			if pErr != nil {

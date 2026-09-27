@@ -132,32 +132,19 @@ roady mcp --transport http --addr :8080
 roady mcp --transport ws --addr :8080
 ```
 
-#### The advertised surface
+#### The surface is the agent loop
 
-A client pays for every listed tool in its prompt. By default the server
-**lists** seven — `roady_next`, `roady_capture`, `roady_plan_import`,
-`roady_task_transition`, `roady_task_check`, `roady_status`, `roady_query`,
-about 2.5k tokens instead of ~10k — and keeps every other tool **registered
-and callable**, so the SDK and clients that call a tool by name keep working.
-`ROADY_MCP_TOOLS` changes that:
-
-```bash
-roady mcp                                 # essential tools listed, all callable
-ROADY_MCP_TOOLS=essential,audit roady mcp # plus the audit tools listed
-ROADY_MCP_TOOLS=all roady mcp             # all 38 tools listed (~10k tokens)
-ROADY_MCP_TOOLS=core roady mcp            # only the core group exists at all
-```
-
-Groups: `core`, `analytics` (semantic drift), `audit`. A profile of groups registers only those (and `core`,
-always). An unknown group name fails startup rather than quietly starting a
-smaller server.
-
-The essential set and the grouping live in
-`internal/infrastructure/mcp/profiles.go`; a tool missing from the grouping
-fails the build — otherwise an unclassified tool would silently disappear
-from every profile, which looks exactly like a tool that does not exist.
-tools/list is trimmed by a middleware (`list_filter.go`), so an unlisted tool
-is still dispatched normally.
+The server has ten tools — `roady_next`, `roady_capture`, `roady_plan_import`,
+`roady_task_transition`, `roady_task_check`, `roady_task_dispatch`,
+`roady_status`, `roady_query`, `roady_drift_detect` (with `semantic` for the
+semantic-drift prompt) and `roady_drift_record_semantic` — about 3k tokens of
+every agent's prompt. Everything else is a CLI command, and on purpose:
+approving or rejecting a plan, accepting drift, re-locking the spec, pruning,
+init, rebuild and audit are decisions or maintenance for a person, and an agent
+that could approve its own plan would make approval meaningless.
+`TestServer_ServesTheAgentLoopOnly` pins the exact set, and
+`TestServer_GovernanceIsNotAnAgentTool` keeps governance off it. Add a tool
+only when the loop cannot work without it.
 
 ## Common Workflows
 
@@ -243,11 +230,9 @@ See `.claude/commands/` for pre-configured Claude Code commands:
 
 ### MCP Server
 
-For projects with Roady MCP configured, these tools are available:
-- `roady_plan_get` - Fetch current plan with ready tasks
-- `roady_task_transition` - Start/complete tasks
-- `roady_drift_detect` - Check implementation vs plan
-- `roady_snapshot_get` - Get full project state
+For projects with Roady MCP configured, the agent works through `roady_next`,
+`roady_capture`, `roady_task_transition` and `roady_task_check`; see
+`docs/mcp-guide.md` for all ten.
 
 Roady's MCP server works with Claude Code, OpenCode, Claude Desktop, OpenAI Codex, and Google Gemini. Use `roady setup <platform>` to configure.
 

@@ -17,19 +17,14 @@ PROJECT = "."
 
 # Arguments per tool. Anything absent is called with no args beyond defaults.
 ARGS = {
-    "roady_transition_task": {"task_id": "task-tasks-create", "event": "start",
+    "roady_task_transition": {"task_id": "task-tasks-create", "event": "start",
                               "actor": "validator", "session_id": "val-1", "agent": "validator"},
-    "roady_tasks": {"status": "all"},
-    "roady_add_feature": {"title": "Validated feature", "description": "added by validator"},
-    "roady_update_plan": {"tasks": []},
-    "roady_explain_drift": {},
+    "roady_task_check": {"task_id": "task-tasks-create"},
+    "roady_task_dispatch": {"task_id": "task-tasks-create", "agent": "validator", "dry_run": True},
+    "roady_capture": {"dry_run": True, "tasks": []},
+    "roady_plan_import": {"path": "README.md", "dry_run": True},
     "roady_query": {"question": "what is left?"},
-    "roady_init": {"name": "validated"},
-    "roady_plan_decompose": {},
-    "roady_suggest_priorities": {},
-    "roady_review_spec": {},
-    "roady_explain_spec": {},
-    "roady_generate_plan": {},
+    "roady_drift_record_semantic": {"judgements": []},
 }
 
 # Substrings that mean "the environment was not set up for this", not a bug.

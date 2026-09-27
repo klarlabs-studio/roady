@@ -6,6 +6,34 @@
 - **Minor** (1.x.0): New optional fields (`omitempty`), new tools, fields deprecated
 - **Major** (x.0.0): Required fields added/removed, tool signatures changed
 
+## v5.0.0 — The agent loop
+
+**Major**: tools removed and merged.
+
+### Removed
+
+`roady_init`, `roady_spec_get`, `roady_plan_get`, `roady_state_get`,
+`roady_snapshot_get`, `roady_tasks`, `roady_plan_generate`,
+`roady_plan_update`, `roady_plan_approve`, `roady_plan_reject`,
+`roady_plan_prune`, `roady_plan_prioritize`, `roady_plan_decompose`,
+`roady_spec_add`, `roady_spec_explain`, `roady_spec_review`,
+`roady_spec_validate`, `roady_spec_lock`, `roady_spec_import`,
+`roady_spec_analyze`, `roady_state_rebuild`, `roady_drift_accept`,
+`roady_drift_explain`, `roady_policy_check`, `roady_git_sync`,
+`roady_audit_verify`, `roady_audit_trail`, `roady_semantic_drift`. Each
+remains a CLI command.
+
+### Changed
+
+- `roady_drift_detect` takes `semantic` (bool): true returns the
+  semantic-drift request and questions that `roady_semantic_drift` returned.
+  It no longer declares an output schema.
+- `roady_drift_record_semantic` takes `judgements` only; `questions` is gone
+  (roady rebuilds them).
+- No tool carries a `ui://roady/*` resource; the MCP App UIs are removed.
+- `ROADY_MCP_TOOLS` and its groups are gone; every tool is listed.
+- The `decompose_spec` prompt's `write_back` is `roady_capture`.
+
 ## v4.0.0 — Narrowed to capture, keep, prove
 
 **Major**: tools removed.

@@ -73,7 +73,7 @@ plan_approval: scope         # default
 # plan_approval: every_change  # any change needs re-approval, as before
 ```
 
-`roady plan generate` and `roady_plan_update` follow the same rule: the
+`roady plan generate` follows the same rule: the
 approval stands when the spec still matches its lock and no task was dropped.
 
 ## One task at a time

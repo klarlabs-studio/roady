@@ -104,7 +104,7 @@ without one verifies as before.
 Once a task is in progress, blocked, done or verified, removing or changing
 its check is refused — whichever way it is attempted:
 
-- editing the task's check (`roady capture`, `roady_plan_update`),
+- editing the task's check (`roady capture`, `roady edit`, `roady_capture`),
 - editing the requirement's check (`roady capture`, `roady plan generate`),
 - editing `spec.yaml` by hand and then re-locking it (`roady spec lock`,
   `roady drift accept`, `roady spec add`), which is how a loosened check

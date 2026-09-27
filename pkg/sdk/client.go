@@ -138,70 +138,7 @@ func majorVersion(v string) string {
 
 // --- Project ---
 
-// Init initializes a new roady project.
-func (c *Client) Init(ctx context.Context, name string) (string, error) {
-	res, err := c.call(ctx, "roady_init", map[string]any{"name": name})
-	if err != nil {
-		return "", err
-	}
-	return textResult(res)
-}
-
-// GetSpec retrieves the current product specification.
-func (c *Client) GetSpec(ctx context.Context) (*Spec, error) {
-	res, err := c.call(ctx, "roady_spec_get", nil)
-	if err != nil {
-		return nil, err
-	}
-	return unmarshalText[Spec](res)
-}
-
-// GetPlan retrieves the current execution plan.
-func (c *Client) GetPlan(ctx context.Context) (*Plan, error) {
-	res, err := c.call(ctx, "roady_plan_get", nil)
-	if err != nil {
-		return nil, err
-	}
-	return unmarshalText[Plan](res)
-}
-
-// GetState retrieves the current execution state.
-func (c *Client) GetState(ctx context.Context) (*ExecutionState, error) {
-	res, err := c.call(ctx, "roady_state_get", nil)
-	if err != nil {
-		return nil, err
-	}
-	return unmarshalText[ExecutionState](res)
-}
-
 // --- Planning ---
-
-// GeneratePlan generates a plan from the spec using 1:1 heuristic.
-func (c *Client) GeneratePlan(ctx context.Context) (string, error) {
-	res, err := c.call(ctx, "roady_plan_generate", nil)
-	if err != nil {
-		return "", err
-	}
-	return textResult(res)
-}
-
-// UpdatePlan updates the plan with the given tasks.
-func (c *Client) UpdatePlan(ctx context.Context, tasks []Task) (string, error) {
-	res, err := c.call(ctx, "roady_plan_update", map[string]any{"tasks": tasks})
-	if err != nil {
-		return "", err
-	}
-	return textResult(res)
-}
-
-// ApprovePlan approves the current plan for execution.
-func (c *Client) ApprovePlan(ctx context.Context) (string, error) {
-	res, err := c.call(ctx, "roady_plan_approve", nil)
-	if err != nil {
-		return "", err
-	}
-	return textResult(res)
-}
 
 // --- Drift ---
 
@@ -212,24 +149,6 @@ func (c *Client) DetectDrift(ctx context.Context) (*DriftReport, error) {
 		return nil, err
 	}
 	return unmarshalText[DriftReport](res)
-}
-
-// AcceptDrift accepts drift and locks the spec snapshot.
-func (c *Client) AcceptDrift(ctx context.Context) (string, error) {
-	res, err := c.call(ctx, "roady_drift_accept", nil)
-	if err != nil {
-		return "", err
-	}
-	return textResult(res)
-}
-
-// ExplainDrift provides an AI-generated explanation of current drift.
-func (c *Client) ExplainDrift(ctx context.Context) (string, error) {
-	res, err := c.call(ctx, "roady_drift_explain", nil)
-	if err != nil {
-		return "", err
-	}
-	return textResult(res)
 }
 
 // --- Tasks ---
@@ -256,25 +175,7 @@ func (c *Client) Status(ctx context.Context, args map[string]any) (string, error
 	return textResult(res)
 }
 
-// CheckPolicy checks plan compliance with execution policies.
-func (c *Client) CheckPolicy(ctx context.Context) (string, error) {
-	res, err := c.call(ctx, "roady_policy_check", nil)
-	if err != nil {
-		return "", err
-	}
-	return textResult(res)
-}
-
 // --- Features ---
-
-// AddFeature adds a new feature to the product specification.
-func (c *Client) AddFeature(ctx context.Context, title, description string) (string, error) {
-	res, err := c.call(ctx, "roady_spec_add", map[string]any{"title": title, "description": description})
-	if err != nil {
-		return "", err
-	}
-	return textResult(res)
-}
 
 // QueryProject asks a natural language question about the project.
 func (c *Client) QueryProject(ctx context.Context, question string) (string, error) {
@@ -285,127 +186,15 @@ func (c *Client) QueryProject(ctx context.Context, question string) (string, err
 	return textResult(res)
 }
 
-// SuggestPriorities returns AI-powered priority suggestions for plan tasks.
-func (c *Client) SuggestPriorities(ctx context.Context) (*PrioritySuggestions, error) {
-	res, err := c.call(ctx, "roady_plan_prioritize", nil)
-	if err != nil {
-		return nil, err
-	}
-	return unmarshalText[PrioritySuggestions](res)
-}
-
-// ReviewSpec performs an AI-powered quality review of the specification.
-func (c *Client) ReviewSpec(ctx context.Context) (*SpecReview, error) {
-	res, err := c.call(ctx, "roady_spec_review", nil)
-	if err != nil {
-		return nil, err
-	}
-	return unmarshalText[SpecReview](res)
-}
-
-// ExplainSpec provides an AI-generated walkthrough of the specification.
-func (c *Client) ExplainSpec(ctx context.Context) (string, error) {
-	res, err := c.call(ctx, "roady_spec_explain", nil)
-	if err != nil {
-		return "", err
-	}
-	return textResult(res)
-}
-
 // --- Coordinator ---
 
-// GetSnapshot returns a consistent project snapshot.
-func (c *Client) GetSnapshot(ctx context.Context) (*Snapshot, error) {
-	res, err := c.call(ctx, "roady_snapshot_get", nil)
-	if err != nil {
-		return nil, err
-	}
-	return unmarshalText[Snapshot](res)
-}
-
-// GetReadyTasks returns tasks that are ready to start.
-func (c *Client) GetReadyTasks(ctx context.Context) (string, error) {
-	res, err := c.call(ctx, "roady_tasks", map[string]any{"status": "ready"})
-	if err != nil {
-		return "", err
-	}
-	return textResult(res)
-}
-
-// GetBlockedTasks returns tasks that are currently blocked.
-func (c *Client) GetBlockedTasks(ctx context.Context) (string, error) {
-	res, err := c.call(ctx, "roady_tasks", map[string]any{"status": "blocked"})
-	if err != nil {
-		return "", err
-	}
-	return textResult(res)
-}
-
-// GetInProgressTasks returns tasks currently in progress.
-func (c *Client) GetInProgressTasks(ctx context.Context) (string, error) {
-	res, err := c.call(ctx, "roady_tasks", map[string]any{"status": "in_progress"})
-	if err != nil {
-		return "", err
-	}
-	return textResult(res)
-}
-
 // --- Forecast / Org ---
-
-// GitSync synchronizes task statuses from git commit markers.
-func (c *Client) GitSync(ctx context.Context) (string, error) {
-	res, err := c.call(ctx, "roady_git_sync", nil)
-	if err != nil {
-		return "", err
-	}
-	return textResult(res)
-}
 
 // --- Sync ---
 
 // --- Deps ---
 
 // --- Debt ---
-
-// AuditTrailQuery selects the subject of an evidence trail. Exactly one of
-// TaskID, Agent, or Session identifies it; TaskID combined with Agent narrows
-// to what that agent did to that task.
-type AuditTrailQuery struct {
-	TaskID  string
-	Agent   string
-	Session string
-	// Since accepts a relative window ("7d", "2w") or an absolute date
-	// ("2026-07-01"). Empty means the whole history.
-	Since string
-}
-
-// AuditTrail returns the evidence trail for a task, agent, or session:
-// chain-integrity status, findings, the task's evidence and spec citation,
-// who acted, and every recorded event.
-//
-// The trail attests to a tamper-evident record of what was asserted, not to
-// who acted — actor and agent are caller-supplied and unauthenticated.
-func (c *Client) AuditTrail(ctx context.Context, q AuditTrailQuery) (string, error) {
-	args := map[string]any{}
-	if q.TaskID != "" {
-		args["task_id"] = q.TaskID
-	}
-	if q.Agent != "" {
-		args["agent"] = q.Agent
-	}
-	if q.Session != "" {
-		args["session_id"] = q.Session
-	}
-	if q.Since != "" {
-		args["since"] = q.Since
-	}
-
-	res, err := c.call(ctx, "roady_audit_trail", args)
-	if err != nil {
-		return "", err
-	}
-	return textResult(res)
-}
 
 // --- Plugins ---
 
@@ -415,13 +204,75 @@ func (c *Client) AuditTrail(ctx context.Context, q AuditTrailQuery) (string, err
 
 // --- Smart Decompose ---
 
-// SmartDecompose performs AI-powered context-aware task decomposition.
-func (c *Client) SmartDecompose(ctx context.Context) (*SmartPlan, error) {
-	res, err := c.call(ctx, "roady_plan_decompose", nil)
-	if err != nil {
-		return nil, err
+// --- Team ---
+
+// --- The agent loop ---
+
+// Next returns the brief on the caller's current task, or the ready task to
+// start next. owner defaults to ai-agent on the server.
+func (c *Client) Next(ctx context.Context, owner string) (string, error) {
+	var args map[string]any
+	if owner != "" {
+		args = map[string]any{"owner": owner}
 	}
-	return unmarshalText[SmartPlan](res)
+	return c.text(ctx, "roady_next", args)
 }
 
-// --- Team ---
+// Capture records features, requirements and tasks in one write. doc is the
+// capture document ({"features": [...], "tasks": [...]}); dryRun previews.
+// The result is the capture report as JSON.
+func (c *Client) Capture(ctx context.Context, doc map[string]any, dryRun bool) (string, error) {
+	args := map[string]any{}
+	for k, v := range doc {
+		args[k] = v
+	}
+	if dryRun {
+		args["dry_run"] = true
+	}
+	return c.text(ctx, "roady_capture", args)
+}
+
+// PlanImport imports a plan file an agent wrote (markdown, Kiro tasks.md,
+// Codex ExecPlan) as tasks. opts may carry format, feature_id, parallel,
+// include_done and dry_run.
+func (c *Client) PlanImport(ctx context.Context, path string, opts map[string]any) (string, error) {
+	args := map[string]any{"path": path}
+	for k, v := range opts {
+		args[k] = v
+	}
+	return c.text(ctx, "roady_plan_import", args)
+}
+
+// TaskCheck runs a task's acceptance check and records the result.
+func (c *Client) TaskCheck(ctx context.Context, taskID string) (string, error) {
+	return c.text(ctx, "roady_task_check", map[string]any{"task_id": taskID})
+}
+
+// DispatchTask hands a ready task to a subagent and claims it unless dryRun.
+func (c *Client) DispatchTask(ctx context.Context, taskID, agent string, dryRun bool) (string, error) {
+	args := map[string]any{"task_id": taskID, "agent": agent}
+	if dryRun {
+		args["dry_run"] = true
+	}
+	return c.text(ctx, "roady_task_dispatch", args)
+}
+
+// SemanticDrift returns the prompt for judging whether implementations still
+// mean what their requirements say, with the questions it covers.
+func (c *Client) SemanticDrift(ctx context.Context) (string, error) {
+	return c.text(ctx, "roady_drift_detect", map[string]any{"semantic": true})
+}
+
+// RecordSemanticDrift records judgements on SemanticDrift's questions. Each
+// judgement is {"requirement_id", "agrees", "explanation"}.
+func (c *Client) RecordSemanticDrift(ctx context.Context, judgements []map[string]any) (string, error) {
+	return c.text(ctx, "roady_drift_record_semantic", map[string]any{"judgements": judgements})
+}
+
+func (c *Client) text(ctx context.Context, tool string, args map[string]any) (string, error) {
+	res, err := c.call(ctx, tool, args)
+	if err != nil {
+		return "", err
+	}
+	return textResult(res)
+}

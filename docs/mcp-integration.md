@@ -216,7 +216,7 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 ## MCP Tools Reference
 
-Seven tools are listed by default — the whole working loop:
+The server carries the working loop — ten tools:
 
 | Tool | Does |
 |------|------|
@@ -227,10 +227,12 @@ Seven tools are listed by default — the whole working loop:
 | `roady_task_check` | Run a task's acceptance check and record the result |
 | `roady_status` | Project status, with filters for ready, blocked, active |
 | `roady_query` | Project context for a question, for your model to answer |
+| `roady_task_dispatch` | Hand a ready task to a subagent |
+| `roady_drift_detect` | Drift between spec, plan, code and policy (`semantic` for the semantic-drift prompt) |
+| `roady_drift_record_semantic` | Record semantic-drift judgements |
 
-Every other tool (spec and plan management, drift, policy, audit, dispatch)
-stays callable by name; `ROADY_MCP_TOOLS=all` lists them too. See
-[mcp-guide.md](mcp-guide.md).
+Approving plans, accepting drift, locking the spec, init, rebuild and audit are
+CLI commands for a person. See [mcp-guide.md](mcp-guide.md).
 
 ## Workflow Example
 

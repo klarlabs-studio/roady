@@ -9,6 +9,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- **The MCP server is the agent loop: ten tools.** `roady_next`,
+  `roady_capture`, `roady_plan_import`, `roady_task_transition`,
+  `roady_task_check`, `roady_task_dispatch`, `roady_status`, `roady_query`,
+  `roady_drift_detect` and `roady_drift_record_semantic` — about 3k tokens of
+  every agent's prompt, all of it listed. The other 28 tools are gone from
+  MCP and stay CLI commands: approving, rejecting and pruning plans,
+  accepting drift and locking the spec are decisions for a person, so an
+  agent can no longer approve its own plan or accept its own drift; init,
+  rebuild, validate, import/analyze and audit are maintenance; reads
+  (`spec_get`, `plan_get`, `state_get`, `snapshot_get`, `tasks`) are covered by
+  `roady_next`, `roady_status` and `roady_query`; `spec_add`/`plan_update` by
+  `roady_capture`; the prompt builders (`spec_explain`, `spec_review`,
+  `drift_explain`, `plan_prioritize`, `plan_decompose`) by the CLI's `--ai`
+  prompts. The semantic-drift prompt moved into `roady_drift_detect`
+  (`semantic: true`), and recording judgements no longer takes the questions
+  back — roady rebuilds them, so an invented requirement id is refused.
+  `ROADY_MCP_TOOLS` is ignored (with a warning). The inline MCP App UIs
+  (`app/`, `ui://roady/*`) are removed: they called tool names that no longer
+  existed. The decomposition prompt now writes back through `roady_capture`.
+  The Go SDK follows: `Next`, `Capture`, `PlanImport`, `TaskCheck`,
+  `DispatchTask`, `SemanticDrift`, `RecordSemanticDrift` added, the removed
+  tools' methods dropped; schema 5.0.0.
 - **Everything that is not capture, keep or prove.** Roady is the plan an AI
   agent works from and the proof it did; these did not serve that and are
   gone from the CLI, the MCP server, the SDK, the docs and the site:

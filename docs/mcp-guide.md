@@ -67,153 +67,78 @@ roady mcp --transport ws --addr :8080
 
 ## Available Tools
 
-By default the server **lists** seven essential tools and keeps every other
-tool registered and callable by name. Set `ROADY_MCP_TOOLS=all` to list
-everything.
+The server carries the agent loop and nothing else — ten tools, about 3k
+tokens of every agent's prompt:
 
-### Essential Tools (listed by default)
+| Tool | Does |
+|------|------|
+| `roady_next` | The task in progress, or the one to start: why it exists (doc:line), what done means, dependencies |
+| `roady_capture` | Record features, requirements and tasks in one write, from one task to a whole plan |
+| `roady_plan_import` | Import a plan file an agent wrote (markdown, Kiro `tasks.md`, Codex ExecPlan) as tasks |
+| `roady_task_transition` | start, complete, block, unblock, stop, reopen, verify |
+| `roady_task_check` | Run a task's acceptance check and record the result |
+| `roady_task_dispatch` | Hand a ready task to a subagent with its intent and completion contract |
+| `roady_status` | Progress and tasks, filterable by ready, blocked, active, status and priority |
+| `roady_query` | Project context for a question, for your model to answer |
+| `roady_drift_detect` | Drift between spec, plan, code and policy; `semantic: true` returns the semantic-drift prompt |
+| `roady_drift_record_semantic` | Record the judgements on that prompt |
 
-| Tool | Description |
-|------|-------------|
-| `roady_next` | Brief for the task in progress, or the one to start next |
-| `roady_capture` | Record intent of any size in one write |
-| `roady_plan_import` | Import an agent's plan file as roady tasks |
-| `roady_task_transition` | Transition task state (start/complete/block/stop/unblock/verify) |
-| `roady_task_check` | Run a task's acceptance check |
-| `roady_status` | High-level project summary |
-| `roady_query` | Ask a question about the plan and state |
-
-### Spec, Plan & State Tools
-
-| Tool | Description |
-|------|-------------|
-| `roady_init` | Initialize a new roady project |
-| `roady_spec_get` / `roady_spec_add` / `roady_spec_import` / `roady_spec_analyze` | Read, extend, or import the spec |
-| `roady_spec_explain` / `roady_spec_review` / `roady_spec_validate` / `roady_spec_lock` | Explain, review, validate, or lock the spec |
-| `roady_plan_get` / `roady_plan_generate` / `roady_plan_update` | Read or build the plan |
-| `roady_plan_approve` / `roady_plan_reject` / `roady_plan_prune` | Plan approval lifecycle |
-| `roady_plan_decompose` / `roady_plan_prioritize` | Break down or reorder tasks |
-| `roady_state_get` / `roady_state_rebuild` / `roady_snapshot_get` | Execution state and full snapshot |
-| `roady_tasks` / `roady_task_dispatch` | List tasks, dispatch work |
-
-### Drift, Governance & Audit Tools
-
-| Tool | Description |
-|------|-------------|
-| `roady_drift_detect` / `roady_drift_explain` / `roady_drift_accept` | Detect, explain, or accept drift |
-| `roady_semantic_drift` / `roady_drift_record_semantic` | Semantic drift prompt and result |
-| `roady_policy_check` | Validate against WIP limits and policy |
-| `roady_audit_trail` / `roady_audit_verify` | Read and verify the hash-chained audit log |
-| `roady_git_sync` | Sync task state from `[roady:<task-id>]` commit markers |
+Everything else is a CLI command for a person: `roady init`, `roady plan
+approve|reject|prune|generate`, `roady drift accept|explain`, `roady spec
+lock|validate|import|analyze|explain|review`, `roady state rebuild`, `roady
+audit verify|trail`, `roady git sync`, `roady policy check`. In particular an
+agent cannot approve its own plan or accept its own drift — deciding what was
+agreed is not the agent's call.
 
 ---
 
 ## Tool Parameters
 
-### roady_init
+### roady_capture
 ```json
 {
-  "name": "my-project"  // Optional: project name
-}
-```
-
-### roady_plan_update
-```json
-{
+  "features": [
+    {"id": "auth", "title": "Authentication", "requirements": [
+      {"id": "jwt", "title": "JWT sessions", "priority": "high",
+       "check": {"run": "go test ./auth -run TestJWT"}}
+    ]}
+  ],
   "tasks": [
-    {
-      "id": "task-auth",
-      "title": "Implement authentication",
-      "description": "Add JWT-based auth",
-      "feature_id": "feat-security",
-      "depends_on": [],
-      "priority": "high",
-      "estimate": "3d"
-    }
-  ]
+    {"id": "task-auth-docs", "title": "Document the login flow",
+     "requirement": "jwt", "depends_on": ["task-jwt"]}
+  ],
+  "dry_run": false
 }
 ```
 
 ### roady_task_transition
 ```json
 {
-  "task_id": "task-auth",
-  "event": "start",           // start|complete|block|stop|unblock|verify
-  "evidence": "commit-sha"    // Optional: proof of completion
-}
-```
-
-### roady_spec_add
-```json
-{
-  "title": "User Dashboard",
-  "description": "A comprehensive dashboard showing user metrics and activity"
+  "task_id": "task-jwt",
+  "event": "start",           // start|complete|block|unblock|stop|reopen|verify
+  "evidence": "commit-sha"    // optional: proof of completion
 }
 ```
 
 ---
 
-## Example Workflows
-
-### 1. Initial Project Setup (AI Agent)
+## Example Workflow
 
 ```python
-# 1. Initialize project
-await mcp.call("roady_init", {"name": "my-app"})
-
-# 2. Generate initial plan from existing spec
-await mcp.call("roady_plan_generate")
-
-# 3. Review and approve
-plan = await mcp.call("roady_plan_get")
-# ... agent reviews plan ...
-await mcp.call("roady_plan_approve")
-```
-
-### 2. Task Execution Loop
-
-```python
-# Check policy before starting
-policy_ok = await mcp.call("roady_policy_check")
-
-# Start task
-await mcp.call("roady_task_transition", {
-    "task_id": "task-api",
-    "event": "start"
-})
-
-# ... agent implements feature ...
-
-# Complete with evidence
-await mcp.call("roady_task_transition", {
-    "task_id": "task-api",
-    "event": "complete",
-    "evidence": "PR #123"
-})
-```
-
-### 3. Drift Detection & Resolution
-
-```python
-# Detect drift
-drift = await mcp.call("roady_drift_detect")
-
-if drift["has_issues"]:
-    # Get AI explanation
-    explanation = await mcp.call("roady_drift_explain")
-
-    # If drift is intentional, accept it
-    await mcp.call("roady_drift_accept")
-```
-
-### 4. Progress Monitoring
-
-```python
-# Get current status
-status = await mcp.call("roady_status")
-
-# Get a brief for the next task
+# What am I doing, and what does done mean?
 brief = await mcp.call("roady_next")
+
+# Record the plan the agent made (all or nothing, idempotent)
+await mcp.call("roady_capture", {"features": [...], "tasks": [...]})
+# ...a person approves new intent: `roady plan approve`
+
+await mcp.call("roady_task_transition", {"task_id": "task-jwt", "event": "start"})
+# ... implement, commit with [roady:task-jwt], `roady git sync` ...
+await mcp.call("roady_task_check", {"task_id": "task-jwt"})
+await mcp.call("roady_task_transition", {"task_id": "task-jwt", "event": "complete", "evidence": "abc123"})
+
+# Has reality diverged from intent?
+drift = await mcp.call("roady_drift_detect")
 ```
 
 ---
@@ -244,11 +169,11 @@ Example event:
 
 ## Best Practices
 
-1. **Always check policy** before starting tasks to respect WIP limits
-2. **Provide evidence** when completing tasks for audit trails
-3. **Run acceptance checks** (`roady_task_check`) before verifying tasks
-4. **Use git sync** after commits with `[roady:task-id]` markers
-5. **Accept drift explicitly** rather than ignoring discrepancies
+1. **Start from `roady_next`** at the beginning of a session and after compaction
+2. **Record new work with `roady_capture`**, never in a markdown file
+3. **Run the acceptance check** (`roady_task_check`) before calling a task done
+4. **Provide evidence** when completing tasks, and commit with `[roady:task-id]`
+5. **Leave approval and drift acceptance to a person** — the CLI is where they happen
 
 ---
 

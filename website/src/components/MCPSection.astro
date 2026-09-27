@@ -1,9 +1,7 @@
 ---
 // MCP Integration Section.
 //
-// Tool list mirrors the seven essential tools the server lists by default
-// (ROADY_MCP_TOOLS=all lists the rest). D3 visualisation sub-block
-// collapsed into a single callout.
+// Tool list mirrors the server's ten tools: the agent loop.
 ---
 
 <section id="mcp" class="py-24 bg-gradient-to-b from-[#0B0E14] to-violet-900/10">
@@ -14,8 +12,8 @@
       </span>
       <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">Native to Claude Code, Codex, Cursor, Gemini</h2>
       <p class="text-gray-400 max-w-2xl mx-auto">
-        Every Roady operation is an MCP tool. Your agent reads and writes the same
-        plan-of-record you see in <code class="mono text-violet-400">roady status</code>.
+        Your agent gets the loop as ten MCP tools and reads and writes the same
+        plan-of-record you see in <code class="mono text-violet-400">roady status</code>. Approving plans and accepting drift stay with you, on the CLI.
         One <code class="mono text-violet-400">roady setup</code> command per supported tool installs the MCP server and session hooks.
       </p>
     </div>
@@ -57,9 +55,17 @@
               <code class="text-violet-300 mono">roady_query</code>
               <p class="text-xs text-gray-500 mt-1">Question over project state</p>
             </div>
+            <div class="px-3 py-2 bg-black/30 rounded-lg">
+              <code class="text-violet-300 mono">roady_task_dispatch</code>
+              <p class="text-xs text-gray-500 mt-1">Hand a task to a subagent</p>
+            </div>
+            <div class="px-3 py-2 bg-black/30 rounded-lg">
+              <code class="text-violet-300 mono">roady_drift_detect</code>
+              <p class="text-xs text-gray-500 mt-1">Has reality diverged from intent?</p>
+            </div>
           </div>
           <p class="text-xs text-gray-500 mt-4">
-            These seven are listed by default; drift, spec, plan, policy, and audit tools stay callable by name. <code class="mono text-violet-400">ROADY_MCP_TOOLS=all</code> lists every tool.
+            Plus <code class="mono text-violet-400">roady_drift_record_semantic</code> for semantic-drift judgements. That is the whole server: about 3k tokens of your agent's prompt.
           </p>
         </div>
 
@@ -116,17 +122,6 @@ roady setup kiro</code></pre>
           </div>
         </div>
 
-        <div class="glass p-6 rounded-2xl">
-          <h3 class="text-white font-semibold mb-2 flex items-center">
-            <i data-lucide="bar-chart-3" class="w-4 h-4 text-cyan-400 mr-2"></i>
-            Visualisations come along for free
-          </h3>
-          <p class="text-sm text-gray-400">
-            Every MCP tool that returns structured data ships with an interactive D3
-            view (donut, force-directed graph, gauge, line chart, tree). Renders inside
-            Claude Code's tool panel automatically &mdash; no separate dashboard install.
-          </p>
-        </div>
       </div>
     </div>
   </div>
