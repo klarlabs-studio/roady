@@ -634,9 +634,25 @@
       "check": {
         "run": "go build ./... \u0026\u0026 test -z \"$(git grep -lE '\"roady_(cost|rate|team|org|debt|deps|plugin|forecast|timeline|report|usage|workspace|messaging)_?[a-z_]*\"' -- '*.go')\""
       }
+    },
+    {
+      "id": "task-mcp-agent-loop",
+      "title": "Cut the MCP server to the agent loop",
+      "description": "MCP carries what an agent needs to work a plan: next, capture, plan import, transition, check, status, query, drift detect, semantic drift, dispatch. Governance (approve, reject, accept drift, lock), maintenance (init, prune, rebuild, validate, import/analyze spec, audit) and prompt builders stay on the CLI, so an agent cannot approve its own plan or accept its own drift. Done when: tools/list has about ten tools, the loop needs no other, and every removed operation is a CLI command.",
+      "priority": "high",
+      "estimate": "",
+      "depends_on": [
+        "task-remove-extras"
+      ],
+      "feature_id": "capture",
+      "origin": "human",
+      "source": {},
+      "check": {
+        "run": "go test ./internal/infrastructure/mcp/ -run 'TestServer_ServesTheAgentLoopOnly|TestServer_GovernanceIsNotAnAgentTool|TestEveryToolIsAnnotated' -count=1"
+      }
     }
   ],
   "approval_status": "approved",
   "created_at": "2026-01-31T18:00:00+01:00",
-  "updated_at": "2026-09-26T23:44:59.128252907+02:00"
+  "updated_at": "2026-09-27T08:07:27.702918304+02:00"
 }

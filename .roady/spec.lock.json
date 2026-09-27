@@ -554,7 +554,7 @@
     },
     {
       "id": "cli-mcp-parity",
-      "description": "All new CLI commands should have corresponding MCP tools"
+      "description": "Every operation is reachable from the CLI. MCP carries the agent loop only (next, capture, plan import, transition, check, dispatch, status, query, drift); approving, rejecting, accepting drift, locking, init and maintenance stay CLI-only so an agent cannot approve its own work."
     }
   ],
   "version": ""
