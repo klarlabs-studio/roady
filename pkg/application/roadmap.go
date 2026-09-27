@@ -167,6 +167,14 @@ func (r Roadmap) Render(w io.Writer) {
 	if len(r.Unlinked) > 0 {
 		sorted := append([]string{}, r.Unlinked...)
 		sort.Strings(sorted)
+		// A project that adopts goals late has dozens of these; naming them
+		// all buries the roadmap under one line.
+		const show = 8
+		if len(sorted) > show {
+			_, _ = fmt.Fprintf(w, "\n%d features serve no goal: %s, … %d more\n  Link them with `roady goal edit <goal> --feature <id>`; `--json` lists all.\n",
+				len(sorted), strings.Join(sorted[:show], ", "), len(sorted)-show)
+			return
+		}
 		_, _ = fmt.Fprintf(w, "\nFeatures serving no goal: %s\n", strings.Join(sorted, ", "))
 	}
 }
