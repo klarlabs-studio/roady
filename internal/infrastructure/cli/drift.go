@@ -3,6 +3,9 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"os"
+	"strings"
 
 	"github.com/felixgeelhaar/roady/pkg/application"
 	"github.com/felixgeelhaar/roady/pkg/domain/drift"
@@ -115,12 +118,7 @@ var driftDetectCmd = &cobra.Command{
 		}
 
 		fmt.Printf("Detected %d drift issues:\n", len(report.Issues))
-		for _, issue := range report.Issues {
-			fmt.Printf("- [%s] (%s/%s) %s\n", issue.Severity, issue.Type, issue.Category, issue.Message)
-			if issue.Hint != "" {
-				fmt.Printf("  Hint: %s\n", issue.Hint)
-			}
-		}
+		printDriftIssues(os.Stdout, report.Issues)
 
 		if len(gating) == 0 {
 			// Reported, but below the gate. Say so explicitly rather than
@@ -169,4 +167,66 @@ func init() {
 	driftAcceptCmd.Flags().BoolVar(&driftAcceptChangeChecks, "change-checks", false, "Allow removing or changing the acceptance check of work already started (reopens done tasks; recorded as an override)")
 	driftCmd.AddCommand(driftAcceptCmd)
 	RootCmd.AddCommand(driftCmd)
+}
+
+// infoGroupAt is how many informational issues of one kind are listed one
+// by one before they are summarised on a single line. A project adopting
+// roady late can carry dozens of them; listed in full they bury the issues
+// that need action.
+const infoGroupAt = 4
+
+// printDriftIssues writes issues as text: each problem with its hint, and
+// informational issues of one kind folded into one line once there are
+// more than a few.
+func printDriftIssues(w io.Writer, issues []drift.Issue) {
+	type group struct {
+		ids  []string
+		hint string
+	}
+	counts := map[string]int{}
+	for _, is := range issues {
+		if is.Severity == drift.SeverityInfo {
+			counts[string(is.Type)+"/"+string(is.Category)]++
+		}
+	}
+	groups := map[string]*group{}
+	var order []string
+	for _, is := range issues {
+		key := string(is.Type) + "/" + string(is.Category)
+		if is.Severity == drift.SeverityInfo && counts[key] >= infoGroupAt {
+			g := groups[key]
+			if g == nil {
+				g = &group{hint: is.Hint}
+				groups[key] = g
+				order = append(order, key)
+			}
+			g.ids = append(g.ids, is.ComponentID)
+			continue
+		}
+		_, _ = fmt.Fprintf(w, "- [%s] (%s/%s) %s\n", is.Severity, is.Type, is.Category, is.Message)
+		if is.Hint != "" {
+			_, _ = fmt.Fprintf(w, "  Hint: %s\n", is.Hint)
+		}
+	}
+	for _, key := range order {
+		g := groups[key]
+		shown := g.ids
+		more := ""
+		if len(shown) > 5 {
+			more = fmt.Sprintf(", … %d more", len(shown)-5)
+			shown = shown[:5]
+		}
+		_, _ = fmt.Fprintf(w, "- [info] (%s) %d %s: %s%s\n", key, len(g.ids), infoGroupLabel(key), strings.Join(shown, ", "), more)
+		_, _ = fmt.Fprintf(w, "  Hint: %s (`--output json` lists each.)\n", g.hint)
+	}
+}
+
+func infoGroupLabel(key string) string {
+	switch key {
+	case string(drift.DriftTypePlan) + "/" + string(drift.CategoryOrphan):
+		return "finished tasks under features the spec no longer has, kept as history"
+	case string(drift.DriftTypePlan) + "/" + string(drift.CategoryUnplanned):
+		return "unplanned tasks"
+	}
+	return "items"
 }

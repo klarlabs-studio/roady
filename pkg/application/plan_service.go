@@ -227,6 +227,16 @@ func (s *PlanService) PrunePlan() error {
 		}
 	}
 
+	// Finished work under a feature the spec no longer has is history, not
+	// intent to reconcile: prune keeps it (drift reports it at info).
+	if state, err := s.repo.LoadState(); err == nil && state != nil {
+		for _, t := range plan.Tasks {
+			if state.GetTaskStatus(t.ID).IsComplete() {
+				validTaskIDs[t.ID] = true
+			}
+		}
+	}
+
 	before := len(plan.Tasks)
 	plan.Tasks = s.reconciler.FilterValidTasks(plan.Tasks, validTaskIDs, validFeatureIDs)
 	plan.UpdatedAt = time.Now()

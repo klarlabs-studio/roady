@@ -230,6 +230,11 @@ goals:
       description: Capture, keep, prove. One MCP tool per CLI noun, with decisions confirmed by the user in their client; `roady capture` and single-task edits; goals, decisions and a ROADMAP.md rendered from them; plan import from agent plan files and hooks for Claude Code, Codex, Gemini, Cursor, OpenCode, Copilot and Kiro; task claims with expiring leases, shared across worktrees; acceptance checks, regression drift, an honest exit for impossible work, task history and local adoption stats. Billing, teams, tracker sync, messaging, debt, forecasting and dashboards were removed.
       status: shipped
       milestone: v0.25.0
+    - id: goal-adopt-existing-projects
+      title: Adopt roady where planning already lives elsewhere
+      description: |
+        Dogfooding on nexa (2026-09-27): roady was abandoned in June for a markdown memory system (roadmap.md Now/Next/Later, an append-only decisions log, open threads with block reasons). What was left in .roady had 89 tasks titled "done", 36 orphans from renamed features and 140 unverified completions. Adopting roady in such a project has to be cheaper than keeping the markdown.
+      horizon: now
 decisions:
     - id: decision-shared-state
       title: Where execution state lives
@@ -607,6 +612,60 @@ features:
           estimate: 1d
           depends_on: []
       goal: goal-planning-for-ai
+    - id: adoption
+      title: Adopting roady in a lived-in project
+      description: ""
+      requirements:
+        - id: finished-orphans-are-history
+          title: Finished tasks whose feature is gone are history, not drift to prune
+          description: A done or verified task with no matching feature is reported at info severity and never offered to plan prune; open orphans stay medium.
+          priority: high
+          estimate: ""
+          depends_on: []
+          check:
+            run: go test ./pkg/application/ -run TestFinishedOrphansAreHistory -count=1
+        - id: status-word-titles
+          title: A status word is not a task title
+          description: Capture refuses a task title that is only a status (done, complete, verified, blocked, in progress) and points to roady_task; doctor lists tasks already titled that way.
+          priority: high
+          estimate: ""
+          depends_on: []
+          check:
+            run: go test ./pkg/application/ ./internal/infrastructure/cli/ -run 'TestStatusWordTitle' -count=1
+        - id: task-list-command
+          title: roady task list
+          description: Agents type `roady task list`; it lists tasks, filtered by --status, capped like the MCP listing.
+          priority: medium
+          estimate: ""
+          depends_on: []
+          check:
+            run: go test ./internal/infrastructure/cli/ -run TestTaskListCommand -count=1
+        - id: unlinked-features-capped
+          title: The roadmap names a few unlinked features, not all of them
+          description: ""
+          priority: low
+          estimate: ""
+          depends_on: []
+          check:
+            run: go test ./pkg/application/ -run TestRoadmapUnlinkedIsCapped -count=1
+        - id: import-roadmap-markdown
+          title: Import goals from a Now/Next/Later roadmap file
+          description: '`roady goal import ROADMAP.md` reads ## Now / Next / Later / Done (Shipped) / Out of scope headings and their top-level bullets into goals, idempotently, through capture.'
+          priority: high
+          estimate: ""
+          depends_on: []
+          check:
+            run: go test ./pkg/application/ -run TestImportRoadmapMarkdown -count=1
+        - id: notes-to-capture-prompt
+          title: Turn planning notes into a capture document
+          description: '`roady capture --from-notes <files>` emits a prompt with the capture schema and the notes, for the caller''s model to answer with a capture document (decisions, open threads with block reasons, goals). Roady runs no inference.'
+          priority: medium
+          estimate: ""
+          depends_on:
+            - import-roadmap-markdown
+          check:
+            run: go test ./pkg/application/ -run TestNotesCapturePrompt -count=1
+      goal: goal-adopt-existing-projects
 constraints:
     - id: backward-compat
       description: Maintain backward compatibility with existing spec.yaml and plan.json formats

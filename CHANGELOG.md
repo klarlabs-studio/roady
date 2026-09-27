@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Adopting roady in a project that already has history. Found by running
+v0.25.0 against a project that had stopped using roady for markdown notes.
+
+### Changed
+
+- A done or verified task whose feature the spec no longer has is history:
+  drift reports it at `info` instead of `medium`, and `roady plan prune`
+  keeps it. Open orphans are unchanged.
+- `roady drift detect` folds more than a few informational issues of one
+  kind into a single line; `--output json` still lists each.
+
 ## [0.25.0] - 2026-09-27
 
 Roady becomes the planning tool for AI: capture intent at any size, keep the

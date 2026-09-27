@@ -702,9 +702,95 @@
       "check": {
         "run": "go test ./internal/infrastructure/mcp/ -run 'TestServer_ToolPerCLINoun|TestEveryNounActionDispatches|TestGatedActionsNeedTheUser' -count=1 \u0026\u0026 go test ./internal/infrastructure/cli/ -run TestEveryCLICommandHasAnMCPTool -count=1"
       }
+    },
+    {
+      "id": "task-finished-orphans-are-history",
+      "title": "Finished tasks whose feature is gone are history, not drift to prune (Adopting roady in a lived-in project)",
+      "description": "A done or verified task with no matching feature is reported at info severity and never offered to plan prune; open orphans stay medium.",
+      "priority": "high",
+      "estimate": "",
+      "depends_on": [],
+      "feature_id": "adoption",
+      "origin": "heuristic",
+      "source": {},
+      "check": {
+        "run": "go test ./pkg/application/ -run TestFinishedOrphansAreHistory -count=1"
+      }
+    },
+    {
+      "id": "task-status-word-titles",
+      "title": "A status word is not a task title (Adopting roady in a lived-in project)",
+      "description": "Capture refuses a task title that is only a status (done, complete, verified, blocked, in progress) and points to roady_task; doctor lists tasks already titled that way.",
+      "priority": "high",
+      "estimate": "",
+      "depends_on": [],
+      "feature_id": "adoption",
+      "origin": "heuristic",
+      "source": {},
+      "check": {
+        "run": "go test ./pkg/application/ ./internal/infrastructure/cli/ -run 'TestStatusWordTitle' -count=1"
+      }
+    },
+    {
+      "id": "task-task-list-command",
+      "title": "roady task list (Adopting roady in a lived-in project)",
+      "description": "Agents type `roady task list`; it lists tasks, filtered by --status, capped like the MCP listing.",
+      "priority": "medium",
+      "estimate": "",
+      "depends_on": [],
+      "feature_id": "adoption",
+      "origin": "heuristic",
+      "source": {},
+      "check": {
+        "run": "go test ./internal/infrastructure/cli/ -run TestTaskListCommand -count=1"
+      }
+    },
+    {
+      "id": "task-unlinked-features-capped",
+      "title": "The roadmap names a few unlinked features, not all of them (Adopting roady in a lived-in project)",
+      "description": "",
+      "priority": "low",
+      "estimate": "",
+      "depends_on": [],
+      "feature_id": "adoption",
+      "origin": "heuristic",
+      "source": {},
+      "check": {
+        "run": "go test ./pkg/application/ -run TestRoadmapUnlinkedIsCapped -count=1"
+      }
+    },
+    {
+      "id": "task-import-roadmap-markdown",
+      "title": "Import goals from a Now/Next/Later roadmap file (Adopting roady in a lived-in project)",
+      "description": "`roady goal import ROADMAP.md` reads ## Now / Next / Later / Done (Shipped) / Out of scope headings and their top-level bullets into goals, idempotently, through capture.",
+      "priority": "high",
+      "estimate": "",
+      "depends_on": [],
+      "feature_id": "adoption",
+      "origin": "heuristic",
+      "source": {},
+      "check": {
+        "run": "go test ./pkg/application/ -run TestImportRoadmapMarkdown -count=1"
+      }
+    },
+    {
+      "id": "task-notes-to-capture-prompt",
+      "title": "Turn planning notes into a capture document (Adopting roady in a lived-in project)",
+      "description": "`roady capture --from-notes \u003cfiles\u003e` emits a prompt with the capture schema and the notes, for the caller's model to answer with a capture document (decisions, open threads with block reasons, goals). Roady runs no inference.",
+      "priority": "medium",
+      "estimate": "",
+      "depends_on": [
+        "task-import-roadmap-markdown"
+      ],
+      "feature_id": "adoption",
+      "origin": "heuristic",
+      "source": {},
+      "check": {
+        "run": "go test ./pkg/application/ -run TestNotesCapturePrompt -count=1"
+      }
     }
   ],
   "approval_status": "approved",
   "created_at": "2026-01-31T18:00:00+01:00",
-  "updated_at": "2026-09-27T15:58:31.9785+02:00"
+  "updated_at": "2026-09-27T16:55:16.404785947+02:00"
 }

@@ -1,6 +1,6 @@
 {
   "project_id": "agent-handoff",
-  "version": 417,
+  "version": 419,
   "task_states": {
     "task-acceptance-checks": {
       "status": "verified",
@@ -783,6 +783,19 @@
         }
       ]
     },
+    "task-finished-orphans-are-history": {
+      "status": "in_progress",
+      "path": "",
+      "owner": "Claude",
+      "started_at": "2026-09-27T16:55:23.201244872+02:00",
+      "elapsed_minutes": 0,
+      "lease": {
+        "holder": "Claude",
+        "session": "0b344c77-c09e-44c1-8365-f91d0af05bb9",
+        "expires_at": "2026-09-27T18:55:23.201245078+02:00",
+        "renewed_at": "2026-09-27T16:55:23.201245078+02:00"
+      }
+    },
     "task-goals-horizons": {
       "status": "verified",
       "path": "",
@@ -966,6 +979,11 @@
           "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.013s\n"
         }
       ]
+    },
+    "task-import-roadmap-markdown": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
     },
     "task-instructions-and-skill": {
       "status": "verified",
@@ -1413,6 +1431,11 @@
           "output": "ok  \tgithub.com/felixgeelhaar/roady/internal/infrastructure/cli\t0.052s\n"
         }
       ]
+    },
+    "task-notes-to-capture-prompt": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
     },
     "task-paged-task-listings": {
       "status": "verified",
@@ -1928,6 +1951,11 @@
         }
       ]
     },
+    "task-status-word-titles": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
     "task-task-brief": {
       "status": "verified",
       "path": "",
@@ -1973,6 +2001,16 @@
           "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.140s\n"
         }
       ]
+    },
+    "task-task-list-command": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
+    "task-unlinked-features-capped": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
     },
     "task-unplanned-tasks": {
       "status": "verified",
@@ -2076,5 +2114,5 @@
       "elapsed_minutes": 4
     }
   },
-  "updated_at": "2026-09-27T15:32:20.056908491+02:00"
+  "updated_at": "2026-09-27T16:55:23.201244872+02:00"
 }
