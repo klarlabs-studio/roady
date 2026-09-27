@@ -81,7 +81,7 @@ every agent's prompt.
 | `roady_drift` | `detect` (`checks: true` re-runs verified tasks' checks) `explain` `semantic` `record` · **`accept`** |
 | `roady_state` | `get` · **`rebuild`** |
 | `roady_audit` | `verify` `trail` |
-| `roady_goal` | `list` `add` `edit` `render` (ROADMAP.md; replacing a hand edit needs the user) — the roadmap: goals on now, next or later, shipped or out of scope, with the features serving them |
+| `roady_goal` | `list` `add` `edit` `render` (ROADMAP.md; replacing a hand edit needs the user) `import` (a hand-kept roadmap file into goals) — the roadmap: goals on now, next or later, shipped or out of scope, with the features serving them |
 | `roady_policy` | `check` |
 | `roady_git` | `sync` |
 | `roady_status` | — progress and tasks; `snapshot: true` for the task ids in each lifecycle bucket |

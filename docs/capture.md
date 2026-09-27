@@ -94,6 +94,15 @@ roady did not write, without `--force` — move what it says into goals first.
 Task progress is left out of the file, so it changes only when the roadmap
 does.
 
+A roadmap already kept by hand moves in with `roady goal import <file>`
+(MCP: `roady_goal` action `import`). It reads `## Now`, `Next`, `Later`,
+`Ideas`, `Done`/`Shipped` and `Out of scope` sections; each `###` heading or
+top-level bullet under one is a goal — a bold lead, or the text before a
+dash, is its title, the rest its description, a trailing `(v1.2)` its
+milestone. Other sections are skipped and named. Ids are `goal-<title>`, so
+a second import changes nothing. Then render the file from the goals (with
+`--force`, since roady did not write it) or delete it.
+
 Goals order work; they are not part of the intent a plan is approved for.
 Adding or moving a goal, or linking a feature to one, never returns an
 approved plan to pending, and does not show as spec drift.

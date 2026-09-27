@@ -35,12 +35,17 @@ var (
 
 // applyEdit runs a capture built by one of the single-task commands.
 func applyEdit(cmd *cobra.Command, ws *wiring.Workspace, doc application.CaptureDoc, allowChecks bool, summary string) error {
+	return applyEditVia(cmd, ws, doc, allowChecks, summary, "")
+}
+
+// applyEditVia is applyEdit recording which path the capture came by.
+func applyEditVia(cmd *cobra.Command, ws *wiring.Workspace, doc application.CaptureDoc, allowChecks bool, summary, via string) error {
 	actor := resolveCurrentOwner(gitConfigUserName)
 	if actor == "" {
 		actor = "unknown-human"
 	}
 	result, err := application.NewCaptureService(ws.Repo, ws.Audit).Capture(doc, application.CaptureOptions{
-		Actor: actor, DryRun: editDryRun, Origin: planning.OriginHuman, AllowCheckChange: allowChecks, Note: summary,
+		Actor: actor, DryRun: editDryRun, Origin: planning.OriginHuman, AllowCheckChange: allowChecks, Note: summary, Via: via,
 	})
 	if err != nil {
 		return MapError(err)

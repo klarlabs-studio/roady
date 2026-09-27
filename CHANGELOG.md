@@ -16,6 +16,10 @@ v0.25.0 against a project that had stopped using roady for markdown notes.
   (`done`, `verified`, `in progress`…) and says to use `roady task complete`
   instead. An agent that retitled tasks to mark them finished left nexa with
   89 tasks called "done". `roady doctor` names tasks already titled that way.
+- `roady goal import <file>` (MCP `roady_goal` action `import`) moves a
+  hand-kept roadmap into goals: `## Now / Next / Later / Done / Out of
+  scope` sections with a `###` heading or bullet per goal. It reads roady's
+  own rendered ROADMAP.md back to the same goals. MCP schema 5.1.0.
 - `roady task list [--status …] [--limit N] [--json]`, the command agents
   try first; it used to print the help.
 

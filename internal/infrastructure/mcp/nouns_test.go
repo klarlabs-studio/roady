@@ -314,3 +314,28 @@ func TestStatsOverMCP(t *testing.T) {
 		t.Errorf("stats: %s", resultText(res))
 	}
 }
+
+// An agent can move a hand-kept roadmap into goals; the path is relative to
+// the project.
+func TestGoalImportOverMCP(t *testing.T) {
+	server := setupCoordinatorTestServer(t)
+	ctx := context.Background()
+	md := "## Now\n- **Offline mode** — works on a plane\n## Scratch\n- nope\n## Done\n- First release (v0.1)\n"
+	if err := os.WriteFile(filepath.Join(server.root, "roadmap.md"), []byte(md), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	res, _ := server.handleGoal(ctx, GoalArgs{Action: "import", Path: "roadmap.md"})
+	if isToolError(res) {
+		t.Fatalf("import: %s", resultText(res))
+	}
+	b, _ := json.Marshal(res)
+	if !strings.Contains(string(b), "goal:goal-offline-mode") || !strings.Contains(string(b), "goal:goal-first-release") || !strings.Contains(string(b), `"skipped_sections":["Scratch"]`) {
+		t.Errorf("import = %s", b)
+	}
+	if res, _ := server.handleGoal(ctx, GoalArgs{Action: "import"}); !isToolError(res) {
+		t.Error("import without a path should fail")
+	}
+	if res, _ := server.handleGoal(ctx, GoalArgs{Action: "import", Path: "missing.md"}); !isToolError(res) {
+		t.Error("a missing file should fail")
+	}
+}
