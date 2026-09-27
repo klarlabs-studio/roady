@@ -816,9 +816,37 @@
       "check": {
         "run": "go test ./pkg/application/ ./internal/infrastructure/wiring/ -run TestRoadmapPathFromPolicy -count=1"
       }
+    },
+    {
+      "id": "task-shared-state-canonical-path",
+      "title": "Every worktree names the shared state file the same way (Field-reported reliability)",
+      "description": "A checkout opened through a symlink (/var on macOS) and a linked worktree reported the same state.json under two paths.",
+      "priority": "medium",
+      "estimate": "",
+      "depends_on": [],
+      "feature_id": "field-reliability",
+      "origin": "heuristic",
+      "source": {},
+      "check": {
+        "run": "go test ./pkg/storage -run 'TestGitCommonDir|TestStateIsSharedAcrossWorktrees'"
+      }
+    },
+    {
+      "id": "task-cask-binaries-match-builds",
+      "title": "The Homebrew cask links only binaries the release builds (Field-reported reliability)",
+      "description": "v0.25.0 dropped the plugin builds but the cask still listed them, so brew install and upgrade failed on a missing symlink source.",
+      "priority": "high",
+      "estimate": "",
+      "depends_on": [],
+      "feature_id": "field-reliability",
+      "origin": "heuristic",
+      "source": {},
+      "check": {
+        "run": "go test ./cmd/roady -run TestReleaseCaskShipsOnlyBuiltBinaries"
+      }
     }
   ],
-  "approval_status": "approved",
+  "approval_status": "pending",
   "created_at": "2026-01-31T18:00:00+01:00",
-  "updated_at": "2026-09-27T18:10:21.619790873+02:00"
+  "updated_at": "2026-09-27T21:42:56.067498+02:00"
 }
