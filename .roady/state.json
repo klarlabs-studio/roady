@@ -1,6 +1,6 @@
 {
   "project_id": "agent-handoff",
-  "version": 330,
+  "version": 333,
   "task_states": {
     "task-acceptance-checks": {
       "status": "verified",
@@ -78,9 +78,28 @@
       "elapsed_minutes": 0
     },
     "task-append-only-edits": {
-      "status": "pending",
+      "status": "done",
       "path": "",
-      "elapsed_minutes": 0
+      "owner": "Claude",
+      "evidence": [
+        "Commit: 7a54233fad0a4746305d9f9bb16bf791da60183a"
+      ],
+      "started_at": "2026-09-27T15:14:39.646843248+02:00",
+      "completed_at": "2026-09-27T15:18:24.486603195+02:00",
+      "elapsed_minutes": 3,
+      "checks": [
+        {
+          "kind": "run",
+          "command": "go test ./pkg/application/ -run TestTaskHistoryShowsSplitsAndEdits -count=1 \u0026\u0026 go test ./internal/infrastructure/cli/ -run TestTaskHistoryFromTheTerminal -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "7a54233fad0a4746305d9f9bb16bf791da60183a",
+          "by": "Claude",
+          "at": "2026-09-27T15:18:24.529147465+02:00",
+          "duration": "998ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.008s\nok  \tgithub.com/felixgeelhaar/roady/internal/infrastructure/cli\t0.011s\n"
+        }
+      ]
     },
     "task-audit-deletion-is-alteration": {
       "status": "verified",
@@ -1400,5 +1419,5 @@
       "elapsed_minutes": 4
     }
   },
-  "updated_at": "2026-09-27T15:13:02.554122112+02:00"
+  "updated_at": "2026-09-27T15:18:24.486603852+02:00"
 }
