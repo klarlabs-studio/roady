@@ -844,9 +844,23 @@
       "check": {
         "run": "go test ./cmd/roady -run TestReleaseCaskShipsOnlyBuiltBinaries"
       }
+    },
+    {
+      "id": "task-accept-finished-without-verification",
+      "title": "Accept finished work as done without verification (Adopting roady in a lived-in project)",
+      "description": "Adopting roady in a project with history leaves every earlier completion \"awaiting verification\" forever (140 on nexa), because nothing proves work finished before roady tracked it. A person accepts those completions, with a reason, and status stops counting them as outstanding. Verified keeps meaning proven.",
+      "priority": "medium",
+      "estimate": "",
+      "depends_on": [],
+      "feature_id": "adoption",
+      "origin": "heuristic",
+      "source": {},
+      "check": {
+        "run": "go test ./pkg/domain/planning ./pkg/application ./internal/infrastructure/cli ./internal/infrastructure/mcp -run 'Accept'"
+      }
     }
   ],
-  "approval_status": "approved",
+  "approval_status": "pending",
   "created_at": "2026-01-31T18:00:00+01:00",
-  "updated_at": "2026-09-27T21:48:17.449111+02:00"
+  "updated_at": "2026-09-27T21:58:01.632879+02:00"
 }

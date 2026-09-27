@@ -934,6 +934,18 @@
           "check": {
             "run": "go test ./pkg/application/ ./internal/infrastructure/wiring/ -run TestRoadmapPathFromPolicy -count=1"
           }
+        },
+        {
+          "id": "accept-finished-without-verification",
+          "title": "Accept finished work as done without verification",
+          "description": "Adopting roady in a project with history leaves every earlier completion \"awaiting verification\" forever (140 on nexa), because nothing proves work finished before roady tracked it. A person accepts those completions, with a reason, and status stops counting them as outstanding. Verified keeps meaning proven.",
+          "priority": "medium",
+          "estimate": "",
+          "depends_on": [],
+          "source": {},
+          "check": {
+            "run": "go test ./pkg/domain/planning ./pkg/application ./internal/infrastructure/cli ./internal/infrastructure/mcp -run 'Accept'"
+          }
         }
       ],
       "source": {},
