@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Every worktree reports the same path for the shared execution state. A
+  checkout opened through a symlink (`/var` on macOS is one, to
+  `/private/var`) named the common git dir differently from a linked
+  worktree, whose `.git` file holds the real path.
+
 ## [0.26.0] - 2026-09-27
 
 Adopting roady in a project that already has history. Found by running
