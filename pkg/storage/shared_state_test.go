@@ -17,7 +17,8 @@ func TestGitCommonDir(t *testing.T) {
 	_ = os.MkdirAll(filepath.Join(main, ".git", "worktrees", "wt"), 0o755)
 	sub := filepath.Join(main, "a", "b")
 	_ = os.MkdirAll(sub, 0o755)
-	if c, top, ok := gitCommonDir(sub); !ok || c != filepath.Join(main, ".git") || top != main {
+	mainGit := resolved(t, filepath.Join(main, ".git"))
+	if c, top, ok := gitCommonDir(sub); !ok || c != mainGit || top != main {
 		t.Errorf("main checkout: %q %q %v", c, top, ok)
 	}
 
@@ -27,7 +28,7 @@ func TestGitCommonDir(t *testing.T) {
 	wtGit := filepath.Join(main, ".git", "worktrees", "wt")
 	_ = os.WriteFile(filepath.Join(wt, ".git"), []byte("gitdir: "+wtGit+"\n"), 0o644)
 	_ = os.WriteFile(filepath.Join(wtGit, "commondir"), []byte("../..\n"), 0o644)
-	if c, top, ok := gitCommonDir(wt); !ok || c != filepath.Join(main, ".git") || top != wt {
+	if c, top, ok := gitCommonDir(wt); !ok || c != mainGit || top != wt {
 		t.Errorf("worktree: %q %q %v", c, top, ok)
 	}
 
@@ -35,8 +36,18 @@ func TestGitCommonDir(t *testing.T) {
 	rel := t.TempDir()
 	_ = os.MkdirAll(filepath.Join(rel, "real"), 0o755)
 	_ = os.WriteFile(filepath.Join(rel, ".git"), []byte("gitdir: real"), 0o644)
-	if c, _, ok := gitCommonDir(rel); !ok || c != filepath.Join(rel, "real") {
+	if c, _, ok := gitCommonDir(rel); !ok || c != resolved(t, filepath.Join(rel, "real")) {
 		t.Errorf("relative gitdir: %q %v", c, ok)
+	}
+
+	// Opened through a symlink, the checkout names the same common dir as the
+	// worktree, whose .git file holds the real path.
+	link := filepath.Join(t.TempDir(), "link")
+	if err := os.Symlink(main, link); err != nil {
+		t.Skipf("symlinks unavailable: %v", err)
+	}
+	if c, _, ok := gitCommonDir(link); !ok || c != mainGit {
+		t.Errorf("through a symlink: %q %v, want %q", c, ok, mainGit)
 	}
 
 	bad := t.TempDir()
@@ -155,3 +166,13 @@ func mustJSON(t *testing.T, v any) []byte {
 }
 
 func contains(s, sub string) bool { return strings.Contains(s, sub) }
+
+// resolved is path with symlinks resolved, as gitCommonDir reports it.
+func resolved(t *testing.T, path string) string {
+	t.Helper()
+	p, err := filepath.EvalSymlinks(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return p
+}

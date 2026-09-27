@@ -28,7 +28,7 @@ func gitCommonDir(dir string) (common, top string, ok bool) {
 		info, err := os.Stat(dotgit)
 		if err == nil {
 			if info.IsDir() {
-				return dotgit, d, true
+				return canonical(dotgit), d, true
 			}
 			gitdir, ok := readGitdirFile(dotgit)
 			if !ok {
@@ -36,18 +36,29 @@ func gitCommonDir(dir string) (common, top string, ok bool) {
 			}
 			raw, err := os.ReadFile(filepath.Join(gitdir, "commondir")) // #nosec G304 -- inside the repository's git dir
 			if err != nil {
-				return gitdir, d, true // a plain linked git dir without commondir is its own common dir
+				return canonical(gitdir), d, true // a plain linked git dir without commondir is its own common dir
 			}
 			c := strings.TrimSpace(string(raw))
 			if !filepath.IsAbs(c) {
 				c = filepath.Join(gitdir, c)
 			}
-			return filepath.Clean(c), d, true
+			return canonical(c), d, true
 		}
 		if parent := filepath.Dir(d); parent == d {
 			return "", "", false
 		}
 	}
+}
+
+// canonical resolves symlinks so every worktree names the common dir the same
+// way: the main checkout reaches it through the path it was opened at, a linked
+// worktree through the path git wrote into its .git file, and the two differ
+// whenever a symlink is involved (/var and /private/var on macOS).
+func canonical(path string) string {
+	if resolved, err := filepath.EvalSymlinks(path); err == nil {
+		return resolved
+	}
+	return filepath.Clean(path)
 }
 
 // readGitdirFile reads a ".git" file ("gitdir: <path>").
