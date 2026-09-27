@@ -1,7 +1,32 @@
 {
   "project_id": "agent-handoff",
-  "version": 479,
+  "version": 484,
   "task_states": {
+    "task-accept-finished-without-verification": {
+      "status": "verified",
+      "path": "",
+      "owner": "git-automation",
+      "evidence": [
+        "Commit: 93c18e07bb3410e3a8d5bd2fbe2e140a54421221"
+      ],
+      "started_at": "2026-09-27T22:07:50.207294+02:00",
+      "completed_at": "2026-09-27T22:07:50.213032+02:00",
+      "elapsed_minutes": 0,
+      "checks": [
+        {
+          "kind": "run",
+          "command": "go test ./pkg/domain/planning ./pkg/application ./internal/infrastructure/cli ./internal/infrastructure/mcp -run 'Accept'",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "93c18e07bb3410e3a8d5bd2fbe2e140a54421221",
+          "dirty": true,
+          "by": "Felix Geelhaar",
+          "at": "2026-09-27T22:07:50.306595+02:00",
+          "duration": "1.385s",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/domain/planning\t(cached)\nok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.349s\nok  \tgithub.com/felixgeelhaar/roady/internal/infrastructure/cli\t0.402s\nok  \tgithub.com/felixgeelhaar/roady/internal/infrastructure/mcp\t0.299s\n"
+        }
+      ]
+    },
     "task-acceptance-checks": {
       "status": "verified",
       "path": "",
@@ -2463,5 +2488,5 @@
       "elapsed_minutes": 4
     }
   },
-  "updated_at": "2026-09-27T21:48:33.896319+02:00"
+  "updated_at": "2026-09-27T22:07:51.704419+02:00"
 }
