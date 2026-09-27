@@ -339,3 +339,17 @@ func TestGoalImportOverMCP(t *testing.T) {
 		t.Error("a missing file should fail")
 	}
 }
+
+// roady_capture with from_notes returns the prompt and writes nothing.
+func TestCaptureFromNotesOverMCP(t *testing.T) {
+	server := setupCoordinatorTestServer(t)
+	_ = os.WriteFile(filepath.Join(server.root, "decisions.md"), []byte("- 2026-06-09: Numbers are computed, never guessed.\n"), 0o644)
+	res, _ := server.handleCapture(context.Background(), CaptureArgs{FromNotes: []string{"decisions.md"}})
+	b, _ := json.Marshal(res)
+	if isToolError(res) || !strings.Contains(string(b), "never guessed") || !strings.Contains(string(b), `"write_back":"roady_capture"`) {
+		t.Fatalf("from_notes = %s", b)
+	}
+	if res, _ := server.handleCapture(context.Background(), CaptureArgs{FromNotes: []string{"missing.md"}}); !isToolError(res) {
+		t.Error("a missing note should fail")
+	}
+}

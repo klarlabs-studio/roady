@@ -28,6 +28,7 @@ const (
 	OpExplainDrift      Operation = "explain_drift"
 	OpPatchDrift        Operation = "patch_drift"
 	OpSemanticDrift     Operation = "semantic_drift"
+	OpNotesToCapture    Operation = "notes_to_capture"
 )
 
 // Request is everything needed to run one inference and return the result to

@@ -13,6 +13,10 @@ it reads goals from a roadmap file kept by hand (`## Now / Next / Later /
 Done` sections, a `###` heading or bullet per goal). A relative path is
 resolved against the project. The result carries `skipped_sections`.
 
+`roady_capture` gains optional `from_notes` (markdown files or a
+directory): it returns a prompt that turns those planning notes into a
+capture document, and writes nothing.
+
 ## v5.0.0 — One tool per CLI noun
 
 **Major**: per-verb tools replaced by noun tools with an `action`.

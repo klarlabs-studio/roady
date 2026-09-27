@@ -19,6 +19,7 @@ var (
 	captureDryRun bool
 	captureJSON   bool
 	captureChecks bool
+	captureNotes  []string
 )
 
 var captureCmd = &cobra.Command{
@@ -50,11 +51,20 @@ Reads from --file, or stdin when no file is given:
       title: Migrate existing invoice numbers
       requirement: seq-numbers
       depends_on: [task-seq-numbers]
-  EOF`,
+  EOF
+
+Planning kept in prose — a decisions log, open threads, a status page — is
+for a model to read. --from-notes prints a prompt with those notes and the
+capture format; your model answers with the document, which you capture:
+
+  roady capture --from-notes memory/decisions.md --from-notes memory/open-threads.md`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		root, err := getProjectRoot()
 		if err != nil {
 			return fmt.Errorf("resolve project path: %w", err)
+		}
+		if len(captureNotes) > 0 {
+			return notesPrompt(cmd, root)
 		}
 		in := cmd.InOrStdin()
 		if captureFile != "" && captureFile != "-" {
@@ -154,6 +164,26 @@ func init() {
 	captureCmd.Flags().StringVarP(&captureFile, "file", "f", "", "Read the capture document from a file instead of stdin")
 	captureCmd.Flags().BoolVar(&captureDryRun, "dry-run", false, "Report what would change without writing")
 	captureCmd.Flags().BoolVar(&captureJSON, "json", false, "Print the result as JSON")
+	captureCmd.Flags().StringSliceVar(&captureNotes, "from-notes", nil, "Print a prompt that turns these markdown notes (files or a directory) into a capture document; writes nothing")
 	captureCmd.Flags().BoolVar(&captureChecks, "change-checks", false, "Allow removing or changing the acceptance check of work already started (reopens done tasks; recorded as an override)")
 	RootCmd.AddCommand(captureCmd)
+}
+
+// notesPrompt prints the request that turns planning notes into a capture
+// document. Nothing is written: the caller's model answers, and the answer
+// is captured like any other document.
+func notesPrompt(cmd *cobra.Command, root string) error {
+	notes, err := application.ReadNotes(root, captureNotes)
+	if err != nil {
+		return err
+	}
+	services, err := loadServicesForCurrentDir()
+	if err != nil {
+		return err
+	}
+	req, err := services.Prompt.NotesToCapture(cmd.Context(), notes)
+	if err != nil {
+		return MapError(err)
+	}
+	return printPromptRequest(req, captureJSON)
 }

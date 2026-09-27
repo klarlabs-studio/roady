@@ -834,6 +834,7 @@ type CaptureArgs struct {
 	Features    []application.CaptureFeature  `json:"features,omitempty" jsonschema:"description=Features to add or update; each may carry requirements"`
 	Tasks       []application.CaptureTask     `json:"tasks,omitempty" jsonschema:"description=Tasks to add or update"`
 	DryRun      bool                          `json:"dry_run,omitempty" jsonschema:"description=Report what would change without writing"`
+	FromNotes   []string                      `json:"from_notes,omitempty" jsonschema:"description=Markdown notes (files or a directory) to turn into a capture document: returns a prompt and writes nothing"`
 	Actor       string                        `json:"actor,omitempty" jsonschema:"description=Who is capturing (defaults to ai-agent)"`
 	ProjectPath string                        `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
 	Project     string                        `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
@@ -843,6 +844,17 @@ func (s *Server) handleCapture(ctx context.Context, args CaptureArgs) (any, erro
 	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
 	if err != nil {
 		return mcpErrCause("Failed to load project at the given path.", err), nil
+	}
+	if len(args.FromNotes) > 0 {
+		notes, err := application.ReadNotes(svc.Workspace.Repo.Root(), args.FromNotes)
+		if err != nil {
+			return mcpErr(err.Error()), nil
+		}
+		req, err := svc.Prompt.NotesToCapture(ctx, notes)
+		if err != nil {
+			return mcpErr(err.Error()), nil
+		}
+		return req, nil
 	}
 	actor := args.Actor
 	if actor == "" {
