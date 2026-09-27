@@ -2,6 +2,7 @@ package application_test
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -244,3 +245,49 @@ func TestStaleStateLockIsBroken(t *testing.T) {
 }
 
 func projectClaim(ttl time.Duration) project.ClaimOptions { return project.ClaimOptions{TTL: ttl} }
+
+// Agents in two worktrees of one repository see each other's claims and
+// completions immediately: execution state is shared through the common git
+// directory.
+func TestWorktreesShareClaimsAndCompletions(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not installed")
+	}
+	main := claimsProject(t, "1h", "task-a", "task-b")
+	git := func(dir string, args ...string) {
+		t.Helper()
+		cmd := exec.Command("git", append([]string{"-C", dir, "-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false"}, args...)...)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+	}
+	git(main, "init", "-q", "-b", "main")
+	git(main, "add", ".")
+	git(main, "commit", "-q", "-m", "roady")
+	wt := filepath.Join(t.TempDir(), "wt")
+	git(main, "worktree", "add", "-q", wt, "-b", "agent-b")
+
+	claude, _ := agent(main)
+	codex, wtRepo := agent(wt)
+	if err := claude.StartTask(t.Context(), "task-a", "claude"); err != nil {
+		t.Fatal(err)
+	}
+	if err := codex.StartTask(t.Context(), "task-a", "codex"); err == nil || !strings.Contains(err.Error(), "claimed by claude") {
+		t.Fatalf("the other worktree did not see the claim: %v", err)
+	}
+	if err := claude.TransitionTask("task-a", "complete", "claude", "abc123"); err != nil {
+		t.Fatal(err)
+	}
+	st, _ := wtRepo.LoadState()
+	if st.GetTaskStatus("task-a") != planning.StatusDone {
+		t.Errorf("the other worktree did not see the completion: %s", st.GetTaskStatus("task-a"))
+	}
+	if err := codex.StartTask(t.Context(), "task-b", "codex"); err != nil {
+		t.Fatalf("worktree B could not start its own task: %v", err)
+	}
+	mainRepo := storage.NewFilesystemRepository(main)
+	st, _ = mainRepo.LoadState()
+	if st.TaskStates["task-b"].Owner != "codex" {
+		t.Errorf("worktree A does not see B's claim: %+v", st.TaskStates["task-b"])
+	}
+}

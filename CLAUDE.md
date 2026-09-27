@@ -85,7 +85,9 @@ All artifacts are git-friendly files:
   `roady goal render`; never edit it by hand (drift reports it)
 - `spec.lock.json` - Pinned spec snapshot for drift detection
 - `plan.json` - Task DAG with approval status
-- `state.json` - Execution state (task statuses, paths)
+- `state.json` - Execution state (task statuses, claims). In a git repo the
+  real file is shared by all worktrees at `.git/roady/<project>/state.json`
+  (docs/rfcs/0002); the checkout copy is a mirror
 - `policy.yaml` - Governance (max_wip, allow_ai, token_limit)
 - `events.jsonl` - Immutable audit trail (hash-chained)
 

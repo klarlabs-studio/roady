@@ -72,6 +72,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `2h`, `off` disables): the task goes back to pending, `task.claim_expired`
   is recorded, and it no longer counts against WIP limits. state.json is
   now replaced atomically, so a reader never sees half a file.
+- **Execution state is shared across worktrees.** In a git repository,
+  claims and progress live in the common git directory
+  (`.git/roady/<project>/state.json`), so agents in separate worktrees see
+  each other's claims and completions immediately and cannot both take a
+  task. `.roady/state.json` is still written as a mirror for commits; the
+  shared file is seeded from it on first use. Outside git, or with
+  `shared_state: false` in `policy.yaml`, state stays per checkout. `roady
+  doctor` says where state lives. See docs/rfcs/0002-shared-execution-state.md.
 - **ROADMAP.md is rendered from the goals.** `roady goal render` (MCP
   `roady_goal` action `render`) writes it with a first-line marker carrying a
   hash of the rest; `roady drift detect` reports a hand edit (`doc` drift)

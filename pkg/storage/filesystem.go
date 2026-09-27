@@ -132,9 +132,18 @@ func (r *FilesystemRepository) ResolvePath(filename string) (string, error) {
 
 func (r *FilesystemRepository) Initialize() error {
 	path := r.ProjectBase()
+	_, statErr := os.Stat(path)
+	fresh := os.IsNotExist(statErr)
 	// G301: Use 0700 for directories
 	if err := os.MkdirAll(path, 0700); err != nil {
 		return fmt.Errorf("failed to create project directory: %w", err)
+	}
+	// A new project must not inherit the shared state of one that was
+	// deleted from this checkout: it would win over the fresh state.
+	if fresh {
+		if shared := r.sharedStatePath(); shared != "" {
+			_ = os.Remove(shared)
+		}
 	}
 	return nil
 }

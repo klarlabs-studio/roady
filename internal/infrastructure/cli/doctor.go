@@ -65,6 +65,10 @@ var doctorCmd = &cobra.Command{
 			return nil
 		})
 
+		if path, shared := repo.StateLocation(); shared {
+			fmt.Printf("ℹ️  Execution state is shared by all worktrees: %s (.roady/state.json is a mirror)\n", path)
+		}
+
 		check("Audit Trail", func() error {
 			path, err := repo.ResolvePath("events.jsonl")
 			if err != nil {

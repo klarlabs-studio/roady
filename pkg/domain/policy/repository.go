@@ -35,6 +35,10 @@ type PolicyConfig struct {
 	// Go duration ("2h", "45m"). Empty means the default; "off" or "0" takes
 	// no lease, so a started task stays claimed until it moves on.
 	ClaimLease string `yaml:"claim_lease,omitempty"`
+	// SharedState keeps execution state in the common git directory so all
+	// worktrees see the same claims and progress (the default in a git
+	// repository). false keeps it in .roady/state.json per checkout.
+	SharedState *bool `yaml:"shared_state,omitempty"`
 }
 
 // LeaseTTL returns the claim lease duration: def when unset, zero when off.

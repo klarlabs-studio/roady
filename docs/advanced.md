@@ -50,6 +50,13 @@ removed; git history has them.
   explicitly. A claim nobody renews lapses: the task goes back to
   pending and `task.claim_expired` is recorded, so a crashed agent does not
   hold work forever.
+- Agents in separate git worktrees share one execution state: in a git
+  repository it lives in the common git directory (`.git/roady/`), so a
+  claim or completion in one worktree is seen by the others at once.
+  `.roady/state.json` in each checkout is a mirror for commits and review;
+  a fresh clone starts from it, and `roady state rebuild` reconstructs it
+  from the committed event log. `shared_state: false` in `policy.yaml` keeps
+  state per checkout ([rfcs/0002-shared-execution-state.md](rfcs/0002-shared-execution-state.md)).
 - Nested sub-projects (`--project` / `project`) keep separate plans in one
   repository ([rfcs/0001-nested-projects.md](rfcs/0001-nested-projects.md)).
 
