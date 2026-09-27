@@ -1,48 +1,6 @@
 id: agent-handoff
 title: 'Roady: Agent Handoff & Cross-Project Planning'
-description: |
-    Roady planning system roadmap:
-    - v0.5.0 (complete): Horizons 5 & 6 — predictive analytics, domain hardening, event sourcing.
-    - v0.6.0 (complete): Multi-repo org dashboard, plugin contracts, notification webhooks, fsnotify watch,
-      coordinator integration into CLI/MCP with snapshot and task queries.
-    - v0.7.0 (complete): Org policy inheritance, cross-project drift, plugin registry and health,
-      Slack/realtime notifications, watch auto-sync and patterns.
-    - v0.8.0 (complete): Developer experience polish, API/SDK stability, multi-user collaboration,
-      AI-powered workflows, interactive D3 MCP app visualizations.
-    - v0.9.0 (complete): Expert-review-driven refinements — sharpen onboarding, reduce CLI
-      cognitive load, ship a pre-seeded demo, fix empty-state UX.
-    - v0.10.0 (complete): AI quality and telemetry — eval harness over the planning
-      pipeline (heuristic + AI mock + drift corpus), Task.Origin provenance, source-doc
-      citations through spec analyze, CompletionResponse confidence + sources +
-      streaming OnToken contract, MCP tool consolidation (roady_tasks +
-      roady_cost_estimate), naming standardisation aliases, roady notify namespace
-      unification, AI command progress feedback with SIGINT cancellation.
-    - v0.11.0 (complete): Positioning and narrative cleanup — single ICP picked
-      (devs using AI coding agents), category named ("Planning memory for AI
-      coding agents"), README hero rewritten, feature museum moved to
-      docs/advanced.md, docs/vs.md competitive comparison + docs/positioning.md
-      one-pager + ROADMAP.md sketch shipped, Astro website hero / definition /
-      features sections realigned to match.
-        - v0.12.0 (complete): Live Kanban dashboard, cross-project board, SSE updates,
-          dashboard auth token.
-        - v0.13.x (complete): Release pipeline — dedicated release workflow, cask
-          publishing, cleared goreleaser deprecations.
-        - v0.14.0 (complete): Coordination and stakeholder reporting without a UI —
-          owner-scoped task queries, per-owner WIP limits, enforceable team roles,
-          `roady report`, `roady notify digest`, agent/session provenance on every
-          event, `roady audit trail`, bidirectional tracker sync, parallel-safe
-          event logs with `roady state rebuild`. Web dashboard removed.
-        - v0.15.0 (complete): Roady stopped calling language models. Provider clients
-          removed; the model-assisted operations return assembled prompts plus the
-          tool that accepts the result. MCP tool failures became readable results
-          rather than masked protocol faults. MCP schema 3.0.0.
-        - v0.16.0 (complete): staleness drift detection, audit-verification
-          correctness (three causes, none of them tampering), and plan prune
-          cleaning execution state.
-        - v0.17.0 (complete): roady_audit_trail exposed over MCP; schema 3.1.0.
-        - Planned (unversioned until it ships): the features below.
-        - Direction (2026-09): roady becomes the record agents plan into (capture, keep, prove); see features trust, capture,
-          keep and focus.
+description: 'Roady is the planning tool for AI coding agents: it captures intent at any size, keeps the agent on it across sessions, compaction and parallel agents, and proves work done with acceptance checks and a hash-chained audit log. The roadmap is the goals below; ROADMAP.md is rendered from them.'
 goals:
     - id: goal-planning-for-ai
       title: 'The planning tool for AI: capture, keep, prove'
@@ -233,6 +191,40 @@ goals:
       title: Plugin marketplace
       description: 'Was on Later: a marketplace for syncers and notifiers with signed binaries and contract tests. Tracker sync, notifications and the plugin system were removed as outside capture, keep and prove.'
       status: out_of_scope
+    - id: goal-release-0-7-0
+      title: Org policy inheritance and cross-project drift
+      description: Org policy inheritance, cross-project drift, plugin registry and health, Slack/realtime notifications, watch auto-sync and patterns.
+      status: shipped
+      milestone: v0.7.0
+    - id: goal-release-0-8-0
+      title: Developer experience and API/SDK stability
+      description: Developer experience polish, API/SDK stability, multi-user collaboration, AI-powered workflows, interactive D3 MCP app visualizations.
+      status: shipped
+      milestone: v0.8.0
+    - id: goal-release-0-9-0
+      title: Expert-review-driven refinements
+      description: Sharper onboarding, less CLI cognitive load, a pre-seeded demo, fixed empty-state UX.
+      status: shipped
+      milestone: v0.9.0
+    - id: goal-release-0-12-0
+      title: Live Kanban dashboard
+      description: Live Kanban dashboard, cross-project board, SSE updates, dashboard auth token.
+      status: shipped
+      milestone: v0.12.0
+    - id: goal-release-0-13-x
+      title: Release pipeline
+      description: Dedicated release workflow, cask publishing, cleared goreleaser deprecations.
+      status: shipped
+      milestone: v0.13.x
+    - id: goal-no-mcp-app-visualizations
+      title: Interactive D3 visualizations in MCP apps
+      description: Was in the backlog (docs/backlog.md) — D3 charts embedded in MCP apps for status, plan, state, drift, spec, policy and git sync. The MCP apps were removed when the server was cut to what agents use; people read roady through the CLI and ROADMAP.md.
+      status: out_of_scope
+    - id: goal-release-0-23-0
+      title: Audit verification tells history it cannot check from alteration
+      description: '`roady audit verify` reports entries it cannot check (unhashed, or hashed before `hash_algo` existed) apart from evidence of alteration, with a reason on every finding.'
+      status: shipped
+      milestone: v0.23.0
 decisions:
     - id: decision-shared-state
       title: Where execution state lives

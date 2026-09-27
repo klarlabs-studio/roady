@@ -137,3 +137,20 @@ func TestGoalDocs(t *testing.T) {
 		t.Error("edit needs an id")
 	}
 }
+
+func TestShippedGoalsNewestFirst(t *testing.T) {
+	sp := &spec.ProductSpec{Goals: []spec.Goal{
+		{ID: "a", Title: "a", Status: spec.GoalShipped, Milestone: "v0.5.0"},
+		{ID: "b", Title: "b", Status: spec.GoalShipped, Milestone: "v0.22.x"},
+		{ID: "c", Title: "c", Status: spec.GoalShipped},
+		{ID: "d", Title: "d", Status: spec.GoalShipped, Milestone: "v0.10.x"},
+		{ID: "e", Title: "e", Status: spec.GoalShipped, Milestone: "v1.0.0"},
+	}}
+	var ids []string
+	for _, g := range application.BuildRoadmap(sp, nil, nil).Sections[0].Goals {
+		ids = append(ids, g.ID)
+	}
+	if strings.Join(ids, ",") != "e,b,d,a,c" {
+		t.Errorf("shipped order %v", ids)
+	}
+}

@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/felixgeelhaar/roady/internal/infrastructure/wiring"
+	"github.com/felixgeelhaar/roady/pkg/application"
 	"github.com/spf13/cobra"
 )
 
@@ -79,13 +80,27 @@ var doctorCmd = &cobra.Command{
 		})
 
 		check("Audit Integrity", func() error {
-			auditSvc := workspace.Audit
-			violations, err := auditSvc.VerifyIntegrity()
+			// The same judgement as `roady audit verify`: entries this build
+			// cannot check (unhashed, or hashed before hash_algo existed) are
+			// history, not evidence. Counting them as violations made doctor
+			// fail a log that verify calls intact.
+			findings, err := application.NewAuditService(repo).VerifyIntegrityDetailed()
 			if err != nil {
 				return err
 			}
-			if len(violations) > 0 {
-				return fmt.Errorf("%d integrity violations found (run 'roady audit verify')", len(violations))
+			alteration, unchecked := 0, 0
+			for _, f := range findings {
+				if f.Kind.EvidencesAlteration() || f.Kind.Unexplained() {
+					alteration++
+				} else {
+					unchecked++
+				}
+			}
+			if alteration > 0 {
+				return fmt.Errorf("%d finding(s) that may mean the log was altered (run 'roady audit verify')", alteration)
+			}
+			if unchecked > 0 {
+				fmt.Printf("ℹ️  %d older audit entries cannot be checked by this build; none is evidence of alteration\n", unchecked)
 			}
 			return nil
 		})

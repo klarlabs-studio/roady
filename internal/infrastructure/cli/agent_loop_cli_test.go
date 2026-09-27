@@ -433,3 +433,29 @@ func TestDecideAndNext(t *testing.T) {
 		t.Errorf("decide --list:\n%s", out)
 	}
 }
+
+// doctor judges the audit log as `roady audit verify` does: an entry this
+// build cannot check is history, an edited one is a problem.
+func TestDoctorAuditJudgement(t *testing.T) {
+	dir, cleanup := withPlainTempDir(t)
+	defer cleanup()
+	t.Setenv("ROADY_USER", "tester")
+	if _, err := runRoady(t, "", "init", "doctor"); err != nil {
+		t.Fatal(err)
+	}
+	events := filepath.Join(dir, ".roady", "events.jsonl")
+	f, _ := os.OpenFile(events, os.O_APPEND|os.O_WRONLY, 0o600)
+	_, _ = f.WriteString(`{"id":"legacy-1","action":"old.entry","actor":"someone","timestamp":"2025-01-01T00:00:00Z"}` + "\n")
+	_ = f.Close()
+	if out, err := runRoady(t, "", "doctor"); err != nil || !strings.Contains(out, "cannot be checked by this build") {
+		t.Errorf("an unhashed legacy entry is not a failure: %v\n%s", err, out)
+	}
+
+	raw, _ := os.ReadFile(events)
+	lines := strings.Split(strings.TrimSpace(string(raw)), "\n")
+	lines[0] = strings.Replace(lines[0], `"actor":"`, `"actor":"x`, 1)
+	_ = os.WriteFile(events, []byte(strings.Join(lines, "\n")+"\n"), 0o600)
+	if out, err := runRoady(t, "", "doctor"); err == nil || !strings.Contains(out, "may mean the log was altered") {
+		t.Errorf("an edited entry must fail doctor: %v\n%s", err, out)
+	}
+}

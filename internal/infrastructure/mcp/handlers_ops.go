@@ -443,13 +443,7 @@ func (s *Server) handleAddFeature(ctx context.Context, args AddFeatureArgs) (any
 		return mcpErrCause("Failed to add feature. Ensure the project is initialized with a valid spec.", err), nil
 	}
 
-	// Report what actually happened. Announcing the backlog sync
-	// unconditionally hid a write that had gone to the wrong repository
-	// entirely, and there is no reason for a caller to learn that later.
 	msg := fmt.Sprintf("Successfully added feature '%s'. Total features: %d", args.Title, len(result.Spec.Features))
-	if result.Synced() {
-		msg += fmt.Sprintf(". Intent synced to %s", result.BacklogPath)
-	}
 	for _, w := range result.Warnings {
 		msg += fmt.Sprintf(". Warning: %s", w)
 	}

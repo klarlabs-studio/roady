@@ -180,17 +180,10 @@ type AddFeatureResult struct {
 	// Spec is the specification including the new feature.
 	Spec *spec.ProductSpec
 
-	// BacklogPath is the documentation file the feature was appended to,
-	// empty when no sync happened.
-	BacklogPath string
-
 	// Warnings names what did not happen, for a caller to pass on rather
 	// than announce success over.
 	Warnings []string
 }
-
-// Synced reports whether the feature reached the backlog document.
-func (r *AddFeatureResult) Synced() bool { return r.BacklogPath != "" }
 
 // rootedRepository is implemented by repositories that know where on disk the
 // project lives. It is deliberately narrow: the spec service needs the root
@@ -199,7 +192,8 @@ type rootedRepository interface {
 	Root() string
 }
 
-// AddFeature adds a new functional unit and syncs it back to documentation.
+// AddFeature adds a new functional unit to the spec. It writes no markdown:
+// intent lives in roady, and ROADMAP.md is rendered from goals.
 func (s *SpecService) AddFeature(title, description string) (*AddFeatureResult, error) {
 	current, err := s.repo.LoadSpec()
 	if err != nil {
@@ -229,69 +223,9 @@ func (s *SpecService) AddFeature(title, description string) (*AddFeatureResult, 
 	}
 
 	result := &AddFeatureResult{Spec: current}
-
-	path, err := s.syncToMarkdown(newFeat)
-	switch {
-	case err != nil:
-		// The spec is already written, so this is a partial success, not a
-		// failure — but it must not be reported as a clean one.
-		result.Warnings = append(result.Warnings,
-			fmt.Sprintf("the feature was added to the spec but not to %s: %v", path, err))
-	default:
-		result.BacklogPath = path
-	}
-
 	return result, nil
 }
 
-// backlogPath locates the backlog document for this project.
-//
-// It must be resolved against the project root rather than the process
-// working directory: the MCP server runs from wherever it was started, which
-// is routinely a different repository from the one named by project_path.
-// Resolving relatively wrote one project's feature text into another's
-// working tree.
-func (s *SpecService) backlogPath() (string, error) {
-	rooted, ok := s.repo.(rootedRepository)
-	if !ok {
-		return "", fmt.Errorf("this repository does not expose a project root, so the backlog document cannot be located")
-	}
-	root := rooted.Root()
-	if root == "" {
-		return "", fmt.Errorf("the project root is empty, so the backlog document cannot be located")
-	}
-	return filepath.Join(root, "docs", "backlog.md"), nil
-}
-
-// syncToMarkdown appends the feature to the project's backlog document,
-// returning the path it wrote to.
-func (s *SpecService) syncToMarkdown(f spec.Feature) (path string, err error) {
-	path, err = s.backlogPath()
-	if err != nil {
-		return "", err
-	}
-
-	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
-		return path, fmt.Errorf("failed to create docs directory: %w", err)
-	}
-
-	content := fmt.Sprintf("\n## %s\n\n%s\n\n---\n", f.Title, f.Description)
-
-	fWriter, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600) //nolint:gosec // path is derived from the project root
-	if err != nil {
-		return path, err
-	}
-	defer func() {
-		if cerr := fWriter.Close(); cerr != nil && err == nil {
-			err = fmt.Errorf("close file: %w", cerr)
-		}
-	}()
-
-	if _, err = fWriter.WriteString(content); err != nil {
-		return path, err
-	}
-	return path, nil
-}
 
 // uniqueRequirementID returns id, suffixed if another feature in sp already
 // uses it.

@@ -1,4 +1,4 @@
-<!-- roady:roadmap sha256=7a152a1faef58a3f91e7c30eb38f88b116133b1a9916e185a3ceb9e422eca746 — generated from .roady/spec.yaml by `roady goal render`. Change goals with `roady goal`, not this file. -->
+<!-- roady:roadmap sha256=f0039a3141ae6791aae1e7e73f35818bb27b464880d89b9646b9ccda3199a187 — generated from .roady/spec.yaml by `roady goal render`. Change goals with `roady goal`, not this file. -->
 # Roadmap
 
 ## Now
@@ -27,6 +27,10 @@ Open-core boundary for a hosted product, no committed date. Intended scope:
 What stays open and free, forever: the full CLI and MCP server, and the `.roady/` file format. If Cloud lands, opting in is a `roady cloud login` away; opting out is the existing local workflow with no behavioural change.
 
 ## Shipped
+
+### Audit verification tells history it cannot check from alteration (v0.23.0)
+
+`roady audit verify` reports entries it cannot check (unhashed, or hashed before `hash_algo` existed) apart from evidence of alteration, with a reason on every finding.
 
 ### The MCP surface mirrors the CLI (v0.22.x)
 
@@ -125,6 +129,14 @@ Features: Field-reported reliability (`field-reliability`)
   stakeholders get a document rather than a server they must reach.
   `roady dashboard` remains as the TUI.
 
+### Release pipeline (v0.13.x)
+
+Dedicated release workflow, cask publishing, cleared goreleaser deprecations.
+
+### Live Kanban dashboard (v0.12.0)
+
+Live Kanban dashboard, cross-project board, SSE updates, dashboard auth token.
+
 ### Nested sub-projects (v0.11.x)
 
 - **Nested sub-projects** under `.roady/projects/<name>/`. One repo
@@ -151,6 +163,18 @@ Features: Field-reported reliability (`field-reliability`)
 - `roady demo` for <1s aha; `roady init --interactive` default in TTY;
   empty-state ladder on `roady status`
 
+### Expert-review-driven refinements (v0.9.0)
+
+Sharper onboarding, less CLI cognitive load, a pre-seeded demo, fixed empty-state UX.
+
+### Developer experience and API/SDK stability (v0.8.0)
+
+Developer experience polish, API/SDK stability, multi-user collaboration, AI-powered workflows, interactive D3 MCP app visualizations.
+
+### Org policy inheritance and cross-project drift (v0.7.0)
+
+Org policy inheritance, cross-project drift, plugin registry and health, Slack/realtime notifications, watch auto-sync and patterns.
+
 ### Multi-repo org dashboard (v0.6.0)
 
 Multi-repo org dashboard, plugin contracts, notification webhooks, fsnotify watch, coordinator integration into CLI/MCP with snapshot and task queries.
@@ -166,3 +190,4 @@ Horizons 5 & 6 — predictive analytics, domain hardening, event sourcing.
 - **Hosted general-purpose memory for non-coding workflows**
 - **Authenticated identity** — Actors and agents are asserted by the caller and never verified. Roady's audit trail is tamper-evident about what was recorded, not proof of who acted; see docs/audit-grc.md.
 - **Plugin marketplace** — Was on Later: a marketplace for syncers and notifiers with signed binaries and contract tests. Tracker sync, notifications and the plugin system were removed as outside capture, keep and prove.
+- **Interactive D3 visualizations in MCP apps** — Was in the backlog (docs/backlog.md) — D3 charts embedded in MCP apps for status, plan, state, drift, spec, policy and git sync. The MCP apps were removed when the server was cut to what agents use; people read roady through the CLI and ROADMAP.md.

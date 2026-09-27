@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/felixgeelhaar/roady/pkg/domain/planning"
@@ -101,6 +102,10 @@ func BuildRoadmap(sp *spec.ProductSpec, plan *planning.Plan, state *planning.Exe
 		v := GoalView{Goal: g, Status: g.EffectiveStatus(), Features: features[g.ID], Tasks: tasks[g.ID], Done: done[g.ID]}
 		bySection[sectionOf(g)] = append(bySection[sectionOf(g)], v)
 	}
+	// Shipped reads newest first, however the goals were recorded.
+	sort.SliceStable(bySection[SectionShipped], func(i, j int) bool {
+		return milestoneAfter(bySection[SectionShipped][i].Milestone, bySection[SectionShipped][j].Milestone)
+	})
 	rm := Roadmap{Sections: []RoadmapSection{}, Unlinked: unlinked}
 	for _, name := range order {
 		if goals := bySection[name]; len(goals) > 0 {
@@ -217,4 +222,31 @@ func EditGoalDoc(sp *spec.ProductSpec, e GoalEdit) (CaptureDoc, string, error) {
 		}
 	}
 	return doc, id, nil
+}
+
+// milestoneAfter orders milestones like "v0.22.x" and "v1.2.0" newest
+// first, comparing their numeric parts; anything unnumbered sorts last.
+func milestoneAfter(a, b string) bool {
+	na, nb := milestoneNumbers(a), milestoneNumbers(b)
+	if len(na) == 0 || len(nb) == 0 {
+		return len(na) > len(nb)
+	}
+	for i := 0; i < len(na) && i < len(nb); i++ {
+		if na[i] != nb[i] {
+			return na[i] > nb[i]
+		}
+	}
+	return len(na) > len(nb)
+}
+
+func milestoneNumbers(m string) []int {
+	var out []int
+	for _, part := range strings.FieldsFunc(strings.TrimPrefix(strings.ToLower(m), "v"), func(r rune) bool { return r == '.' || r == '-' }) {
+		n, err := strconv.Atoi(part)
+		if err != nil {
+			break
+		}
+		out = append(out, n)
+	}
+	return out
 }

@@ -153,9 +153,6 @@ var specAddCmd = &cobra.Command{
 		}
 
 		fmt.Printf("Successfully added feature '%s'. (Total features: %d)\n", title, len(result.Spec.Features))
-		if result.Synced() {
-			fmt.Printf("Intent synced to %s\n", result.BacklogPath)
-		}
 		for _, w := range result.Warnings {
 			fmt.Fprintf(os.Stderr, "warning: %s\n", w)
 		}

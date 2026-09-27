@@ -24,6 +24,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `Task`, `Plan`, `Spec`, `Drift`, `Audit`, `State`, `PolicyCheck`,
   `GitSync`, `Init`, `Next` and `Capture`; its older helpers call the noun
   tools. Schema 5.0.0.
+- **`roady spec add` no longer writes `docs/backlog.md`.** Appending every
+  new feature to a markdown backlog kept a second plan file beside the one
+  roady holds — the thing roady exists to replace. Intent lives in roady;
+  ROADMAP.md is rendered from goals.
 - **Unused event machinery.** The in-process event publisher, dispatcher,
   handlers and projections (task state, velocity, timeline) were rebuilt from
   the whole log on every command and read by nothing; the audit service now
@@ -60,7 +64,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   out-of-scope decisions. Features and requirements link to the goal they
   serve, and `roady goal list` shows each goal's progress from its tasks.
   Goals order work rather than define it, so they leave the spec hash and
-  the plan's approval alone. Roady's own ROADMAP.md is recorded this way.
+  the plan's approval alone. Roady's own ROADMAP.md is recorded this way —
+  every release back to v0.5.0 — and docs/backlog.md is gone, its entries
+  now goals. Shipped goals list newest first.
 - **Task claims with an expiring lease.** Starting a task claims it for the
   agent (and session) that started it. Two agents starting the same task at
   once can no longer both get it: state.json is written under a lock and a
@@ -236,6 +242,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`roady doctor` failed a log `roady audit verify` calls intact.** It
+  counted every entry it could not check — unhashed, or hashed before
+  `hash_algo` existed — as an integrity violation, so roady's own repository
+  reported 86. It now judges as verify does: only findings that may mean
+  alteration fail it; uncheckable history is noted.
 - **A verified dependency read as unfinished.** The dependency policy rule
   accepted only `done`, so a task in progress whose dependency had been
   verified was reported as policy drift, and a cross-project dependency
