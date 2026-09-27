@@ -1,6 +1,6 @@
 {
   "project_id": "agent-handoff",
-  "version": 333,
+  "version": 337,
   "task_states": {
     "task-acceptance-checks": {
       "status": "verified",
@@ -73,16 +73,36 @@
       ]
     },
     "task-adoption-metrics": {
-      "status": "pending",
+      "status": "done",
       "path": "",
-      "elapsed_minutes": 0
+      "owner": "Claude",
+      "evidence": [
+        "Commit: ee064123163bfd39a1ea6e6e8d40dce5eae7c7e3"
+      ],
+      "started_at": "2026-09-27T15:25:26.962165474+02:00",
+      "completed_at": "2026-09-27T15:28:40.994553183+02:00",
+      "elapsed_minutes": 3,
+      "checks": [
+        {
+          "kind": "run",
+          "command": "go test ./pkg/application/ -run TestComputeAdoptionStats -count=1 \u0026\u0026 go test ./internal/infrastructure/cli/ -run TestStatsCommand -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "ee064123163bfd39a1ea6e6e8d40dce5eae7c7e3",
+          "by": "Claude",
+          "at": "2026-09-27T15:28:41.036999536+02:00",
+          "duration": "1.037s",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.004s\nok  \tgithub.com/felixgeelhaar/roady/internal/infrastructure/cli\t0.008s\n"
+        }
+      ]
     },
     "task-append-only-edits": {
       "status": "done",
       "path": "",
       "owner": "Claude",
       "evidence": [
-        "Commit: 7a54233fad0a4746305d9f9bb16bf791da60183a"
+        "Commit: 7a54233fad0a4746305d9f9bb16bf791da60183a",
+        "Commit: c3d8bf31779e93a65775d7dc08f3e852ab24d6fe"
       ],
       "started_at": "2026-09-27T15:14:39.646843248+02:00",
       "completed_at": "2026-09-27T15:18:24.486603195+02:00",
@@ -1419,5 +1439,5 @@
       "elapsed_minutes": 4
     }
   },
-  "updated_at": "2026-09-27T15:18:24.486603852+02:00"
+  "updated_at": "2026-09-27T15:28:40.994554074+02:00"
 }

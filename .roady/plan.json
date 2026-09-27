@@ -630,7 +630,10 @@
       ],
       "feature_id": "focus",
       "origin": "heuristic",
-      "source": {}
+      "source": {},
+      "check": {
+        "run": "go test ./pkg/application/ -run TestComputeAdoptionStats -count=1 \u0026\u0026 go test ./internal/infrastructure/cli/ -run TestStatsCommand -count=1"
+      }
     },
     {
       "id": "task-multi-agent-setup",
@@ -700,5 +703,5 @@
   ],
   "approval_status": "approved",
   "created_at": "2026-01-31T18:00:00+01:00",
-  "updated_at": "2026-09-27T15:18:24.508609559+02:00"
+  "updated_at": "2026-09-27T15:28:41.015884467+02:00"
 }
