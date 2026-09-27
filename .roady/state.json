@@ -1,6 +1,6 @@
 {
   "project_id": "agent-handoff",
-  "version": 437,
+  "version": 452,
   "task_states": {
     "task-acceptance-checks": {
       "status": "verified",
@@ -784,7 +784,7 @@
       ]
     },
     "task-finished-orphans-are-history": {
-      "status": "done",
+      "status": "verified",
       "path": "",
       "owner": "Claude",
       "evidence": [
@@ -814,6 +814,17 @@
           "by": "Claude",
           "at": "2026-09-27T16:58:20.155107677+02:00",
           "duration": "334ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.008s\n"
+        },
+        {
+          "kind": "run",
+          "command": "go test ./pkg/application/ -run TestFinishedOrphansAreHistory -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "e36b4d66bfea0e4cd1960ccae12bcef943b1f960",
+          "by": "Claude",
+          "at": "2026-09-27T17:09:28.340907828+02:00",
+          "duration": "324ms",
           "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.008s\n"
         }
       ]
@@ -1003,7 +1014,7 @@
       ]
     },
     "task-import-roadmap-markdown": {
-      "status": "done",
+      "status": "verified",
       "path": "",
       "owner": "Claude",
       "evidence": [
@@ -1033,6 +1044,17 @@
           "by": "Claude",
           "at": "2026-09-27T17:07:13.146094504+02:00",
           "duration": "315ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.005s\n"
+        },
+        {
+          "kind": "run",
+          "command": "go test ./pkg/application/ -run TestImportRoadmapMarkdown -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "e36b4d66bfea0e4cd1960ccae12bcef943b1f960",
+          "by": "Claude",
+          "at": "2026-09-27T17:09:30.64273334+02:00",
+          "duration": "325ms",
           "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.005s\n"
         }
       ]
@@ -1485,17 +1507,39 @@
       ]
     },
     "task-notes-to-capture-prompt": {
-      "status": "in_progress",
+      "status": "verified",
       "path": "",
       "owner": "Claude",
+      "evidence": [
+        "Commit: e36b4d66bfea0e4cd1960ccae12bcef943b1f960"
+      ],
       "started_at": "2026-09-27T17:07:13.484007125+02:00",
-      "elapsed_minutes": 0,
-      "lease": {
-        "holder": "Claude",
-        "session": "66429d1a-8cc7-489a-b352-cbfc0d813390",
-        "expires_at": "2026-09-27T19:07:13.484007367+02:00",
-        "renewed_at": "2026-09-27T17:07:13.484007367+02:00"
-      }
+      "completed_at": "2026-09-27T17:09:18.397188492+02:00",
+      "elapsed_minutes": 2,
+      "checks": [
+        {
+          "kind": "run",
+          "command": "go test ./pkg/application/ -run TestNotesCapturePrompt -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "e36b4d66bfea0e4cd1960ccae12bcef943b1f960",
+          "by": "Claude",
+          "at": "2026-09-27T17:09:18.419486855+02:00",
+          "duration": "347ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.006s\n"
+        },
+        {
+          "kind": "run",
+          "command": "go test ./pkg/application/ -run TestNotesCapturePrompt -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "e36b4d66bfea0e4cd1960ccae12bcef943b1f960",
+          "by": "Claude",
+          "at": "2026-09-27T17:09:31.005920897+02:00",
+          "duration": "356ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.008s\n"
+        }
+      ]
     },
     "task-paged-task-listings": {
       "status": "verified",
@@ -2012,7 +2056,7 @@
       ]
     },
     "task-status-word-titles": {
-      "status": "done",
+      "status": "verified",
       "path": "",
       "owner": "Claude",
       "evidence": [
@@ -2043,8 +2087,24 @@
           "at": "2026-09-27T17:00:06.288660221+02:00",
           "duration": "817ms",
           "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.006s\nok  \tgithub.com/felixgeelhaar/roady/internal/infrastructure/cli\t0.008s\n"
+        },
+        {
+          "kind": "run",
+          "command": "go test ./pkg/application/ ./internal/infrastructure/cli/ -run 'TestStatusWordTitle' -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "e36b4d66bfea0e4cd1960ccae12bcef943b1f960",
+          "by": "Claude",
+          "at": "2026-09-27T17:09:28.705469312+02:00",
+          "duration": "768ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.007s\nok  \tgithub.com/felixgeelhaar/roady/internal/infrastructure/cli\t0.008s\n"
         }
       ]
+    },
+    "task-sync-completes-unstarted": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
     },
     "task-task-brief": {
       "status": "verified",
@@ -2093,7 +2153,7 @@
       ]
     },
     "task-task-list-command": {
-      "status": "done",
+      "status": "verified",
       "path": "",
       "owner": "Claude",
       "evidence": [
@@ -2113,11 +2173,22 @@
           "at": "2026-09-27T17:00:54.609191472+02:00",
           "duration": "753ms",
           "output": "ok  \tgithub.com/felixgeelhaar/roady/internal/infrastructure/cli\t0.008s\n"
+        },
+        {
+          "kind": "run",
+          "command": "go test ./internal/infrastructure/cli/ -run TestTaskListCommand -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "e36b4d66bfea0e4cd1960ccae12bcef943b1f960",
+          "by": "Claude",
+          "at": "2026-09-27T17:09:29.513777419+02:00",
+          "duration": "730ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/internal/infrastructure/cli\t0.009s\n"
         }
       ]
     },
     "task-unlinked-features-capped": {
-      "status": "done",
+      "status": "verified",
       "path": "",
       "owner": "Claude",
       "evidence": [
@@ -2137,6 +2208,17 @@
           "at": "2026-09-27T17:01:27.615526015+02:00",
           "duration": "336ms",
           "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.004s\n"
+        },
+        {
+          "kind": "run",
+          "command": "go test ./pkg/application/ -run TestRoadmapUnlinkedIsCapped -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "e36b4d66bfea0e4cd1960ccae12bcef943b1f960",
+          "by": "Claude",
+          "at": "2026-09-27T17:09:30.282975472+02:00",
+          "duration": "320ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.005s\n"
         }
       ]
     },
@@ -2242,5 +2324,5 @@
       "elapsed_minutes": 4
     }
   },
-  "updated_at": "2026-09-27T17:07:13.484007125+02:00"
+  "updated_at": "2026-09-27T17:09:31.375050733+02:00"
 }

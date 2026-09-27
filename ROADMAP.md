@@ -1,4 +1,4 @@
-<!-- roady:roadmap sha256=1cee859aef0b9fd6cb63e7d9269e43177636e8d33245a72f2b2df8735ebe41cc — generated from .roady/spec.yaml by `roady goal render`. Change goals with `roady goal`, not this file. -->
+<!-- roady:roadmap sha256=4de5809104458f67666bd099c36a5960ce22ba129045f298ca599c35fd49b46d — generated from .roady/spec.yaml by `roady goal render`. Change goals with `roady goal`, not this file. -->
 # Roadmap
 
 ## Now
@@ -10,6 +10,12 @@ Roady is the plan an AI agent works from and the proof it did: capture intent at
 The most useful input is field use: v0.18.0 came entirely from one person running Roady on a real 118-feature project for a day.
 
 Features: MCP surface is learnable, trimmable and honest (`mcp-surface`), Trust: done means proven (`trust`), Capture: intent at whatever size it arrives (`capture`), Keep: continuity across sessions, compaction and parallel agents (`keep`), Focus and proof of adoption (`focus`)
+
+### Adopt roady where planning already lives elsewhere
+
+Dogfooding on nexa (2026-09-27): roady was abandoned in June for a markdown memory system (roadmap.md Now/Next/Later, an append-only decisions log, open threads with block reasons). What was left in .roady had 89 tasks titled "done", 36 orphans from renamed features and 140 unverified completions. Adopting roady in such a project has to be cheaper than keeping the markdown.
+
+Features: Adopting roady in a lived-in project (`adoption`)
 
 ## Later
 

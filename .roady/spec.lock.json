@@ -884,6 +884,18 @@
           "check": {
             "run": "go test ./pkg/application/ -run TestNotesCapturePrompt -count=1"
           }
+        },
+        {
+          "id": "sync-completes-unstarted",
+          "title": "A commit naming a task that was never started still completes it",
+          "description": "Dogfooding: git sync skipped a commit tagged [roady:\u003cid\u003e] because the task was pending ('invalid transition from pending'). The commit is the evidence; sync should start and complete a ready task in one step, and say why when it cannot (unmet dependency, not approved).",
+          "priority": "medium",
+          "estimate": "",
+          "depends_on": [],
+          "source": {},
+          "check": {
+            "run": "go test ./pkg/application/ -run TestSyncCompletesUnstartedTask -count=1"
+          }
         }
       ],
       "source": {},

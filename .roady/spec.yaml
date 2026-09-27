@@ -665,6 +665,14 @@ features:
             - import-roadmap-markdown
           check:
             run: go test ./pkg/application/ -run TestNotesCapturePrompt -count=1
+        - id: sync-completes-unstarted
+          title: A commit naming a task that was never started still completes it
+          description: 'Dogfooding: git sync skipped a commit tagged [roady:<id>] because the task was pending (''invalid transition from pending''). The commit is the evidence; sync should start and complete a ready task in one step, and say why when it cannot (unmet dependency, not approved).'
+          priority: medium
+          estimate: ""
+          depends_on: []
+          check:
+            run: go test ./pkg/application/ -run TestSyncCompletesUnstartedTask -count=1
       goal: goal-adopt-existing-projects
 constraints:
     - id: backward-compat
