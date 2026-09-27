@@ -554,7 +554,10 @@
       ],
       "feature_id": "keep",
       "origin": "heuristic",
-      "source": {}
+      "source": {},
+      "check": {
+        "run": "go test ./pkg/application/ -run TestWorktreesShareClaimsAndCompletions -count=1 \u0026\u0026 go test ./pkg/storage/ -run 'GitCommonDir|StateIsSharedAcrossWorktrees|StaleShared' -count=1"
+      }
     },
     {
       "id": "task-append-only-edits",
@@ -679,5 +682,5 @@
   ],
   "approval_status": "approved",
   "created_at": "2026-01-31T18:00:00+01:00",
-  "updated_at": "2026-09-27T13:51:48.779415911+02:00"
+  "updated_at": "2026-09-27T13:57:09.202154281+02:00"
 }

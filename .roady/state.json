@@ -1,6 +1,6 @@
 {
   "project_id": "agent-handoff",
-  "version": 282,
+  "version": 285,
   "task_states": {
     "task-acceptance-checks": {
       "status": "verified",
@@ -793,9 +793,28 @@
       ]
     },
     "task-shared-execution-state": {
-      "status": "pending",
+      "status": "done",
       "path": "",
-      "elapsed_minutes": 0
+      "owner": "Claude",
+      "evidence": [
+        "Commit: 5fb2e00da199196abdd11c74a784cd54f6c880f6"
+      ],
+      "started_at": "2026-09-27T13:54:03.924087305+02:00",
+      "completed_at": "2026-09-27T13:57:09.17947175+02:00",
+      "elapsed_minutes": 3,
+      "checks": [
+        {
+          "kind": "run",
+          "command": "go test ./pkg/application/ -run TestWorktreesShareClaimsAndCompletions -count=1 \u0026\u0026 go test ./pkg/storage/ -run 'GitCommonDir|StateIsSharedAcrossWorktrees|StaleShared' -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "5fb2e00da199196abdd11c74a784cd54f6c880f6",
+          "by": "Claude",
+          "at": "2026-09-27T13:57:09.225654804+02:00",
+          "duration": "649ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.036s\nok  \tgithub.com/felixgeelhaar/roady/pkg/storage\t0.027s\n"
+        }
+      ]
     },
     "task-single-task-cli": {
       "status": "done",
@@ -936,5 +955,5 @@
       "elapsed_minutes": 4
     }
   },
-  "updated_at": "2026-09-27T13:51:48.75982694+02:00"
+  "updated_at": "2026-09-27T13:57:09.179472545+02:00"
 }
