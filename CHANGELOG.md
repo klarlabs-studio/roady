@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.27.1] - 2026-09-27
+
 Found by trying roady on mcp-go, a second project that had used it and
 drifted away.
 
@@ -1645,7 +1647,8 @@ See [GitHub release notes](https://github.com/felixgeelhaar/roady/releases/tag/v
 - Resilience via `fortify` integration for filesystem retries
 - State management via `statekit` FSM for task transitions
 
-[Unreleased]: https://github.com/felixgeelhaar/roady/compare/v0.27.0...HEAD
+[Unreleased]: https://github.com/felixgeelhaar/roady/compare/v0.27.1...HEAD
+[0.27.1]: https://github.com/felixgeelhaar/roady/compare/v0.27.0...v0.27.1
 [0.27.0]: https://github.com/felixgeelhaar/roady/compare/v0.26.1...v0.27.0
 [0.26.1]: https://github.com/felixgeelhaar/roady/compare/v0.26.0...v0.26.1
 [0.26.0]: https://github.com/felixgeelhaar/roady/compare/v0.25.0...v0.26.0

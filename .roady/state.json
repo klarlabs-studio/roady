@@ -1,6 +1,6 @@
 {
   "project_id": "agent-handoff",
-  "version": 489,
+  "version": 502,
   "task_states": {
     "task-accept-finished-without-verification": {
       "status": "verified",
@@ -628,9 +628,29 @@
       "elapsed_minutes": 0
     },
     "task-doctor-validates-spec": {
-      "status": "pending",
+      "status": "verified",
       "path": "",
-      "elapsed_minutes": 0
+      "owner": "git-automation",
+      "evidence": [
+        "Commit: c9380b9420be28485df446e2690aba01f955b8ab"
+      ],
+      "started_at": "2026-09-27T22:49:26.809751+02:00",
+      "completed_at": "2026-09-27T22:49:26.814095+02:00",
+      "elapsed_minutes": 0,
+      "checks": [
+        {
+          "kind": "run",
+          "command": "go test ./internal/infrastructure/cli -run 'TestDoctor.*Spec'",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "b870ab57260db6781fd49c793cf2e004e92181f3",
+          "dirty": true,
+          "by": "Felix Geelhaar",
+          "at": "2026-09-27T22:49:26.905078+02:00",
+          "duration": "1.099s",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/internal/infrastructure/cli\t0.250s\n"
+        }
+      ]
     },
     "task-dogfood-roadmap": {
       "status": "verified",
@@ -884,10 +904,55 @@
         }
       ]
     },
-    "task-goal-import-explains-shape": {
-      "status": "pending",
+    "task-git-sync-every-marker": {
+      "status": "verified",
       "path": "",
-      "elapsed_minutes": 0
+      "owner": "git-automation",
+      "evidence": [
+        "Commit: b870ab57260db6781fd49c793cf2e004e92181f3"
+      ],
+      "started_at": "2026-09-27T22:49:26.796974+02:00",
+      "completed_at": "2026-09-27T22:49:26.801876+02:00",
+      "elapsed_minutes": 0,
+      "checks": [
+        {
+          "kind": "run",
+          "command": "go test ./pkg/application -run 'TestGitService_SyncEveryMarker'",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "b870ab57260db6781fd49c793cf2e004e92181f3",
+          "dirty": true,
+          "by": "Felix Geelhaar",
+          "at": "2026-09-27T22:49:29.32097+02:00",
+          "duration": "629ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.253s\n"
+        }
+      ]
+    },
+    "task-goal-import-explains-shape": {
+      "status": "verified",
+      "path": "",
+      "owner": "git-automation",
+      "evidence": [
+        "Commit: c9380b9420be28485df446e2690aba01f955b8ab"
+      ],
+      "started_at": "2026-09-27T22:49:26.820636+02:00",
+      "completed_at": "2026-09-27T22:49:26.824784+02:00",
+      "elapsed_minutes": 0,
+      "checks": [
+        {
+          "kind": "run",
+          "command": "go test ./pkg/application ./internal/infrastructure/cli -run 'GoalImport.*Sections'",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "b870ab57260db6781fd49c793cf2e004e92181f3",
+          "dirty": true,
+          "by": "Felix Geelhaar",
+          "at": "2026-09-27T22:49:28.113689+02:00",
+          "duration": "1.107s",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.112s [no tests to run]\nok  \tgithub.com/felixgeelhaar/roady/internal/infrastructure/cli\t0.293s\n"
+        }
+      ]
     },
     "task-goals-horizons": {
       "status": "verified",
@@ -2523,5 +2588,5 @@
       "elapsed_minutes": 4
     }
   },
-  "updated_at": "2026-09-27T22:46:15.360003+02:00"
+  "updated_at": "2026-09-27T22:49:29.962268+02:00"
 }
