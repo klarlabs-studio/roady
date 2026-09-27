@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.24.0] - 2026-09-27
+## [0.25.0] - 2026-09-27
 
 Roady becomes the planning tool for AI: capture intent at any size, keep the
 agent on it across sessions, compaction and parallel agents, and prove work
@@ -316,6 +316,15 @@ before upgrading.
   a missing parent is labelled as a removal, a duplicate withholds the
   reassurance as unexplained, and the reassurance is kept for logs whose only
   findings are history this build cannot check.
+
+## [0.24.0] - 2026-09-27
+
+A security and MCP-compliance release. The planning-tool work first described
+under this version shipped in 0.25.0; v0.24.0 was tagged from `main` before
+that work was merged, and a published Go module version cannot be moved.
+
+### Added
+
 - **`sdk.Client.Connect`**, the MCP 2026-07-28 handshake: it calls
   `server/discover` and falls back to `initialize` only for servers that predate
   it. roady's HTTP server is stateless Streamable HTTP, which retires
@@ -329,6 +338,12 @@ before upgrading.
   rejected together with the error text (#92). Via go.klarlabs.de/mcp 1.28.1; roady takes 1.28.2, which also fixes the client's Initialize header.
   A test now drives a real tools/call over HTTP and reads the bytes a client
   receives, since the unit test on the result type had passed throughout.
+
+### Security
+
+- Built with a patched Go toolchain (#99); dependency and GitHub Actions
+  remediation from nox (#97, #98, #100); npm advisories patched and a stale
+  AI-028 baseline entry dropped (#105).
 
 ## [0.23.0] - 2026-08-10
 
@@ -1541,7 +1556,8 @@ See [GitHub release notes](https://github.com/felixgeelhaar/roady/releases/tag/v
 - Resilience via `fortify` integration for filesystem retries
 - State management via `statekit` FSM for task transitions
 
-[Unreleased]: https://github.com/felixgeelhaar/roady/compare/v0.24.0...HEAD
+[Unreleased]: https://github.com/felixgeelhaar/roady/compare/v0.25.0...HEAD
+[0.25.0]: https://github.com/felixgeelhaar/roady/compare/v0.24.0...v0.25.0
 [0.24.0]: https://github.com/felixgeelhaar/roady/compare/v0.23.0...v0.24.0
 [0.10.0]: https://github.com/felixgeelhaar/roady/compare/v0.9.2...v0.10.0
 [0.9.2]: https://github.com/felixgeelhaar/roady/compare/v0.9.1...v0.9.2

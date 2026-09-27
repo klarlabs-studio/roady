@@ -229,7 +229,7 @@ goals:
       title: The planning tool for AI
       description: Capture, keep, prove. One MCP tool per CLI noun, with decisions confirmed by the user in their client; `roady capture` and single-task edits; goals, decisions and a ROADMAP.md rendered from them; plan import from agent plan files and hooks for Claude Code, Codex, Gemini, Cursor, OpenCode, Copilot and Kiro; task claims with expiring leases, shared across worktrees; acceptance checks, regression drift, an honest exit for impossible work, task history and local adoption stats. Billing, teams, tracker sync, messaging, debt, forecasting and dashboards were removed.
       status: shipped
-      milestone: v0.24.0
+      milestone: v0.25.0
 decisions:
     - id: decision-shared-state
       title: Where execution state lives
