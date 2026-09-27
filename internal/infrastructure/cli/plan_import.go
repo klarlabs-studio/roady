@@ -66,7 +66,8 @@ the plan updates the same tasks instead of adding new ones.`,
 		if actor == "" {
 			actor = "unknown-human"
 		}
-		result, err := svc.Capture(imp.Doc, application.CaptureOptions{Actor: actor, DryRun: planImportDryRun, Origin: planning.OriginHuman})
+		result, err := svc.Capture(imp.Doc, application.CaptureOptions{Actor: actor, DryRun: planImportDryRun, Origin: planning.OriginHuman,
+			Via: application.ViaPlanImport, Note: "Imported plan " + args[0]})
 		if err != nil {
 			return MapError(fmt.Errorf("import plan: %w", err))
 		}

@@ -306,3 +306,11 @@ func TestTaskHistoryOverMCP(t *testing.T) {
 		t.Errorf("history: %s", resultText(res))
 	}
 }
+
+func TestStatsOverMCP(t *testing.T) {
+	server := setupCoordinatorTestServer(t)
+	res, _ := server.handleStatus(context.Background(), StatusArgs{Stats: true})
+	if isToolError(res) || !strings.Contains(resultText(res), "Verified with a passing check") {
+		t.Errorf("stats: %s", resultText(res))
+	}
+}

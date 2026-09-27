@@ -451,6 +451,7 @@ func (fi *FlexInt) UnmarshalJSON(data []byte) error {
 
 // StatusArgs defines filter parameters for roady_status tool
 type StatusArgs struct {
+	Stats       FlexBool `json:"stats,omitempty" jsonschema:"description=Return the adoption numbers (roady stats) instead"`
 	Status      string   `json:"status,omitempty" jsonschema:"description=Comma-separated: pending,blocked,in_progress,done,verified"`
 	Priority    string   `json:"priority,omitempty" jsonschema:"description=Comma-separated: high,medium,low"`
 	Ready       FlexBool `json:"ready,omitempty" jsonschema:"description=Only tasks ready to start"`
@@ -520,6 +521,17 @@ func (s *Server) handleDetectDrift(ctx context.Context, args DetectDriftArgs) (a
 }
 
 func (s *Server) handleStatus(ctx context.Context, args StatusArgs) (any, error) {
+	if args.Stats {
+		svc, err := s.servicesForPath(args.ProjectPath, args.Project)
+		if err != nil {
+			return mcpErrCause("Failed to load project at the given path.", err), nil
+		}
+		st, err := svc.Task.Stats()
+		if err != nil {
+			return mcpErr(err.Error()), nil
+		}
+		return st.Render(), nil
+	}
 	if args.Snapshot {
 		return s.handleGetSnapshot(ctx, GetSnapshotArgs{ProjectPath: args.ProjectPath, Project: args.Project})
 	}
@@ -886,7 +898,8 @@ func (s *Server) handlePlanImport(ctx context.Context, args PlanImportArgs) (any
 	if actor == "" {
 		actor = "ai-agent"
 	}
-	result, err := svc.Capture.Capture(imp.Doc, application.CaptureOptions{Actor: actor, DryRun: args.DryRun, Origin: planning.OriginAI})
+	result, err := svc.Capture.Capture(imp.Doc, application.CaptureOptions{Actor: actor, DryRun: args.DryRun, Origin: planning.OriginAI,
+		Via: application.ViaPlanImport, Note: "Imported plan " + args.Path})
 	if err != nil {
 		return mcpErr(fmt.Sprintf("Failed to import plan: %v", err)), nil
 	}

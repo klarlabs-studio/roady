@@ -145,7 +145,17 @@ type CaptureOptions struct {
 	// Note says in words what the capture was for ("Split task-x into 3
 	// parts"); recorded with the event.
 	Note string
+	// Via names the path the capture came through, for adoption metrics:
+	// ViaPlanImport for a plan file brought in by hand, ViaPlanImportAuto
+	// for one a hook imported when the user approved it.
+	Via string
 }
+
+// Capture paths recorded as "via" on the event.
+const (
+	ViaPlanImport     = "plan-import"
+	ViaPlanImportAuto = "plan-import-auto"
+)
 
 // Capture applies doc atomically: either every item is applied or none is.
 // Sending the same document twice changes nothing the second time.
@@ -233,6 +243,9 @@ func (s *CaptureService) Capture(doc CaptureDoc, opts CaptureOptions) (*CaptureR
 		}
 		if opts.Note != "" {
 			meta["note"] = opts.Note
+		}
+		if opts.Via != "" {
+			meta["via"] = opts.Via
 		}
 		if err := s.audit.Log("plan.capture", actor, meta); err != nil {
 			return result, fmt.Errorf("write audit log: %w", err)

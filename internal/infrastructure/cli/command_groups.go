@@ -30,6 +30,7 @@ var commandGroupAssignments = map[string]string{
 
 	"drift": groupTrackReport,
 	"query": groupTrackReport,
+	"stats": groupTrackReport,
 
 	"mcp": groupIntegrate,
 	"git": groupIntegrate,

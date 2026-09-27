@@ -25,7 +25,7 @@ func runRoady(t *testing.T, stdin string, args ...string) (string, error) {
 	splitSequential = false
 	moveReq, moveFeature = "", ""
 	goalID, goalDesc, goalHorizon, goalStatus, goalMilestone, goalTitle = "", "", "", "", "", ""
-	goalFeatures, goalListJSON, taskHistoryJSON = nil, false, false
+	goalFeatures, goalListJSON, taskHistoryJSON, statsJSON = nil, false, false, false
 	goalRenderOut, goalRenderCheck, goalRenderForce = "", false, false
 	decideID, decideChoice, decideContext, decideConsequences, decideSupersedes = "", "", "", "", ""
 	decideGoals, decideFeatures, decideReqs, decideList = nil, nil, nil, false
@@ -488,5 +488,21 @@ func TestTaskHistoryFromTheTerminal(t *testing.T) {
 	}
 	if out, err := runRoady(t, "", "audit", "verify"); err != nil || strings.Contains(out, "altered") {
 		t.Errorf("the log with change records does not verify: %v\n%s", err, out)
+	}
+}
+
+func TestStatsCommand(t *testing.T) {
+	_, cleanup := withPlainTempDir(t)
+	defer cleanup()
+	t.Setenv("ROADY_USER", "tester")
+	if _, err := runRoady(t, "", "init", "stats"); err != nil {
+		t.Fatal(err)
+	}
+	out, err := runRoady(t, "", "stats")
+	if err != nil || !strings.Contains(out, "Plans captured automatically") || !strings.Contains(out, "Sessions resumed the right task") {
+		t.Errorf("stats: %v\n%s", err, out)
+	}
+	if out, err = runRoady(t, "", "stats", "--json"); err != nil || !strings.Contains(out, `"verified_with_passing_check"`) {
+		t.Errorf("stats --json: %v\n%s", err, out)
 	}
 }

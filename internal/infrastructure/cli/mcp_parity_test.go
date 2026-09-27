@@ -21,7 +21,7 @@ var verbAlias = map[string]map[string]string{
 var leafTool = map[string]string{
 	"init": "roady_init", "next": "roady_next", "status": "roady_status", "query": "roady_query", "capture": "roady_capture",
 	"add": "roady_capture", "edit": "roady_capture", "split": "roady_capture", "move": "roady_capture",
-	"decide": "roady_capture",
+	"decide": "roady_capture", "stats": "roady_status",
 }
 
 // Parity: every project operation on the CLI is reachable over MCP, under the

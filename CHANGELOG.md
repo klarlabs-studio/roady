@@ -78,6 +78,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `2h`, `off` disables): the task goes back to pending, `task.claim_expired`
   is recorded, and it no longer counts against WIP limits. state.json is
   now replaced atomically, so a reader never sees half a file.
+- **`roady stats`: is roady doing its job here?** Three numbers from the
+  local event log — plans captured automatically (the plan-approved hook,
+  of all plan imports), verified tasks with a passing check, and sessions
+  that resumed the task in progress rather than starting another. Plan
+  imports now record how they arrived (`via`), and events carry
+  `session_given` when the session ID came from `ROADY_SESSION_ID`, so a
+  per-command CLI session is not mistaken for a conversation. MCP:
+  `roady_status` with `stats: true`.
 - **Every plan edit is an appended record, and `roady task history <id>`
   reads it back.** A capture's event (so every add, edit, split, move, goal
   and decide) now carries the fields it changed on each item, from → to, the

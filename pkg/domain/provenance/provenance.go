@@ -24,6 +24,10 @@ const (
 	KeySessionID = "session_id"
 	KeyAgent     = "agent"
 	KeySurface   = "surface"
+	// KeySessionGiven marks a session ID the caller supplied (ROADY_SESSION_ID)
+	// rather than one minted for a single CLI invocation. Only a given session
+	// spans an agent's conversation on the CLI.
+	KeySessionGiven = "session_given"
 )
 
 // Surface names how an action reached Roady. It distinguishes a human typing
@@ -49,6 +53,8 @@ type Context struct {
 	SessionID string
 	Agent     string
 	Surface   Surface
+	// SessionGiven is true when the caller supplied the session ID.
+	SessionGiven bool
 }
 
 // Unknown is the zero-information context, used when identity cannot be
@@ -78,6 +84,11 @@ func (c Context) Apply(metadata map[string]any) map[string]any {
 	setIfAbsent(metadata, KeyAgent, c.Agent)
 	if c.Surface != "" && c.Surface != SurfaceUnknown {
 		setIfAbsent(metadata, KeySurface, string(c.Surface))
+	}
+	if c.SessionGiven && c.SessionID != "" {
+		if _, ok := metadata[KeySessionGiven]; !ok {
+			metadata[KeySessionGiven] = true
+		}
 	}
 
 	return metadata

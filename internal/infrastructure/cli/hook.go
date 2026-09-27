@@ -280,7 +280,8 @@ func importApprovedPlan(root string, in hookInput) string {
 			"Record its tasks with `roady capture`.", rel, err)
 	}
 	result, err := application.NewCaptureService(ws.Repo, ws.Audit).
-		Capture(imp.Doc, application.CaptureOptions{Actor: hookActor(), Origin: planning.OriginAI})
+		Capture(imp.Doc, application.CaptureOptions{Actor: hookActor(), Origin: planning.OriginAI,
+			Via: application.ViaPlanImportAuto, Note: "Imported approved plan " + rel})
 	if err != nil {
 		return fmt.Sprintf("Roady could not import the approved plan from %s: %v", rel, err)
 	}

@@ -87,6 +87,22 @@ removed; git history has them.
   the committed baseline, and `roady audit trail` produces the evidence for a
   task, agent or session ([audit-grc.md](audit-grc.md)).
 
+## Is it working?
+
+`roady stats` computes three numbers from the local event log (nothing
+leaves the machine):
+
+- **Plans captured automatically** — plans agents wrote that the
+  plan-approved hook imported, of all plan imports.
+- **Verified with a passing check** — verified tasks whose latest
+  verification ran a passing acceptance check.
+- **Sessions resumed the right task** — sessions that began with work in
+  progress and touched that work first. Only sessions that span a
+  conversation count: an MCP server process, or a CLI session named with
+  `ROADY_SESSION_ID`; a CLI session minted per command is not a resumption.
+
+Over MCP: `roady_status` with `stats: true`.
+
 ## Setup and maintenance
 
 - `roady completion bash|zsh|fish|powershell`
