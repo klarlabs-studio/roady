@@ -1,6 +1,6 @@
 {
   "project_id": "agent-handoff",
-  "version": 279,
+  "version": 282,
   "task_states": {
     "task-acceptance-checks": {
       "status": "verified",
@@ -378,9 +378,28 @@
       ]
     },
     "task-leased-claims": {
-      "status": "pending",
+      "status": "done",
       "path": "",
-      "elapsed_minutes": 0
+      "owner": "Claude",
+      "evidence": [
+        "Commit: 346d6df34f9f525d43ece9dc9048a2fcec516c00"
+      ],
+      "started_at": "2026-09-27T13:41:41.033310478+02:00",
+      "completed_at": "2026-09-27T13:51:48.759826175+02:00",
+      "elapsed_minutes": 10,
+      "checks": [
+        {
+          "kind": "run",
+          "command": "go test ./pkg/application/ -run 'TestTwoAgentsNeverDoubleClaim|TestExpiredClaimIsReleased|TestExpiredClaimIsTakenOver|TestClaimIsHeldAndRenewed|TestBriefRenewsTheClaim' -count=3 \u0026\u0026 go test ./pkg/domain/planning/ -run TestLeaseLifecycle -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "346d6df34f9f525d43ece9dc9048a2fcec516c00",
+          "by": "Claude",
+          "at": "2026-09-27T13:51:48.799828041+02:00",
+          "duration": "1.933s",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t1.400s\nok  \tgithub.com/felixgeelhaar/roady/pkg/domain/planning\t0.002s\n"
+        }
+      ]
     },
     "task-markdown-importer": {
       "status": "verified",
@@ -917,5 +936,5 @@
       "elapsed_minutes": 4
     }
   },
-  "updated_at": "2026-09-27T09:26:20.085613703+02:00"
+  "updated_at": "2026-09-27T13:51:48.75982694+02:00"
 }
