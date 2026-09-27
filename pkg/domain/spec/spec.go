@@ -13,7 +13,9 @@ type ProductSpec struct {
 	Title       string `json:"title" yaml:"title"`
 	Description string `json:"description" yaml:"description"`
 	// Goals are the roadmap: outcomes with a horizon, which features link to.
-	Goals       []Goal       `json:"goals,omitempty" yaml:"goals,omitempty"`
+	Goals []Goal `json:"goals,omitempty" yaml:"goals,omitempty"`
+	// Decisions record choices made along the way, linked to what they constrain.
+	Decisions   []Decision   `json:"decisions,omitempty" yaml:"decisions,omitempty"`
 	Features    []Feature    `json:"features" yaml:"features"`
 	Constraints []Constraint `json:"constraints" yaml:"constraints"`
 	Version     string       `json:"version" yaml:"version"`
@@ -159,5 +161,6 @@ func (s *ProductSpec) Validate() []error {
 			}
 		}
 	}
-	return append(errs, s.validateGoals()...)
+	errs = append(errs, s.validateGoals()...)
+	return append(errs, s.validateDecisions()...)
 }

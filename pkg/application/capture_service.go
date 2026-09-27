@@ -24,9 +24,26 @@ import (
 // Every item is keyed by ID and upserted. Fields left out keep their current
 // value, so the same document shape is also how an item is edited.
 type CaptureDoc struct {
-	Goals    []CaptureGoal    `json:"goals,omitempty" yaml:"goals,omitempty" jsonschema:"description=Roadmap goals to add or update: outcomes with a horizon (now, next, later) that features link to"`
-	Features []CaptureFeature `json:"features,omitempty" yaml:"features,omitempty" jsonschema:"description=Features to add or update; each may carry requirements"`
-	Tasks    []CaptureTask    `json:"tasks,omitempty" yaml:"tasks,omitempty" jsonschema:"description=Tasks to add or update. A requirement already gets a task (task-<requirement id>); list tasks here to add more or to edit one"`
+	Decisions []CaptureDecision `json:"decisions,omitempty" yaml:"decisions,omitempty" jsonschema:"description=Decisions to record or update: title, choice, context, consequences, and the goals/features/requirements they apply to"`
+	Goals     []CaptureGoal     `json:"goals,omitempty" yaml:"goals,omitempty" jsonschema:"description=Roadmap goals to add or update: outcomes with a horizon (now, next, later) that features link to"`
+	Features  []CaptureFeature  `json:"features,omitempty" yaml:"features,omitempty" jsonschema:"description=Features to add or update; each may carry requirements"`
+	Tasks     []CaptureTask     `json:"tasks,omitempty" yaml:"tasks,omitempty" jsonschema:"description=Tasks to add or update. A requirement already gets a task (task-<requirement id>); list tasks here to add more or to edit one"`
+}
+
+// CaptureDecision upserts a decision record. Title and choice are required
+// for a new one; lists replace the current ones when given.
+type CaptureDecision struct {
+	ID           string    `json:"id" yaml:"id" jsonschema:"description=Decision ID"`
+	Title        *string   `json:"title,omitempty" yaml:"title,omitempty" jsonschema:"description=What was decided about (required for a new decision)"`
+	Choice       *string   `json:"choice,omitempty" yaml:"choice,omitempty" jsonschema:"description=What was chosen (required for a new decision)"`
+	Context      *string   `json:"context,omitempty" yaml:"context,omitempty" jsonschema:"description=Why the question came up; options weighed"`
+	Consequences *string   `json:"consequences,omitempty" yaml:"consequences,omitempty" jsonschema:"description=What follows from it"`
+	Date         *string   `json:"date,omitempty" yaml:"date,omitempty" jsonschema:"description=YYYY-MM-DD (default today)"`
+	Goals        *[]string `json:"goals,omitempty" yaml:"goals,omitempty"`
+	Features     *[]string `json:"features,omitempty" yaml:"features,omitempty"`
+	Requirements *[]string `json:"requirements,omitempty" yaml:"requirements,omitempty"`
+	// Supersedes marks an earlier decision as replaced by this one.
+	Supersedes *string `json:"supersedes,omitempty" yaml:"supersedes,omitempty" jsonschema:"description=ID of a decision this one replaces"`
 }
 
 // CaptureGoal upserts a roadmap goal. Title is required for a new goal.
@@ -147,6 +164,7 @@ func (s *CaptureService) Capture(doc CaptureDoc, opts CaptureOptions) (*CaptureR
 
 	tracker := newChangeTracker()
 	applyGoals(doc.Goals, nextSpec, tracker, result)
+	applyDecisions(doc.Decisions, nextSpec, tracker, result)
 	derived := s.applyFeatures(doc.Features, nextSpec, nextPlan, tracker, result)
 	s.applyTasks(doc.Tasks, nextSpec, nextPlan, derived, opts.Origin, tracker, result)
 	validateCapture(nextSpec, nextPlan, result)
@@ -236,7 +254,7 @@ func approvalAfterCapture(prev *planning.Plan, t *changeTracker, mode string) (p
 	if scope := t.scopeChanges(); len(scope) > 0 {
 		return planning.ApprovalPending, "intent changed (" + strings.Join(scope, ", ") + ") and needs re-approval"
 	}
-	return planning.ApprovalApproved, "only tasks or goals changed; the approval stands (plan_approval: scope)"
+	return planning.ApprovalApproved, "only tasks, goals or decisions changed; the approval stands (plan_approval: scope)"
 }
 
 func approvalOf(p *planning.Plan) string {
@@ -244,6 +262,63 @@ func approvalOf(p *planning.Plan) string {
 		return ""
 	}
 	return string(p.ApprovalStatus)
+}
+
+// applyDecisions upserts decision records. Like goals, they never reopen
+// the plan's approval.
+func applyDecisions(decisions []CaptureDecision, sp *spec.ProductSpec, t *changeTracker, result *CaptureResult) {
+	for _, cd := range decisions {
+		id := strings.TrimSpace(cd.ID)
+		if id == "" {
+			result.Rejected = append(result.Rejected, CaptureRejection{Item: "decision:", Reason: "a decision needs an id"})
+			continue
+		}
+		di := sp.DecisionIndex(id)
+		if di < 0 {
+			if cd.Title == nil || strings.TrimSpace(*cd.Title) == "" || cd.Choice == nil || strings.TrimSpace(*cd.Choice) == "" {
+				result.Rejected = append(result.Rejected, CaptureRejection{Item: "decision:" + id, Reason: "a new decision needs a title and a choice"})
+				continue
+			}
+			sp.Decisions = append(sp.Decisions, spec.Decision{ID: id, Date: time.Now().Format("2006-01-02")})
+			di = len(sp.Decisions) - 1
+			t.created("decision:" + id)
+		}
+		d := &sp.Decisions[di]
+		before := cloneDecision(*d)
+		setStr(&d.Title, cd.Title)
+		setStr(&d.Choice, cd.Choice)
+		setStr(&d.Context, cd.Context)
+		setStr(&d.Consequences, cd.Consequences)
+		setStr(&d.Date, cd.Date)
+		if cd.Goals != nil {
+			d.Goals = append([]string{}, (*cd.Goals)...)
+		}
+		if cd.Features != nil {
+			d.Features = append([]string{}, (*cd.Features)...)
+		}
+		if cd.Requirements != nil {
+			d.Requirements = append([]string{}, (*cd.Requirements)...)
+		}
+		t.compare("decision:"+id, before, *d)
+		if cd.Supersedes != nil && *cd.Supersedes != "" {
+			old := sp.DecisionIndex(*cd.Supersedes)
+			if old < 0 || *cd.Supersedes == id {
+				result.Rejected = append(result.Rejected, CaptureRejection{Item: "decision:" + id, Reason: fmt.Sprintf("cannot supersede %q: no such other decision", *cd.Supersedes)})
+				continue
+			}
+			prev := cloneDecision(sp.Decisions[old])
+			sp.Decisions[old].Status = spec.DecisionSuperseded
+			sp.Decisions[old].SupersededBy = id
+			t.compare("decision:"+sp.Decisions[old].ID, prev, sp.Decisions[old])
+		}
+	}
+}
+
+func cloneDecision(d spec.Decision) spec.Decision {
+	d.Goals = append([]string(nil), d.Goals...)
+	d.Features = append([]string(nil), d.Features...)
+	d.Requirements = append([]string(nil), d.Requirements...)
+	return d
 }
 
 // applyGoals upserts roadmap goals. Goals order work rather than define it,

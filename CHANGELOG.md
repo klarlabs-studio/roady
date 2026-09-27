@@ -72,6 +72,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `2h`, `off` disables): the task goes back to pending, `task.claim_expired`
   is recorded, and it no longer counts against WIP limits. state.json is
   now replaced atomically, so a reader never sees half a file.
+- **Decision records.** `roady decide "<title>" --choice "…"` (MCP
+  `roady_capture` with `decisions`) records a decision with its context and
+  consequences, linked to the goals, features and requirements it
+  constrains; `--supersedes` retires an older one. `roady next` shows the
+  standing decisions behind the active task, so an agent does not reopen or
+  quietly reverse them. `roady decide --list` lists them all.
 - **Unplanned work has a place.** `roady add "<title>"` with no `--req` or
   `--feature` (and tasks in a capture without either) now succeeds: the
   task is unplanned work in the inbox, or under a roadmap goal with

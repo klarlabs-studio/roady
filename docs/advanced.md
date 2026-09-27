@@ -16,6 +16,9 @@ removed; git history has them.
 - `roady capture` records features, requirements and tasks in one write, from
   a single task to a whole plan ([capture.md](capture.md)). `roady add`,
   `edit`, `split` and `move` do the same for one task at a time.
+- `roady decide` records a decision (context, choice, consequences) linked
+  to goals, features or requirements; `roady next` shows the ones behind the
+  active task, and `--supersedes` replaces an old one.
 - `roady goal` keeps the roadmap: goals on now, next or later (or just
   ideas), shipped goals with their milestone, and what is out of scope.
   Features link to the goal they serve; `roady goal list` shows each goal's

@@ -27,7 +27,9 @@ func runRoady(t *testing.T, stdin string, args ...string) (string, error) {
 	goalID, goalDesc, goalHorizon, goalStatus, goalMilestone, goalTitle = "", "", "", "", "", ""
 	goalFeatures, goalListJSON = nil, false
 	goalRenderOut, goalRenderCheck, goalRenderForce = "", false, false
-	for _, c := range []*cobra.Command{goalAddCmd, goalEditCmd, goalListCmd, goalRenderCmd} {
+	decideID, decideChoice, decideContext, decideConsequences, decideSupersedes = "", "", "", "", ""
+	decideGoals, decideFeatures, decideReqs, decideList = nil, nil, nil, false
+	for _, c := range []*cobra.Command{goalAddCmd, goalEditCmd, goalListCmd, goalRenderCmd, decideCmd} {
 		c.Flags().VisitAll(func(f *pflag.Flag) { f.Changed = false })
 	}
 	var err error
@@ -397,5 +399,37 @@ func TestUnplannedTask(t *testing.T) {
 	}
 	if out, _ = runRoady(t, "", "status"); !strings.Contains(out, "Fix the typo in the README") {
 		t.Errorf("prune dropped unplanned work:\n%s", out)
+	}
+}
+
+// The done-when of task-decisions: `roady decide` records one and `roady
+// next` shows it for the active task.
+func TestDecideAndNext(t *testing.T) {
+	_, cleanup := withPlainTempDir(t)
+	defer cleanup()
+	t.Setenv("ROADY_USER", "tester")
+	if _, err := runRoady(t, "", "init", "decisions"); err != nil {
+		t.Fatal(err)
+	}
+	doc := "features:\n  - id: auth\n    title: Auth\n    requirements:\n      - id: jwt\n        title: JWT sessions\n"
+	if _, err := runRoady(t, doc, "capture"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := runRoady(t, "", "plan", "approve"); err != nil {
+		t.Fatal(err)
+	}
+	out, err := runRoady(t, "", "decide", "Session storage", "--choice", "Signed cookies, no server sessions",
+		"--context", "Stateless deploys", "--req", "jwt")
+	if err != nil || !strings.Contains(out, "decision-session-storage") {
+		t.Fatalf("decide: %v\n%s", err, out)
+	}
+	if _, err := runRoady(t, "", "task", "start", "task-jwt"); err != nil {
+		t.Fatal(err)
+	}
+	if out, _ = runRoady(t, "", "next"); !strings.Contains(out, "Decided: Session storage — Signed cookies, no server sessions (decision-session-storage)") {
+		t.Errorf("next does not show the decision:\n%s", out)
+	}
+	if out, _ = runRoady(t, "", "decide", "--list"); !strings.Contains(out, "applies to requirement jwt") {
+		t.Errorf("decide --list:\n%s", out)
 	}
 }

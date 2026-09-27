@@ -283,7 +283,7 @@ func (s *Server) registerTools() {
 		Handler(s.handleNext)
 
 	s.tool("roady_capture").
-		Description("Record goals, features, requirements and tasks, one or many, upserted by id (omitted fields keep their value). A requirement gets task-<id>. All or nothing; each rejection is returned. dry_run previews. The CLI's add, edit, split and move are shortcuts for this.").
+		Description("Record goals, decisions, features, requirements and tasks, one or many, upserted by id (omitted fields keep their value). A requirement gets task-<id>. All or nothing; each rejection is returned. dry_run previews. The CLI's add, edit, split, move and decide are shortcuts for this.").
 		Handler(s.handleCapture)
 
 	s.tool("roady_goal").
@@ -817,13 +817,14 @@ func (s *Server) handleTaskCheck(ctx context.Context, args TaskCheckArgs) (any, 
 
 // CaptureArgs is a capture document plus the usual project selectors.
 type CaptureArgs struct {
-	Goals       []application.CaptureGoal    `json:"goals,omitempty" jsonschema:"description=Roadmap goals to add or update (horizon now/next/later); features link to them with goal"`
-	Features    []application.CaptureFeature `json:"features,omitempty" jsonschema:"description=Features to add or update; each may carry requirements"`
-	Tasks       []application.CaptureTask    `json:"tasks,omitempty" jsonschema:"description=Tasks to add or update"`
-	DryRun      bool                         `json:"dry_run,omitempty" jsonschema:"description=Report what would change without writing"`
-	Actor       string                       `json:"actor,omitempty" jsonschema:"description=Who is capturing (defaults to ai-agent)"`
-	ProjectPath string                       `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
-	Project     string                       `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
+	Decisions   []application.CaptureDecision `json:"decisions,omitempty" jsonschema:"description=Decisions to record: title, choice, context, consequences, goals/features/requirements they apply to, supersedes"`
+	Goals       []application.CaptureGoal     `json:"goals,omitempty" jsonschema:"description=Roadmap goals to add or update (horizon now/next/later); features link to them with goal"`
+	Features    []application.CaptureFeature  `json:"features,omitempty" jsonschema:"description=Features to add or update; each may carry requirements"`
+	Tasks       []application.CaptureTask     `json:"tasks,omitempty" jsonschema:"description=Tasks to add or update"`
+	DryRun      bool                          `json:"dry_run,omitempty" jsonschema:"description=Report what would change without writing"`
+	Actor       string                        `json:"actor,omitempty" jsonschema:"description=Who is capturing (defaults to ai-agent)"`
+	ProjectPath string                        `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
+	Project     string                        `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
 
 func (s *Server) handleCapture(ctx context.Context, args CaptureArgs) (any, error) {
@@ -835,7 +836,7 @@ func (s *Server) handleCapture(ctx context.Context, args CaptureArgs) (any, erro
 	if actor == "" {
 		actor = "ai-agent"
 	}
-	result, err := svc.Capture.Capture(application.CaptureDoc{Goals: args.Goals, Features: args.Features, Tasks: args.Tasks},
+	result, err := svc.Capture.Capture(application.CaptureDoc{Decisions: args.Decisions, Goals: args.Goals, Features: args.Features, Tasks: args.Tasks},
 		application.CaptureOptions{Actor: actor, DryRun: args.DryRun, Origin: planning.OriginAI})
 	if err != nil {
 		return mcpErr(fmt.Sprintf("Failed to capture: %v", err)), nil

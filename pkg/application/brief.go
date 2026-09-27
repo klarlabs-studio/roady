@@ -34,6 +34,8 @@ type TaskBrief struct {
 	Claim *planning.Lease `json:"claim,omitempty"`
 	// NeedsDecision lists tasks agents reported they cannot do as specified.
 	NeedsDecision []NeedsDecision `json:"needs_decision,omitempty"`
+	// Decisions are the standing decisions that apply to the task.
+	Decisions []BriefDecision `json:"decisions,omitempty"`
 }
 
 // BriefTask is the task the brief is about.
@@ -151,6 +153,9 @@ func (s *TaskService) Brief(ctx context.Context, owner string) (*TaskBrief, erro
 			}
 		}
 		brief.Task = bt
+		if sp, err := s.repo.LoadSpec(); err == nil {
+			brief.Decisions = decisionsForTask(sp, task)
+		}
 		if state != nil {
 			if last, ok := state.TaskStates[focus.ID].LastCheck(); ok {
 				brief.LastCheck = &last
@@ -238,6 +243,9 @@ func (b *TaskBrief) render() string {
 	w.WriteString("\n")
 	if b.Claim != nil {
 		fmt.Fprintf(&w, "Claim: yours until %s; roady next renews it\n", b.Claim.ExpiresAt.Local().Format("15:04"))
+	}
+	for _, d := range b.Decisions {
+		fmt.Fprintf(&w, "Decided: %s — %s (%s)\n", d.Title, d.Choice, d.ID)
 	}
 	if len(t.DependsOn) > 0 {
 		parts := make([]string, 0, len(t.DependsOn))

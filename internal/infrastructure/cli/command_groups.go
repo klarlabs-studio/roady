@@ -22,6 +22,7 @@ var commandGroupAssignments = map[string]string{
 	"spec":    groupGetStarted,
 	"capture": groupGetStarted,
 	"goal":    groupGetStarted,
+	"decide":  groupGetStarted,
 	"add":     groupGetStarted,
 	"edit":    groupGetStarted,
 	"split":   groupGetStarted,

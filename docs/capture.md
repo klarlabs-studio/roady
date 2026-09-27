@@ -98,6 +98,22 @@ Goals order work; they are not part of the intent a plan is approved for.
 Adding or moving a goal, or linking a feature to one, never returns an
 approved plan to pending, and does not show as spec drift.
 
+## Decisions
+
+A decision records a choice — `title`, `choice`, `context`,
+`consequences`, `date` — linked to the `goals`, `features` and
+`requirements` it constrains (none: project-wide). `supersedes: <id>` marks
+an earlier one as replaced. `roady next` shows the standing decisions behind
+the task you are on, newest first, so an agent does not reopen or silently
+reverse them.
+
+```bash
+roady decide "Session storage" --choice "Signed cookies" --context "Stateless deploys" --req jwt
+roady decide --list
+```
+
+Decisions, like goals, never reopen the plan's approval.
+
 ## Approval: which changes need it
 
 An approved plan stays approved when only **tasks** (or goals) change — adding, splitting

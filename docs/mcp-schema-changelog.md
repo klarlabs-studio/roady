@@ -65,6 +65,9 @@ Every per-verb tool: `roady_task_transition`, `roady_task_check`,
 - `roady_capture` takes `goals` (id, title, description, horizon, status,
   milestone), and features and requirements take `goal`. A task needs no
   requirement or feature (unplanned work) and takes `goal`.
+- `roady_capture` takes `decisions` (id, title, choice, context,
+  consequences, date, goals, features, requirements, supersedes); the brief
+  from `roady_next` carries `decisions`.
 - Drift issues can carry severity `info` (below `low`) and category
   `UNPLANNED`.
 
