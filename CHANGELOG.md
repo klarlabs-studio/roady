@@ -20,6 +20,10 @@ v0.25.0 against a project that had stopped using roady for markdown notes.
   hand-kept roadmap into goals: `## Now / Next / Later / Done / Out of
   scope` sections with a `###` heading or bullet per goal. It reads roady's
   own rendered ROADMAP.md back to the same goals. MCP schema 5.1.0.
+- `roady capture --from-notes <files|dir>` (MCP `roady_capture`
+  `from_notes`) prints a prompt that turns planning notes — a decisions log,
+  open threads — into a capture document for the caller's model to write.
+  Roady still runs no inference.
 - `roady task list [--status …] [--limit N] [--json]`, the command agents
   try first; it used to print the help.
 

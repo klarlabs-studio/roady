@@ -103,6 +103,14 @@ milestone. Other sections are skipped and named. Ids are `goal-<title>`, so
 a second import changes nothing. Then render the file from the goals (with
 `--force`, since roady did not write it) or delete it.
 
+Planning kept in prose — a decisions log, open threads, a status page — is
+for a model to read, and roady runs none. `roady capture --from-notes
+<file|dir>` (MCP: `roady_capture` with `from_notes`) prints a prompt holding
+those notes, what the project already records (so ids are reused, not
+duplicated) and the capture format. Your model answers with the document;
+capture it, `--dry-run` first. Each file is capped at 40 KB and the prompt
+at 120 KB; a cut file is marked truncated.
+
 Goals order work; they are not part of the intent a plan is approved for.
 Adding or moving a goal, or linking a feature to one, never returns an
 approved plan to pending, and does not show as spec drift.

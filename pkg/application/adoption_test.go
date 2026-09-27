@@ -1,6 +1,8 @@
 package application_test
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -171,5 +173,57 @@ func TestImportRoadmapRoundTrip(t *testing.T) {
 	want := "goal-offline-mode|now|v2.0|Works on a plane.;goal-plugins|later|idea;goal-first-release|shipped|v0.1.0;goal-jira-parity|out_of_scope|Not our job."
 	if strings.Join(lines, ";") != want {
 		t.Errorf("round trip:\n got %s\nwant %s", strings.Join(lines, ";"), want)
+	}
+}
+
+func TestNotesCapturePrompt(t *testing.T) {
+	dir := claimsProject(t, "off", "task-a")
+	repo := storage.NewFilesystemRepository(dir)
+	pol, _ := repo.LoadPolicy()
+	pol.AllowAI = true
+	_ = repo.SavePolicy(pol)
+	sp, _ := repo.LoadSpec()
+	sp.Goals = []spec.Goal{{ID: "goal-offline", Title: "Offline mode", Horizon: spec.HorizonNow}}
+	_ = repo.SaveSpec(sp)
+
+	notes := filepath.Join(dir, "memory")
+	_ = os.MkdirAll(notes, 0o755)
+	_ = os.WriteFile(filepath.Join(notes, "decisions.md"), []byte("- 2026-06-09: Tax numbers are deterministic Go, never LLM.\n"), 0o644)
+	_ = os.WriteFile(filepath.Join(notes, "open-threads.md"), []byte("- ERiC validate: blocked on Hersteller-ID\n"), 0o644)
+	_ = os.WriteFile(filepath.Join(notes, "big.md"), []byte(strings.Repeat("x", 50<<10)), 0o644)
+	_ = os.WriteFile(filepath.Join(notes, "skip.txt"), []byte("not markdown"), 0o644)
+
+	files, err := application.ReadNotes(dir, []string{"memory"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var names []string
+	for _, f := range files {
+		names = append(names, f.Path)
+	}
+	if strings.Join(names, ",") != "memory/big.md,memory/decisions.md,memory/open-threads.md" || !files[0].Truncated || len(files[0].Content) != 40<<10 {
+		t.Fatalf("notes %v (truncated %v, %d bytes)", names, files[0].Truncated, len(files[0].Content))
+	}
+
+	req, err := application.NewPromptService(repo).NotesToCapture(t.Context(), files)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"=== memory/decisions.md ===", "deterministic Go, never LLM", "=== memory/big.md (truncated) ===", "goal goal-offline: Offline mode", "never a status word"} {
+		if !strings.Contains(req.Prompt, want) {
+			t.Errorf("prompt lacks %q", want)
+		}
+	}
+	if req.WriteBack != "roady_capture" || !strings.Contains(req.ExpectedFormat, `"decisions"`) {
+		t.Errorf("request %+v", req)
+	}
+
+	if _, err := application.ReadNotes(dir, []string{"nope.md"}); err == nil {
+		t.Error("a missing file should fail")
+	}
+	pol.AllowAI = false
+	_ = repo.SavePolicy(pol)
+	if _, err := application.NewPromptService(repo).NotesToCapture(t.Context(), files); err == nil {
+		t.Error("allow_ai: false should refuse")
 	}
 }

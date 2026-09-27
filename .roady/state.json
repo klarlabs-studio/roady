@@ -1,6 +1,6 @@
 {
   "project_id": "agent-handoff",
-  "version": 432,
+  "version": 437,
   "task_states": {
     "task-acceptance-checks": {
       "status": "verified",
@@ -1003,9 +1003,39 @@
       ]
     },
     "task-import-roadmap-markdown": {
-      "status": "pending",
+      "status": "done",
       "path": "",
-      "elapsed_minutes": 0
+      "owner": "Claude",
+      "evidence": [
+        "Commit: 57e0af70fca7c0daddb220faddae1b256e4b83b6"
+      ],
+      "started_at": "2026-09-27T17:07:13.097924583+02:00",
+      "completed_at": "2026-09-27T17:07:13.126950169+02:00",
+      "elapsed_minutes": 0,
+      "checks": [
+        {
+          "kind": "run",
+          "command": "go test ./pkg/application/ -run TestImportRoadmapMarkdown -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "57e0af70fca7c0daddb220faddae1b256e4b83b6",
+          "by": "Claude",
+          "at": "2026-09-27T17:06:53.854856047+02:00",
+          "duration": "345ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.005s\n"
+        },
+        {
+          "kind": "run",
+          "command": "go test ./pkg/application/ -run TestImportRoadmapMarkdown -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "57e0af70fca7c0daddb220faddae1b256e4b83b6",
+          "by": "Claude",
+          "at": "2026-09-27T17:07:13.146094504+02:00",
+          "duration": "315ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.005s\n"
+        }
+      ]
     },
     "task-instructions-and-skill": {
       "status": "verified",
@@ -1455,9 +1485,17 @@
       ]
     },
     "task-notes-to-capture-prompt": {
-      "status": "pending",
+      "status": "in_progress",
       "path": "",
-      "elapsed_minutes": 0
+      "owner": "Claude",
+      "started_at": "2026-09-27T17:07:13.484007125+02:00",
+      "elapsed_minutes": 0,
+      "lease": {
+        "holder": "Claude",
+        "session": "66429d1a-8cc7-489a-b352-cbfc0d813390",
+        "expires_at": "2026-09-27T19:07:13.484007367+02:00",
+        "renewed_at": "2026-09-27T17:07:13.484007367+02:00"
+      }
     },
     "task-paged-task-listings": {
       "status": "verified",
@@ -2204,5 +2242,5 @@
       "elapsed_minutes": 4
     }
   },
-  "updated_at": "2026-09-27T17:01:27.592432969+02:00"
+  "updated_at": "2026-09-27T17:07:13.484007125+02:00"
 }
