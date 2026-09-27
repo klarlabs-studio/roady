@@ -41,6 +41,15 @@ removed; git history has them.
   completion contract.
 - Task owners and `max_wip_per_owner` keep parallel agents off each other's
   work; `roady task mine` lists yours.
+- Starting a task claims it with a lease (`claim_lease` in `policy.yaml`,
+  default `2h`, `off` to disable). Of two agents starting the same task at
+  once exactly one gets it — the state file is written under a lock, even
+  across processes. `roady next` renews the claims you hold, and so does
+  the write-guard hook each time the agent writes a file — so an agent at
+  work keeps its claim without thinking about it; `roady task renew` does it
+  explicitly. A claim nobody renews lapses: the task goes back to
+  pending and `task.claim_expired` is recorded, so a crashed agent does not
+  hold work forever.
 - Nested sub-projects (`--project` / `project`) keep separate plans in one
   repository ([rfcs/0001-nested-projects.md](rfcs/0001-nested-projects.md)).
 

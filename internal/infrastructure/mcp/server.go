@@ -290,7 +290,7 @@ func (s *Server) registerTools() {
 		Handler(s.handleGoal)
 
 	s.tool("roady_task").
-		Description("roady task: start, complete, block, unblock, stop, reopen, verify (re-runs the acceptance check), check (run it and record the result), dispatch (hand to a subagent), list.").
+		Description("roady task: start, complete, block, unblock, stop, reopen, verify (re-runs the acceptance check), check (run it and record the result), dispatch (hand to a subagent), list, renew. start claims the task with a lease that roady_next renews; an unrenewed claim lapses and frees the task.").
 		Handler(s.handleTask)
 
 	s.tool("roady_plan").
@@ -468,6 +468,9 @@ func (s *Server) handleTransitionTask(ctx context.Context, args TransitionTaskAr
 		return mcpErrCause("Failed to load project at the given path.", err), nil
 	}
 	actor := args.Actor
+	if actor == "" {
+		actor = args.Agent
+	}
 	if actor == "" {
 		actor = "ai-agent"
 	}

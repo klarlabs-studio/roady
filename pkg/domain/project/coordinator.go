@@ -3,7 +3,9 @@ package project
 
 import (
 	"context"
+	"fmt"
 	"sync"
+	"time"
 
 	"github.com/felixgeelhaar/roady/pkg/domain/planning"
 )
@@ -118,8 +120,41 @@ func (c *Coordinator) ApprovePlan(ctx context.Context, approver string) error {
 
 // StartTask validates dependencies and starts a task.
 func (c *Coordinator) StartTask(ctx context.Context, taskID, owner string) error {
+	_, err := c.ClaimTask(ctx, taskID, owner, ClaimOptions{})
+	return err
+}
+
+// ClaimOptions shapes the claim starting a task takes.
+type ClaimOptions struct {
+	Session string
+	// TTL is the lease length; zero takes no lease.
+	TTL time.Duration
+	// Now is the clock; nil means time.Now.
+	Now func() time.Time
+}
+
+// ClaimedError is returned when a task is in progress under someone else's
+// live claim.
+type ClaimedError struct {
+	TaskID    string
+	Holder    string
+	ExpiresAt time.Time
+}
+
+func (e *ClaimedError) Error() string {
+	return fmt.Sprintf("task %s is claimed by %s until %s", e.TaskID, e.Holder, e.ExpiresAt.Format(time.RFC3339))
+}
+
+// ClaimTask starts a task for owner and puts a lease on it. A task still
+// in progress under a lease that has run out is taken over; the lease it
+// replaced is returned so the takeover can be recorded.
+func (c *Coordinator) ClaimTask(ctx context.Context, taskID, owner string, opt ClaimOptions) (*planning.Lease, error) {
 	if owner == "" {
-		return ErrOwnerRequired
+		return nil, ErrOwnerRequired
+	}
+	now := time.Now
+	if opt.Now != nil {
+		now = opt.Now
 	}
 
 	c.mu.Lock()
@@ -127,33 +162,45 @@ func (c *Coordinator) StartTask(ctx context.Context, taskID, owner string) error
 
 	plan, err := c.planRepo.Load(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if plan == nil {
-		return ErrNoPlan
+		return nil, ErrNoPlan
 	}
 	if !plan.ApprovalStatus.IsApproved() {
-		return ErrPlanNotApproved
+		return nil, ErrPlanNotApproved
 	}
 
 	// Find task in plan
 	task := findTask(plan, taskID)
 	if task == nil {
-		return ErrTaskNotFound
+		return nil, ErrTaskNotFound
 	}
 
 	state, err := c.stateRepo.Load(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if state == nil {
-		return ErrNoState
+		return nil, ErrNoState
 	}
 
-	// Check current status allows starting
+	// Check current status allows starting. A claim that has run out no
+	// longer holds the task: it can be taken over.
 	currentStatus := state.GetTaskStatus(taskID)
+	var replaced *planning.Lease
+	if result, _ := state.GetTaskResult(taskID); currentStatus == planning.StatusInProgress && result.Lease != nil {
+		if !result.Lease.Expired(now()) {
+			if !result.Lease.HeldBy(owner, opt.Session) {
+				return nil, &ClaimedError{TaskID: taskID, Holder: result.Lease.Holder, ExpiresAt: result.Lease.ExpiresAt}
+			}
+		} else {
+			replaced = result.Lease
+			currentStatus = planning.StatusPending
+		}
+	}
 	if !currentStatus.CanTransitionWith("start") {
-		return &TransitionError{
+		return nil, &TransitionError{
 			TaskID:     taskID,
 			FromStatus: string(currentStatus),
 			ToStatus:   string(planning.StatusInProgress),
@@ -165,7 +212,7 @@ func (c *Coordinator) StartTask(ctx context.Context, taskID, owner string) error
 	for _, depID := range task.DependsOn {
 		depStatus := state.GetTaskStatus(depID)
 		if !depStatus.IsComplete() {
-			return &DependencyError{
+			return nil, &DependencyError{
 				TaskID:       taskID,
 				DependencyID: depID,
 				Status:       string(depStatus),
@@ -177,9 +224,10 @@ func (c *Coordinator) StartTask(ctx context.Context, taskID, owner string) error
 	state.SetTaskStatus(taskID, planning.StatusInProgress)
 	state.SetTaskOwner(taskID, owner)
 	state.StartTask(taskID)
+	state.Claim(taskID, owner, opt.Session, opt.TTL, now())
 
 	if err := c.stateRepo.Save(ctx, state); err != nil {
-		return err
+		return nil, err
 	}
 
 	// Publish event (fire-and-forget, errors logged internally)
@@ -187,7 +235,7 @@ func (c *Coordinator) StartTask(ctx context.Context, taskID, owner string) error
 		_ = c.publisher.PublishTaskStarted(ctx, taskID, owner)
 	}
 
-	return nil
+	return replaced, nil
 }
 
 // CompleteTask completes a task and returns newly unlocked task IDs.

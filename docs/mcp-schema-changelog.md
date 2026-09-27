@@ -20,7 +20,7 @@ tools in all; every CLI project command has a tool or action.
 
 | Tool | Actions |
 |------|---------|
-| `roady_task` | start, complete, block, unblock, stop, reopen, verify, check, dispatch, list |
+| `roady_task` | start, complete, block, unblock, stop, reopen, verify, check, dispatch, list, renew |
 | `roady_plan` | get, generate, approve, reject, prune, prioritize, decompose, import |
 | `roady_spec` | get, add, analyze, explain, import, lock, review, validate |
 | `roady_drift` | detect, accept, explain, semantic, record |
@@ -47,6 +47,10 @@ Every per-verb tool: `roady_task_transition`, `roady_task_check`,
   client without elicitation returns an error result naming the CLI command;
   nothing changes. A confirmation is logged as `approval.confirmed`.
 - `roady_task` takes `event` as `action` and `agent` in place of `actor`.
+  `start` claims the task with a lease (`agent` and `session_id` identify
+  the holder); `renew` extends it; another agent starting a claimed task is
+  refused with the holder and expiry. The brief from `roady_next` carries
+  `claim`.
 - `roady_drift` `record` takes `judgements` only (roady rebuilds the
   questions, so an invented requirement id is refused).
 - Prompt requests name the noun tool in `write_back`: `roady_capture` for

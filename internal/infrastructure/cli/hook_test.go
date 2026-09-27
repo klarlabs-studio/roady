@@ -7,7 +7,9 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/felixgeelhaar/roady/pkg/domain"
 	"github.com/felixgeelhaar/roady/pkg/domain/planning"
 	"github.com/felixgeelhaar/roady/pkg/domain/spec"
 	"github.com/felixgeelhaar/roady/pkg/storage"
@@ -235,5 +237,39 @@ func TestClaudeCodeHooksEndToEnd(t *testing.T) {
 	})
 	if out != "" {
 		t.Errorf("ordinary files pass silently: %q", out)
+	}
+}
+
+// An agent writing files keeps its claim: the write guard is the heartbeat
+// between briefs, and says nothing when it lets a write through.
+func TestGuardWriteRenewsTheClaim(t *testing.T) {
+	dir, cleanup := withPlainTempDir(t)
+	defer cleanup()
+	t.Setenv("ROADY_USER", "tester")
+	if _, err := runRoady(t, "", "init", "heartbeat"); err != nil {
+		t.Fatal(err)
+	}
+	doc := "features:\n  - id: f\n    title: F\n    requirements:\n      - id: r\n        title: R\n"
+	if _, err := runRoady(t, doc, "capture"); err != nil {
+		t.Fatal(err)
+	}
+	repo := storage.NewFilesystemRepository(dir)
+	_ = repo.SavePolicy(&domain.PolicyConfig{ClaimLease: "200ms"})
+	if _, err := runRoady(t, "", "plan", "approve"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := runRoady(t, "", "task", "start", "task-r"); err != nil {
+		t.Fatal(err)
+	}
+	st, _ := repo.LoadState()
+	before := st.TaskStates["task-r"].Lease.ExpiresAt
+	time.Sleep(120 * time.Millisecond)
+	out := runHook(t, hookGuardWriteCmd, map[string]any{"cwd": dir, "tool_name": "Write", "tool_input": map[string]any{"file_path": "main.go"}})
+	if out != "" {
+		t.Errorf("an allowed write printed %q", out)
+	}
+	st, _ = repo.LoadState()
+	if after := st.TaskStates["task-r"].Lease.ExpiresAt; !after.After(before) {
+		t.Errorf("the write did not renew the claim: %v -> %v", before, after)
 	}
 }

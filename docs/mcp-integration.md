@@ -223,7 +223,7 @@ command has an MCP equivalent:
 |------|---------|
 | `roady_next` | The current task (or the next to start): why, done-when, dependencies |
 | `roady_capture` | Record features, requirements and tasks in one write |
-| `roady_task` | `start` `complete` `block` `unblock` `stop` `reopen` `verify` `check` `dispatch` `list` |
+| `roady_task` | `start` `complete` `block` `unblock` `stop` `reopen` `verify` `check` `dispatch` `list` `renew` |
 | `roady_plan` | `get` `generate` `import` `prioritize` `decompose` `approve`* `reject`* `prune`* |
 | `roady_spec` | `get` `add` `explain` `review` `validate` `analyze`* `import`* `lock`* |
 | `roady_drift` | `detect` `explain` `semantic` `record` `accept`* |

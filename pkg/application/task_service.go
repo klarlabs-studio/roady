@@ -31,6 +31,10 @@ func NewTaskService(repo domain.WorkspaceRepository, audit domain.AuditLogger, p
 func (s *TaskService) TransitionTask(taskID string, event string, actor string, evidence string) error {
 	ctx := context.Background()
 
+	if event == "start" {
+		// Claims that ran out no longer count against WIP or block a start.
+		_, _ = s.ReleaseExpiredClaims(actor)
+	}
 	// Validate policy first if policy service is available. The actor is the
 	// owner a "start" would assign, so pass it through for per-owner limits.
 	if s.policy != nil {
@@ -42,15 +46,24 @@ func (s *TaskService) TransitionTask(taskID string, event string, actor string, 
 	// Use coordinator for supported operations
 	switch event {
 	case "start":
-		err := s.coordinator.StartTask(ctx, taskID, actor)
+		replaced, err := s.claimTask(taskID, actor)
 		if err != nil {
 			return s.mapCoordinatorError(err, event)
 		}
-		return s.audit.Log("task.transition", actor, map[string]interface{}{
+		if replaced != nil {
+			s.logClaimExpired(taskID, *replaced, actor)
+		}
+		meta := map[string]interface{}{
 			"task_id": taskID,
 			"event":   event,
 			"status":  string(planning.StatusInProgress),
-		})
+		}
+		if st, err := s.repo.LoadState(); err == nil && st != nil {
+			if l := st.TaskStates[taskID].Lease; l != nil {
+				meta["lease_expires_at"] = l.ExpiresAt.Format(time.RFC3339)
+			}
+		}
+		return s.audit.Log("task.transition", actor, meta)
 
 	case "complete":
 		unlocked, err := s.coordinator.CompleteTask(ctx, taskID, evidence)
@@ -134,6 +147,12 @@ func (s *TaskService) mapCoordinatorError(err error, event string) error {
 	}
 	if errors.Is(err, project.ErrOwnerRequired) {
 		return fmt.Errorf("owner/actor required for this operation")
+	}
+
+	var claimed *project.ClaimedError
+	if errors.As(err, &claimed) {
+		return fmt.Errorf("cannot %s task %s: it is claimed by %s until %s. Pick another task, or wait for the claim to lapse",
+			event, claimed.TaskID, claimed.Holder, claimed.ExpiresAt.Local().Format("2006-01-02 15:04"))
 	}
 
 	var depErr *project.DependencyError
@@ -233,14 +252,19 @@ func (s *TaskService) StartTask(ctx context.Context, taskID, owner string) error
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	// Claims that ran out no longer count against WIP or block a start.
+	_, _ = s.ReleaseExpiredClaims(owner)
 	if s.policy != nil {
 		if err := s.policy.ValidateTransitionForOwner(taskID, "start", owner); err != nil {
 			return err
 		}
 	}
-	err := s.coordinator.StartTask(ctx, taskID, owner)
+	replaced, err := s.claimTask(taskID, owner)
 	if err != nil {
 		return s.mapCoordinatorError(err, "start")
+	}
+	if replaced != nil {
+		s.logClaimExpired(taskID, *replaced, owner)
 	}
 	return nil
 }

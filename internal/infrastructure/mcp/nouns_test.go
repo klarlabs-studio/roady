@@ -246,3 +246,24 @@ func TestGoalRenderOverMCP(t *testing.T) {
 		t.Error("a confirmed force left the hand edit in place")
 	}
 }
+
+// An agent keeps its claim over MCP; another agent cannot renew it.
+func TestRenewClaimOverMCP(t *testing.T) {
+	server := setupCoordinatorTestServer(t)
+	ctx := context.Background()
+	repo := storage.NewFilesystemRepository(server.root)
+	plan, _ := repo.LoadPlan()
+	id := plan.Tasks[0].ID
+	if res, _ := server.handleTask(ctx, TaskArgs{Action: "start", TaskID: id, Agent: "claude", SessionID: "s1"}); isToolError(res) {
+		t.Fatalf("start: %s", resultText(res))
+	}
+	if res, _ := server.handleTask(ctx, TaskArgs{Action: "renew", TaskID: id, Agent: "claude", SessionID: "s1"}); isToolError(res) {
+		t.Errorf("renew: %s", resultText(res))
+	}
+	if res, _ := server.handleTask(ctx, TaskArgs{Action: "renew", TaskID: id, Agent: "claude", SessionID: "s2"}); !isToolError(res) {
+		t.Errorf("a different session renewed the claim: %s", resultText(res))
+	}
+	if res, _ := server.handleTask(ctx, TaskArgs{Action: "start", TaskID: id, Agent: "codex", SessionID: "s3"}); !strings.Contains(resultText(res), "claimed by claude") {
+		t.Errorf("a second agent took the task: %s", resultText(res))
+	}
+}

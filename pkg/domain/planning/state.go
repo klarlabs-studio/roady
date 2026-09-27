@@ -38,6 +38,9 @@ type TaskResult struct {
 
 	// Checks records every run of the task's acceptance check, newest last.
 	Checks []CheckResult `json:"checks,omitempty"`
+
+	// Lease is the claim on an in-progress task; nil when none was taken.
+	Lease *Lease `json:"lease,omitempty"`
 }
 
 // ExternalRef links a Roady task to an external system (Linear, Jira, etc.)
@@ -74,6 +77,10 @@ func (s *ExecutionState) GetTaskResult(taskID string) (TaskResult, bool) {
 func (s *ExecutionState) SetTaskStatus(taskID string, status TaskStatus) {
 	result := s.TaskStates[taskID]
 	result.Status = status
+	// A claim is on work in progress; moving on ends it.
+	if status != StatusInProgress {
+		result.Lease = nil
+	}
 	s.TaskStates[taskID] = result
 	s.UpdatedAt = time.Now()
 }

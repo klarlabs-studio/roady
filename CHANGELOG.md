@@ -61,6 +61,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   serve, and `roady goal list` shows each goal's progress from its tasks.
   Goals order work rather than define it, so they leave the spec hash and
   the plan's approval alone. Roady's own ROADMAP.md is recorded this way.
+- **Task claims with an expiring lease.** Starting a task claims it for the
+  agent (and session) that started it. Two agents starting the same task at
+  once can no longer both get it: state.json is written under a lock and a
+  version check, across processes, and the loser is told who holds the task
+  and until when. `roady next` renews the claims you hold (the session-start
+  hook runs it, also after compaction), the write-guard hook renews them
+  each time the agent writes a file, and `roady task renew` (MCP `roady_task` action `renew`) does it explicitly. A
+  claim nobody renews lapses after `claim_lease` in `policy.yaml` (default
+  `2h`, `off` disables): the task goes back to pending, `task.claim_expired`
+  is recorded, and it no longer counts against WIP limits. state.json is
+  now replaced atomically, so a reader never sees half a file.
 - **ROADMAP.md is rendered from the goals.** `roady goal render` (MCP
   `roady_goal` action `render`) writes it with a first-line marker carrying a
   hash of the rest; `roady drift detect` reports a hand edit (`doc` drift)

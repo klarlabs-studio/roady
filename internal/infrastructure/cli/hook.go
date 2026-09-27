@@ -131,6 +131,9 @@ var hookGuardWriteCmd = &cobra.Command{
 			writeHookDeny(cmd.OutOrStdout(), cmd.ErrOrStderr(), hookAgent, reason)
 			return nil
 		}
+		// An agent writing files is at work: keep its claims alive. This is
+		// the heartbeat between briefs, and silent.
+		hookHeartbeat(root)
 		return nil
 	},
 }
@@ -217,6 +220,18 @@ func hookProjectRoot(in hookInput) (string, bool) {
 		}
 	}
 	return "", false
+}
+
+// hookHeartbeat renews the claims of whoever is working — the git identity,
+// and ai-agent for work started over MCP.
+func hookHeartbeat(root string) {
+	ws := wiring.NewWorkspace(root)
+	svc := application.NewTaskService(ws.Repo, ws.Audit, application.NewPolicyService(ws.Repo))
+	owner := resolveCurrentOwner(gitConfigUserName)
+	svc.Heartbeat(owner)
+	if !sameIdentity(owner, "ai-agent") {
+		svc.Heartbeat("ai-agent")
+	}
 }
 
 // hookBrief is the brief for whoever is working: the git identity the CLI

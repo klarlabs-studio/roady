@@ -252,3 +252,38 @@ func TestGoalRender(t *testing.T) {
 		t.Errorf("a fresh render still reads as drift:\n%s", out)
 	}
 }
+
+// Starting a task claims it; renew keeps the claim, and someone else is
+// refused while it holds.
+func TestTaskClaimFromTheTerminal(t *testing.T) {
+	_, cleanup := withPlainTempDir(t)
+	defer cleanup()
+	t.Setenv("ROADY_USER", "tester")
+	if _, err := runRoady(t, "", "init", "claims"); err != nil {
+		t.Fatal(err)
+	}
+	doc := "features:\n  - id: f\n    title: F\n    requirements:\n      - id: r\n        title: R\n"
+	if _, err := runRoady(t, doc, "capture"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := runRoady(t, "", "plan", "approve"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := runRoady(t, "", "task", "renew", "task-r"); err == nil {
+		t.Error("renewing a task that is not started should fail")
+	}
+	if _, err := runRoady(t, "", "task", "start", "task-r"); err != nil {
+		t.Fatal(err)
+	}
+	out, err := runRoady(t, "", "task", "renew", "task-r")
+	if err != nil || !strings.Contains(out, "renewed until") {
+		t.Fatalf("renew: %v\n%s", err, out)
+	}
+	if out, _ = runRoady(t, "", "next"); !strings.Contains(out, "Claim: yours until") {
+		t.Errorf("next does not show the claim:\n%s", out)
+	}
+	t.Setenv("ROADY_USER", "someone-else")
+	if _, err = runRoady(t, "", "task", "start", "task-r"); err == nil || !strings.Contains(err.Error(), "claimed by tester") {
+		t.Errorf("a second agent took the task: %v", err)
+	}
+}

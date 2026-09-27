@@ -75,7 +75,7 @@ every agent's prompt.
 |------|---------------|
 | `roady_next` | — the task in progress, or the one to start: why it exists (doc:line), what done means, dependencies |
 | `roady_capture` | — goals, features, requirements and tasks in one write, from one task to a whole plan (`roady capture`, `add`, `edit`, `split`, `move`) |
-| `roady_task` | `start` `complete` `block` `unblock` `stop` `reopen` `verify` `check` `dispatch` `list` |
+| `roady_task` | `start` `complete` `block` `unblock` `stop` `reopen` `verify` `check` `dispatch` `list` `renew` — start claims the task with an expiring lease that `roady_next` renews |
 | `roady_plan` | `get` `generate` `import` `prioritize` `decompose` · **`approve` `reject` `prune`** |
 | `roady_spec` | `get` `add` `explain` `review` `validate` · **`analyze` `import` `lock`** |
 | `roady_drift` | `detect` `explain` `semantic` `record` · **`accept`** |

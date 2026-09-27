@@ -80,7 +80,10 @@ roady task unassigned             # work nobody has started
 ```
 
 `max_wip_per_owner` in `.roady/policy.yaml` caps in-progress work per person
-or agent, not just per project.
+or agent, not just per project. Starting a task claims it: two agents
+starting the same task at once cannot both get it, and a claim nobody renews
+(`roady next` and the agent hooks keep it alive while you work) lapses after `claim_lease`
+(default `2h`) and frees the task, so a crashed agent does not hold it.
 
 **Prove "done" instead of claiming it:**
 

@@ -75,6 +75,32 @@ func createTaskCommand(use, short, event string) *cobra.Command {
 
 var taskQueryJSON bool
 
+var taskRenewCmd = &cobra.Command{
+	Use:   "renew <task-id>",
+	Short: "Keep your claim on an in-progress task",
+	Long: `Starting a task claims it with a lease (policy claim_lease, default 2h).
+The lease is renewed whenever you run ` + "`roady next`" + ` (the session-start hook does,
+also after compaction) and each time the agent writes a file (the write-guard
+hook); this renews it explicitly. A claim nobody renews runs out and the task goes back to pending,
+so an agent that crashed does not hold it forever.`,
+	Args: cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		root, err := getProjectRoot()
+		if err != nil {
+			return fmt.Errorf("resolve project path: %w", err)
+		}
+		ws := wiring.NewWorkspace(root)
+		svc := application.NewTaskService(ws.Repo, ws.Audit, application.NewPolicyService(ws.Repo))
+		actor := resolveCurrentOwner(gitConfigUserName)
+		lease, err := svc.RenewClaim(args[0], actor)
+		if err != nil {
+			return MapError(err)
+		}
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Claim on %s renewed until %s.\n", args[0], lease.ExpiresAt.Local().Format("2006-01-02 15:04"))
+		return nil
+	},
+}
+
 var taskReadyCmd = &cobra.Command{
 	Use:   "ready",
 	Short: "List tasks ready to start (unlocked and pending)",
@@ -216,7 +242,8 @@ func listTasksForOwner(cmd *cobra.Command, owner, title string) error {
 }
 
 func init() {
-	taskCmd.AddCommand(createTaskCommand("start", "Start a task", "start"))
+	taskCmd.AddCommand(createTaskCommand("start", "Start a task (claims it; see `roady task renew`)", "start"))
+	taskCmd.AddCommand(taskRenewCmd)
 	taskCmd.AddCommand(createTaskCommand("block", "Block a task", "block"))
 	taskCmd.AddCommand(createTaskCommand("unblock", "Unblock a task", "unblock"))
 	taskCmd.AddCommand(createTaskCommand("complete", "Complete a task", "complete"))

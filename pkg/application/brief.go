@@ -30,6 +30,8 @@ type TaskBrief struct {
 	Remaining  int                   `json:"remaining"`
 	Rules      []string              `json:"rules,omitempty"`
 	LastCheck  *planning.CheckResult `json:"last_check,omitempty"`
+	// Claim is the owner's lease on the active task, when there is one.
+	Claim *planning.Lease `json:"claim,omitempty"`
 }
 
 // BriefTask is the task the brief is about.
@@ -66,6 +68,10 @@ func (s *TaskService) Brief(ctx context.Context, owner string) (*TaskBrief, erro
 	if err != nil || plan == nil {
 		return &TaskBrief{Mode: "none", Owner: owner}, nil
 	}
+	// The brief is the claim heartbeat: it releases claims that ran out and
+	// renews the ones the owner holds.
+	_, _ = s.ReleaseExpiredClaims(owner)
+	s.renewHeld(owner)
 	state, _ := s.repo.LoadState()
 	summaries, err := s.coordinator.GetTaskSummaries(ctx)
 	if err != nil {
@@ -147,6 +153,9 @@ func (s *TaskService) Brief(ctx context.Context, owner string) (*TaskBrief, erro
 			if last, ok := state.TaskStates[focus.ID].LastCheck(); ok {
 				brief.LastCheck = &last
 			}
+			if brief.Mode == "active" {
+				brief.Claim = state.TaskStates[focus.ID].Lease
+			}
 		}
 		brief.Rules = []string{
 			fmt.Sprintf("commit with [roady:%s] in the message, then `roady git sync`", focus.ID),
@@ -213,6 +222,9 @@ func (b *TaskBrief) Render() string {
 		fmt.Fprintf(&w, " (last run %s at %s)", verdict, at)
 	}
 	w.WriteString("\n")
+	if b.Claim != nil {
+		fmt.Fprintf(&w, "Claim: yours until %s; roady next renews it\n", b.Claim.ExpiresAt.Local().Format("15:04"))
+	}
 	if len(t.DependsOn) > 0 {
 		parts := make([]string, 0, len(t.DependsOn))
 		for _, d := range t.DependsOn {

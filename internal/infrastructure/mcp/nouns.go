@@ -34,7 +34,7 @@ type scope struct {
 // It is the one place the surface is declared, so a parity test can hold the
 // CLI and MCP to each other.
 var NounActions = map[string][]string{
-	"roady_task":   {"start", "complete", "block", "unblock", "stop", "reopen", "verify", "check", "dispatch", "list"},
+	"roady_task":   {"start", "complete", "block", "unblock", "stop", "reopen", "verify", "check", "dispatch", "list", "renew"},
 	"roady_plan":   {"get", "generate", "approve", "reject", "prune", "prioritize", "decompose", "import"},
 	"roady_spec":   {"get", "add", "analyze", "explain", "import", "lock", "review", "validate"},
 	"roady_drift":  {"detect", "accept", "explain", "semantic", "record"},
@@ -67,7 +67,7 @@ func actionError(tool, action string) (any, error) {
 
 // TaskArgs is `roady task <action>`.
 type TaskArgs struct {
-	Action    string `json:"action" jsonschema:"required,description=start|complete|block|unblock|stop|reopen|verify|check|dispatch|list"`
+	Action    string `json:"action" jsonschema:"required,description=start|complete|block|unblock|stop|reopen|verify|check|dispatch|list|renew (keep your claim; starting a task claims it with an expiring lease)"`
 	TaskID    string `json:"task_id,omitempty" jsonschema:"description=The task (all actions but list)"`
 	Evidence  string `json:"evidence,omitempty" jsonschema:"description=Proof for complete/verify, e.g. a commit"`
 	Agent     string `json:"agent,omitempty" jsonschema:"description=Acting agent; for dispatch, the subagent taking the task"`
@@ -92,6 +92,8 @@ func (s *Server) handleTask(ctx context.Context, a TaskArgs) (any, error) {
 	case a.Action == "dispatch":
 		return s.handleDispatchTask(ctx, DispatchTaskArgs{TaskID: a.TaskID, Agent: a.Agent, Session: a.SessionID,
 			DryRun: a.DryRun, ProjectPath: a.ProjectPath, Project: a.Project})
+	case a.Action == "renew":
+		return s.handleRenewClaim(a)
 	case a.Action == "list":
 		return s.handleTasks(ctx, TasksArgs{Status: a.Status, Assignee: a.Owner, Limit: a.Limit, Offset: a.Offset,
 			ProjectPath: a.ProjectPath, Project: a.Project})
@@ -346,4 +348,26 @@ func (s *Server) renderRoadmap(ctx context.Context, repo *storage.FilesystemRepo
 		return s.gated(ctx, a.scope, "goal render --force", "Replace ROADMAP.md, including edits made to it by hand, with the roadmap rendered from the goals?", write)
 	}
 	return write()
+}
+
+// handleRenewClaim keeps the caller's claim on an in-progress task alive.
+func (s *Server) handleRenewClaim(a TaskArgs) (any, error) {
+	svc, err := s.servicesForPath(a.ProjectPath, a.Project)
+	if err != nil {
+		return mcpErrCause("Failed to load project at the given path.", err), nil
+	}
+	actor := a.Agent
+	if actor == "" {
+		actor = "ai-agent"
+	}
+	if a.SessionID != "" || a.Agent != "" {
+		previous := svc.Audit.Provenance()
+		svc.Audit.SetProvenance(previous.WithSession(a.SessionID, a.Agent))
+		defer svc.Audit.SetProvenance(previous)
+	}
+	lease, err := svc.Task.RenewClaim(a.TaskID, actor)
+	if err != nil {
+		return mcpErr(err.Error()), nil
+	}
+	return lease, nil
 }
