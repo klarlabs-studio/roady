@@ -1,6 +1,6 @@
 {
   "project_id": "agent-handoff",
-  "version": 423,
+  "version": 427,
   "task_states": {
     "task-acceptance-checks": {
       "status": "verified",
@@ -1974,17 +1974,39 @@
       ]
     },
     "task-status-word-titles": {
-      "status": "in_progress",
+      "status": "done",
       "path": "",
       "owner": "Claude",
+      "evidence": [
+        "Commit: f651342260eaf63f5b0bfdb42ebd704556f2a0e0"
+      ],
       "started_at": "2026-09-27T16:58:28.410579823+02:00",
-      "elapsed_minutes": 0,
-      "lease": {
-        "holder": "Claude",
-        "session": "1d3a1a0c-03da-40c0-9034-fb4291d76e89",
-        "expires_at": "2026-09-27T18:58:28.410580072+02:00",
-        "renewed_at": "2026-09-27T16:58:28.410580072+02:00"
-      }
+      "completed_at": "2026-09-27T16:59:59.316397195+02:00",
+      "elapsed_minutes": 1,
+      "checks": [
+        {
+          "kind": "run",
+          "command": "go test ./pkg/application/ ./internal/infrastructure/cli/ -run 'TestStatusWordTitle' -count=1",
+          "passed": false,
+          "exit_code": 1,
+          "commit": "f651342260eaf63f5b0bfdb42ebd704556f2a0e0",
+          "by": "Claude",
+          "at": "2026-09-27T16:59:59.335513036+02:00",
+          "duration": "22ms",
+          "output": "go: downloading go1.26.7 (linux/amd64)\ngo: download go1.26.7: golang.org/toolchain@v0.0.1-go1.26.7.linux-amd64: reading https://proxy.golang.org/golang.org/toolchain/@v/v0.0.1-go1.26.7.linux-amd64.zip: 403 Forbidden\n\tserver response: Host not in allowlist: proxy.golang.org. Add this host to your network egress settings to allow access.\n"
+        },
+        {
+          "kind": "run",
+          "command": "go test ./pkg/application/ ./internal/infrastructure/cli/ -run 'TestStatusWordTitle' -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "f651342260eaf63f5b0bfdb42ebd704556f2a0e0",
+          "by": "Claude",
+          "at": "2026-09-27T17:00:06.288660221+02:00",
+          "duration": "817ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.006s\nok  \tgithub.com/felixgeelhaar/roady/internal/infrastructure/cli\t0.008s\n"
+        }
+      ]
     },
     "task-task-brief": {
       "status": "verified",
@@ -2033,9 +2055,17 @@
       ]
     },
     "task-task-list-command": {
-      "status": "pending",
+      "status": "in_progress",
       "path": "",
-      "elapsed_minutes": 0
+      "owner": "Claude",
+      "started_at": "2026-09-27T16:59:59.379592088+02:00",
+      "elapsed_minutes": 0,
+      "lease": {
+        "holder": "Claude",
+        "session": "64971bf4-2c09-4e4d-a68b-03575e3860fd",
+        "expires_at": "2026-09-27T18:59:59.379592234+02:00",
+        "renewed_at": "2026-09-27T16:59:59.379592234+02:00"
+      }
     },
     "task-unlinked-features-capped": {
       "status": "pending",
@@ -2144,5 +2174,5 @@
       "elapsed_minutes": 4
     }
   },
-  "updated_at": "2026-09-27T16:58:28.410579823+02:00"
+  "updated_at": "2026-09-27T16:59:59.379592088+02:00"
 }
