@@ -267,3 +267,11 @@ func TestRenewClaimOverMCP(t *testing.T) {
 		t.Errorf("a second agent took the task: %s", resultText(res))
 	}
 }
+
+func TestDriftDetectWithChecksOverMCP(t *testing.T) {
+	server := setupCoordinatorTestServer(t)
+	res, _ := server.handleDrift(context.Background(), DriftArgs{Action: "detect", Checks: true})
+	if isToolError(res) {
+		t.Fatalf("detect with checks: %s", resultText(res))
+	}
+}

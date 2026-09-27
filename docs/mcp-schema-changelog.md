@@ -51,6 +51,8 @@ Every per-verb tool: `roady_task_transition`, `roady_task_check`,
   the holder); `renew` extends it; another agent starting a claimed task is
   refused with the holder and expiry. The brief from `roady_next` carries
   `claim`.
+- `roady_drift` `detect` takes `checks` (bool): re-run the acceptance checks
+  of verified tasks and report failures as `REGRESSION` issues.
 - `roady_drift` `record` takes `judgements` only (roady rebuilds the
   questions, so an invented requirement id is refused).
 - Prompt requests name the noun tool in `write_back`: `roady_capture` for

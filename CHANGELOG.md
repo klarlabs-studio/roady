@@ -72,6 +72,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `2h`, `off` disables): the task goes back to pending, `task.claim_expired`
   is recorded, and it no longer counts against WIP limits. state.json is
   now replaced atomically, so a reader never sees half a file.
+- **Drift catches regressions.** `roady drift detect --checks` (MCP
+  `roady_drift` detect with `checks: true`) re-runs the acceptance check of
+  every verified task against the current code. A check that fails now is
+  reported as `REGRESSION` drift (high) with the task, command, the commit
+  it failed at and the commit it last passed at, and logged as
+  `task.regression`; each run lands in the task's check history.
 - **Execution state is shared across worktrees.** In a git repository,
   claims and progress live in the common git directory
   (`.git/roady/<project>/state.json`), so agents in separate worktrees see
@@ -209,6 +215,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **A verified dependency read as unfinished.** The dependency policy rule
+  accepted only `done`, so a task in progress whose dependency had been
+  verified was reported as policy drift, and a cross-project dependency
+  (`@project:task`) always was. Found by running `drift detect --checks` on
+  roady itself.
 - **`roady spec lock` noticed only structural changes.** It compared IDs and
   counts, so after a requirement's description or check changed it answered
   "already in sync" while `drift detect`, which compares hashes, kept

@@ -31,8 +31,10 @@ func (r *DependencyRule) Validate(plan *planning.Plan, state *planning.Execution
 			continue
 		}
 
-		for _, depID := range task.DependsOn {
-			if statusMap[depID] != planning.StatusDone {
+		// Verified is complete too; external (@project:task) dependencies are
+		// resolved by the coordinator, not from this project's state.
+		for _, depID := range task.LocalDependencies() {
+			if !statusMap[depID].IsComplete() {
 				violations = append(violations, policy.Violation{
 					RuleID:  r.ID(),
 					Level:   policy.ViolationError,

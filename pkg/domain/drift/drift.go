@@ -24,6 +24,7 @@ const (
 	CategoryViolation      DriftCategory = "VIOLATION"      // Policy violation
 	CategoryImplementation DriftCategory = "IMPLEMENTATION" // Code reality doesn't match state
 	CategoryStale          DriftCategory = "STALE"          // The artifact is internally consistent but the repository has moved past it
+	CategoryRegression     DriftCategory = "REGRESSION"     // A verified task's acceptance check fails now
 )
 
 type Severity string

@@ -191,13 +191,14 @@ func (s *Server) handleSpec(ctx context.Context, a SpecArgs) (any, error) {
 type DriftArgs struct {
 	Action     string                    `json:"action" jsonschema:"required,description=detect|accept|explain|semantic|record. accept needs the user's confirmation. semantic returns a prompt; record stores the judgements on it."`
 	Judgements []drift.SemanticJudgement `json:"judgements,omitempty" jsonschema:"description=record: one per requirement: requirement_id, agrees, explanation"`
+	Checks     bool                      `json:"checks,omitempty" jsonschema:"description=detect: also re-run the acceptance checks of verified tasks and report failures as regressions"`
 	scope
 }
 
 func (s *Server) handleDrift(ctx context.Context, a DriftArgs) (any, error) {
 	switch a.Action {
 	case "detect":
-		return s.handleDetectDrift(ctx, DetectDriftArgs{ProjectPath: a.ProjectPath, Project: a.Project})
+		return s.handleDetectDrift(ctx, DetectDriftArgs{Checks: a.Checks, ProjectPath: a.ProjectPath, Project: a.Project})
 	case "semantic":
 		return s.handleDetectDrift(ctx, DetectDriftArgs{Semantic: true, ProjectPath: a.ProjectPath, Project: a.Project})
 	case "record":

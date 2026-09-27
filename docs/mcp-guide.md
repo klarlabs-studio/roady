@@ -78,7 +78,7 @@ every agent's prompt.
 | `roady_task` | `start` `complete` `block` `unblock` `stop` `reopen` `verify` `check` `dispatch` `list` `renew` — start claims the task with an expiring lease that `roady_next` renews |
 | `roady_plan` | `get` `generate` `import` `prioritize` `decompose` · **`approve` `reject` `prune`** |
 | `roady_spec` | `get` `add` `explain` `review` `validate` · **`analyze` `import` `lock`** |
-| `roady_drift` | `detect` `explain` `semantic` `record` · **`accept`** |
+| `roady_drift` | `detect` (`checks: true` re-runs verified tasks' checks) `explain` `semantic` `record` · **`accept`** |
 | `roady_state` | `get` · **`rebuild`** |
 | `roady_audit` | `verify` `trail` |
 | `roady_goal` | `list` `add` `edit` `render` (ROADMAP.md; replacing a hand edit needs the user) — the roadmap: goals on now, next or later, shipped or out of scope, with the features serving them |

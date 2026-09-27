@@ -287,3 +287,41 @@ func TestTaskClaimFromTheTerminal(t *testing.T) {
 		t.Errorf("a second agent took the task: %v", err)
 	}
 }
+
+// The done-when of task-drift-reruns-checks: break the code behind a
+// verified task and drift --checks reports it.
+func TestDriftChecksReportsARegression(t *testing.T) {
+	dir, cleanup := withPlainTempDir(t)
+	defer cleanup()
+	t.Setenv("ROADY_USER", "tester")
+	if _, err := runRoady(t, "", "init", "regress"); err != nil {
+		t.Fatal(err)
+	}
+	doc := "features:\n  - id: f\n    title: F\n    requirements:\n      - id: r\n        title: R\n        check:\n          run: test -f built.txt\n"
+	if _, err := runRoady(t, doc, "capture"); err != nil {
+		t.Fatal(err)
+	}
+	_ = os.WriteFile(filepath.Join(dir, "built.txt"), []byte("ok"), 0o644)
+	for _, args := range [][]string{
+		{"plan", "approve"}, {"task", "start", "task-r"}, {"task", "complete", "task-r", "--evidence", "abc123"}, {"task", "verify", "task-r", "--override", "test fixture"},
+	} {
+		if out, err := runRoady(t, "", args...); err != nil {
+			t.Fatalf("%v: %v\n%s", args, err, out)
+		}
+	}
+	driftChecks = false
+	if out, err := runRoady(t, "", "drift", "detect", "--checks"); err != nil || strings.Contains(out, "REGRESSION") {
+		t.Fatalf("a passing verified task reported drift: %v\n%s", err, out)
+	}
+
+	_ = os.Remove(filepath.Join(dir, "built.txt"))
+	driftChecks = false
+	out, err := runRoady(t, "", "drift", "detect", "--checks")
+	if err == nil || !strings.Contains(out, "REGRESSION") || !strings.Contains(out, "task-r is verified, but its acceptance check fails now") {
+		t.Errorf("the regression was not reported: %v\n%s", err, out)
+	}
+	driftChecks = false
+	if out, _ = runRoady(t, "", "drift", "detect"); strings.Contains(out, "REGRESSION") {
+		t.Errorf("without --checks nothing is re-run:\n%s", out)
+	}
+}

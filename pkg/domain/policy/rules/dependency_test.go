@@ -32,3 +32,17 @@ func TestDependencyRuleDetectsViolation(t *testing.T) {
 		t.Fatalf("rule id mismatch: %s", violations[0].RuleID)
 	}
 }
+
+// A verified dependency is complete; so is one in another project, which
+// this project's state cannot speak for.
+func TestDependencyRuleAcceptsVerifiedAndExternal(t *testing.T) {
+	plan := &planning.Plan{Tasks: []planning.Task{
+		{ID: "a"}, {ID: "b", DependsOn: []string{"a", "@other:x"}},
+	}}
+	state := planning.NewExecutionState("p")
+	state.SetTaskStatus("a", planning.StatusVerified)
+	state.SetTaskStatus("b", planning.StatusInProgress)
+	if v := (&DependencyRule{}).Validate(plan, state); len(v) != 0 {
+		t.Errorf("violations %+v", v)
+	}
+}

@@ -260,6 +260,7 @@ func NewServer(root string) (*Server, error) {
 // Args structs for handlers that previously used struct{}
 
 type DetectDriftArgs struct {
+	Checks      bool   `json:"checks,omitempty"`
 	Semantic    bool   `json:"semantic,omitempty" jsonschema:"description=Instead of structural drift, return the prompt for judging whether implementations still mean what their requirements say; record the judgements with roady_drift action record"`
 	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
 	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
@@ -507,6 +508,13 @@ func (s *Server) handleDetectDrift(ctx context.Context, args DetectDriftArgs) (a
 	report, err := svc.Drift.DetectDrift(ctx)
 	if err != nil {
 		return mcpErrCause("Failed to detect drift. Ensure both spec and plan exist.", err), nil
+	}
+	if args.Checks {
+		regressions, _, err := svc.Task.RecheckVerified(ctx, "ai-agent", application.CheckOptions{})
+		if err != nil {
+			return mcpErrCause("Failed to re-run the checks of verified tasks.", err), nil
+		}
+		report.Issues = append(report.Issues, regressions...)
 	}
 	return report, nil
 }

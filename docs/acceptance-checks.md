@@ -61,6 +61,24 @@ It does not trust an earlier pass: verification is a claim about the current
 state. A `manual` check needs a confirmation already recorded with
 `roady task check <id> --confirm`.
 
+## Catching regressions: `roady drift detect --checks`
+
+Verification proves a task at the commit it was verified at; the code keeps
+moving. `roady drift detect --checks` re-runs the `run` check of every
+verified task against the code as it is now. Each run is recorded in the
+task's check history, and a check that fails is reported as `REGRESSION`
+drift (severity high) naming the task, the command, the commit it failed at
+and the commit it last passed at — and logged as `task.regression`. The
+task's status is left alone: fix the code, or `roady task reopen` it if the
+requirement changed. Manual checks are skipped; only a person can confirm
+them.
+
+```bash
+roady drift detect --checks --fail-on high   # in CI: fail on a regression
+```
+
+Over MCP: `roady_drift` with action `detect` and `checks: true`.
+
 ## Requiring evidence: `verify_requires_evidence`
 
 With this policy on, **verified means proven**. A task can be verified only

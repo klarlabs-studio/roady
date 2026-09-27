@@ -68,6 +68,9 @@ removed; git history has them.
 - `verify_requires_evidence` in `policy.yaml`: a task is verified only with a
   passing check and a linked commit, unless a person overrides it on the
   record.
+- `roady drift detect --checks` re-runs the acceptance checks of verified
+  tasks and reports one that fails now as a regression, with the commit it
+  last passed at.
 - `roady drift detect` / `explain` / `accept` — intent, plan, code and policy
   drift; `roady drift semantic` builds the prompt for judging whether an
   implementation still means what its requirement says.
