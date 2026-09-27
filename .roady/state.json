@@ -1,6 +1,6 @@
 {
   "project_id": "agent-handoff",
-  "version": 459,
+  "version": 462,
   "task_states": {
     "task-acceptance-checks": {
       "status": "verified",
@@ -1768,17 +1768,39 @@
       "elapsed_minutes": 0
     },
     "task-roadmap-path-policy": {
-      "status": "in_progress",
+      "status": "done",
       "path": "",
       "owner": "Claude",
+      "evidence": [
+        "Commit: 5b0617a2385b4ff72fff5ca5e8325ada554a4f87"
+      ],
       "started_at": "2026-09-27T17:59:14.507135701+02:00",
-      "elapsed_minutes": 0,
-      "lease": {
-        "holder": "Claude",
-        "session": "9f2b4b65-d26f-4795-af73-bbb4738a6dcc",
-        "expires_at": "2026-09-27T19:59:14.507135865+02:00",
-        "renewed_at": "2026-09-27T17:59:14.507135865+02:00"
-      }
+      "completed_at": "2026-09-27T18:00:36.407829532+02:00",
+      "elapsed_minutes": 1,
+      "checks": [
+        {
+          "kind": "run",
+          "command": "go test ./pkg/application/ ./internal/infrastructure/wiring/ -run TestRoadmapPathFromPolicy -count=1",
+          "passed": false,
+          "exit_code": 1,
+          "commit": "5b0617a2385b4ff72fff5ca5e8325ada554a4f87",
+          "by": "Claude",
+          "at": "2026-09-27T18:00:36.431592396+02:00",
+          "duration": "45ms",
+          "output": "go: downloading go1.26.7 (linux/amd64)\ngo: download go1.26.7: golang.org/toolchain@v0.0.1-go1.26.7.linux-amd64: reading https://proxy.golang.org/golang.org/toolchain/@v/v0.0.1-go1.26.7.linux-amd64.zip: 403 Forbidden\n\tserver response: Host not in allowlist: proxy.golang.org. Add this host to your network egress settings to allow access.\n"
+        },
+        {
+          "kind": "run",
+          "command": "go test ./pkg/application/ ./internal/infrastructure/wiring/ -run TestRoadmapPathFromPolicy -count=1",
+          "passed": false,
+          "exit_code": 1,
+          "commit": "5b0617a2385b4ff72fff5ca5e8325ada554a4f87",
+          "by": "Claude",
+          "at": "2026-09-27T18:00:36.502928825+02:00",
+          "duration": "24ms",
+          "output": "go: downloading go1.26.7 (linux/amd64)\ngo: download go1.26.7: golang.org/toolchain@v0.0.1-go1.26.7.linux-amd64: reading https://proxy.golang.org/golang.org/toolchain/@v/v0.0.1-go1.26.7.linux-amd64.zip: 403 Forbidden\n\tserver response: Host not in allowlist: proxy.golang.org. Add this host to your network egress settings to allow access.\n"
+        }
+      ]
     },
     "task-safe-generated-ids": {
       "status": "verified",
@@ -2367,5 +2389,5 @@
       "elapsed_minutes": 4
     }
   },
-  "updated_at": "2026-09-27T17:59:14.507135701+02:00"
+  "updated_at": "2026-09-27T18:00:36.40783034+02:00"
 }
