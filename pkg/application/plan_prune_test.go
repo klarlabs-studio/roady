@@ -30,8 +30,10 @@ func newPruneRepo() *pruneRepo {
 	state := planning.NewExecutionState("plan-1")
 	// One task the spec still wants, two it no longer does.
 	state.TaskStates["task-keep"] = planning.TaskResult{Status: planning.StatusInProgress, Owner: "alice"}
-	state.TaskStates["task-drop-a"] = planning.TaskResult{Status: planning.StatusDone}
-	state.TaskStates["task-drop-b"] = planning.TaskResult{Status: planning.StatusDone}
+	// Unfinished: finished work under a dropped feature is history and
+	// survives prune (TestFinishedOrphansAreHistory).
+	state.TaskStates["task-drop-a"] = planning.TaskResult{Status: planning.StatusPending}
+	state.TaskStates["task-drop-b"] = planning.TaskResult{Status: planning.StatusBlocked}
 
 	return &pruneRepo{
 		spec: &spec.ProductSpec{

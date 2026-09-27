@@ -102,7 +102,7 @@ func (s *DriftService) DetectDrift(ctx context.Context) (*drift.Report, error) {
 	}
 
 	// 1. Plan vs Spec
-	if planIssues := s.detector.DetectPlanDrift(spec, plan); len(planIssues) > 0 {
+	if planIssues := s.detector.SettleFinishedOrphans(s.detector.DetectPlanDrift(spec, plan), state); len(planIssues) > 0 {
 		report.Issues = append(report.Issues, planIssues...)
 	}
 

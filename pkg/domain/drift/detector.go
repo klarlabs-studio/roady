@@ -197,3 +197,27 @@ func (d *DriftDetector) DetectPolicyDrift(violations []policy.Violation) []Issue
 
 	return issues
 }
+
+// SettleFinishedOrphans turns orphan issues for finished tasks into history.
+// A task done or verified under a feature the spec has since renamed or
+// dropped is a record of work that happened, not intent to reconcile:
+// pruning it would throw that record away. It stays reported, at info, so
+// it can still be linked to the feature that replaced its old one.
+func (d *DriftDetector) SettleFinishedOrphans(issues []Issue, state *planning.ExecutionState) []Issue {
+	if state == nil {
+		return issues
+	}
+	for i, is := range issues {
+		if is.Category != CategoryOrphan || is.Type != DriftTypePlan {
+			continue
+		}
+		st := state.GetTaskStatus(is.ComponentID)
+		if !st.IsComplete() {
+			continue
+		}
+		issues[i].Severity = SeverityInfo
+		issues[i].Message = fmt.Sprintf("Task %s is %s under a feature the spec no longer has; kept as history.", is.ComponentID, st)
+		issues[i].Hint = fmt.Sprintf("Nothing to do. `roady plan prune` keeps it; to trace it, `roady move %s --feature <feature>`.", is.ComponentID)
+	}
+	return issues
+}
