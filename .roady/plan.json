@@ -479,7 +479,10 @@
       "depends_on": [],
       "feature_id": "keep",
       "origin": "heuristic",
-      "source": {}
+      "source": {},
+      "check": {
+        "run": "go test ./pkg/domain/spec/ -run Goal -count=1 \u0026\u0026 go test ./pkg/application/ -run 'Goal|Roadmap' -count=1 \u0026\u0026 go test ./internal/infrastructure/mcp/ -run TestGoalToolRecordsTheRoadmap -count=1 \u0026\u0026 go test ./internal/infrastructure/cli/ -run TestGoalCommands -count=1"
+      }
     },
     {
       "id": "task-decisions",
@@ -670,5 +673,5 @@
   ],
   "approval_status": "approved",
   "created_at": "2026-01-31T18:00:00+01:00",
-  "updated_at": "2026-09-27T08:31:24.284928414+02:00"
+  "updated_at": "2026-09-27T09:07:41.786248284+02:00"
 }

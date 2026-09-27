@@ -1,6 +1,6 @@
 {
   "project_id": "agent-handoff",
-  "version": 273,
+  "version": 276,
   "task_states": {
     "task-acceptance-checks": {
       "status": "verified",
@@ -271,9 +271,28 @@
       "elapsed_minutes": 0
     },
     "task-goals-horizons": {
-      "status": "pending",
+      "status": "done",
       "path": "",
-      "elapsed_minutes": 0
+      "owner": "Claude",
+      "evidence": [
+        "Commit: ffafc090e9e9db8a8bb37ab6a1117fc57b23e08f"
+      ],
+      "started_at": "2026-09-27T08:59:32.375299648+02:00",
+      "completed_at": "2026-09-27T09:07:33.947441413+02:00",
+      "elapsed_minutes": 8,
+      "checks": [
+        {
+          "kind": "run",
+          "command": "go test ./pkg/domain/spec/ -run Goal -count=1 \u0026\u0026 go test ./pkg/application/ -run 'Goal|Roadmap' -count=1 \u0026\u0026 go test ./internal/infrastructure/mcp/ -run TestGoalToolRecordsTheRoadmap -count=1 \u0026\u0026 go test ./internal/infrastructure/cli/ -run TestGoalCommands -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "ffafc090e9e9db8a8bb37ab6a1117fc57b23e08f",
+          "by": "Claude",
+          "at": "2026-09-27T09:07:41.805257593+02:00",
+          "duration": "1.701s",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/domain/spec\t0.002s\nok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.006s\nok  \tgithub.com/felixgeelhaar/roady/internal/infrastructure/mcp\t0.008s\nok  \tgithub.com/felixgeelhaar/roady/internal/infrastructure/cli\t0.009s\n"
+        }
+      ]
     },
     "task-guarded-fields": {
       "status": "verified",
@@ -879,5 +898,5 @@
       "elapsed_minutes": 4
     }
   },
-  "updated_at": "2026-09-27T08:31:19.775157516+02:00"
+  "updated_at": "2026-09-27T09:07:33.947442116+02:00"
 }
