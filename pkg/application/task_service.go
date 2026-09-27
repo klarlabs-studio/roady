@@ -228,32 +228,6 @@ func (s *TaskService) transitionWithFSM(taskID string, event string, actor strin
 	})
 }
 
-func (s *TaskService) LinkTask(taskID string, provider string, ref planning.ExternalRef) error {
-	state, err := s.repo.LoadState()
-	if err != nil {
-		return err
-	}
-
-	result := state.TaskStates[taskID]
-	if result.ExternalRefs == nil {
-		result.ExternalRefs = make(map[string]planning.ExternalRef)
-	}
-
-	result.ExternalRefs[provider] = ref
-	state.TaskStates[taskID] = result
-	state.UpdatedAt = time.Now()
-
-	if err := s.repo.SaveState(state); err != nil {
-		return err
-	}
-
-	return s.audit.Log("task.link", "plugin", map[string]interface{}{
-		"task_id":  taskID,
-		"provider": provider,
-		"ref":      ref.Identifier,
-	})
-}
-
 // StartTask starts a task using the coordinator with proper dependency validation.
 func (s *TaskService) StartTask(ctx context.Context, taskID, owner string) error {
 	if ctx == nil {

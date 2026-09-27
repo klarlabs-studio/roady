@@ -216,23 +216,26 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 ## MCP Tools Reference
 
-The server carries the working loop — ten tools:
+One tool per CLI noun, with the CLI verbs as its `action` — every project
+command has an MCP equivalent:
 
-| Tool | Does |
-|------|------|
+| Tool | Actions |
+|------|---------|
 | `roady_next` | The current task (or the next to start): why, done-when, dependencies |
 | `roady_capture` | Record features, requirements and tasks in one write |
-| `roady_plan_import` | Import a plan file an agent wrote as tasks |
-| `roady_task_transition` | Start, block, unblock, complete, stop, reopen, verify |
-| `roady_task_check` | Run a task's acceptance check and record the result |
-| `roady_status` | Project status, with filters for ready, blocked, active |
-| `roady_query` | Project context for a question, for your model to answer |
-| `roady_task_dispatch` | Hand a ready task to a subagent |
-| `roady_drift_detect` | Drift between spec, plan, code and policy (`semantic` for the semantic-drift prompt) |
-| `roady_drift_record_semantic` | Record semantic-drift judgements |
+| `roady_task` | `start` `complete` `block` `unblock` `stop` `reopen` `verify` `check` `dispatch` `list` |
+| `roady_plan` | `get` `generate` `import` `prioritize` `decompose` `approve`* `reject`* `prune`* |
+| `roady_spec` | `get` `add` `explain` `review` `validate` `analyze`* `import`* `lock`* |
+| `roady_drift` | `detect` `explain` `semantic` `record` `accept`* |
+| `roady_state` | `get` `rebuild`* |
+| `roady_audit` | `verify` `trail` |
+| `roady_policy` / `roady_git` | `check` / `sync` |
+| `roady_status` / `roady_query` / `roady_init` | Status, project context for a question, a new project |
 
-Approving plans, accepting drift, locking the spec, init, rebuild and audit are
-CLI commands for a person. See [mcp-guide.md](mcp-guide.md).
+\* A decision: it runs only after the user confirms it in their client (MCP
+elicitation). Declined, cancelled, or a client that cannot ask means nothing
+changes and the agent is told the CLI command to hand to a person. See
+[mcp-guide.md](mcp-guide.md).
 
 ## Workflow Example
 

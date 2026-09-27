@@ -185,9 +185,8 @@ func (s *DispatchService) buildBrief(task *planning.Task, opts DispatchOptions) 
 	}
 
 	args := map[string]string{
+		"action":  "complete",
 		"task_id": task.ID,
-		"event":   "complete",
-		"actor":   opts.Agent,
 		"agent":   opts.Agent,
 	}
 	cli := fmt.Sprintf("roady task complete %s --evidence <commit-or-link>", task.ID)
@@ -199,11 +198,11 @@ func (s *DispatchService) buildBrief(task *planning.Task, opts DispatchOptions) 
 	}
 
 	brief.Completion = dispatch.CompletionContract{
-		Tool:             "roady_task_transition",
+		Tool:             "roady_task",
 		CLI:              cli,
 		Arguments:        args,
 		EvidenceRequired: true,
-		Instructions: "When the work is done, call roady_task_transition with these arguments and an evidence value " +
+		Instructions: "When the work is done, call roady_task with these arguments and an evidence value " +
 			"(a commit hash or link). The transition is what records the work against you in the audit trail — " +
 			"without it the task stays in progress and nothing attributes it.",
 	}

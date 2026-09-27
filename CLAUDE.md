@@ -132,19 +132,25 @@ roady mcp --transport http --addr :8080
 roady mcp --transport ws --addr :8080
 ```
 
-#### The surface is the agent loop
+#### Parity: one tool per CLI noun
 
-The server has ten tools — `roady_next`, `roady_capture`, `roady_plan_import`,
-`roady_task_transition`, `roady_task_check`, `roady_task_dispatch`,
-`roady_status`, `roady_query`, `roady_drift_detect` (with `semantic` for the
-semantic-drift prompt) and `roady_drift_record_semantic` — about 3k tokens of
-every agent's prompt. Everything else is a CLI command, and on purpose:
-approving or rejecting a plan, accepting drift, re-locking the spec, pruning,
-init, rebuild and audit are decisions or maintenance for a person, and an agent
-that could approve its own plan would make approval meaningless.
-`TestServer_ServesTheAgentLoopOnly` pins the exact set, and
-`TestServer_GovernanceIsNotAnAgentTool` keeps governance off it. Add a tool
-only when the loop cannot work without it.
+Every CLI command that works on a project has an MCP tool: one per noun
+(`roady_task`, `roady_plan`, `roady_spec`, `roady_drift`, `roady_audit`,
+`roady_state`, `roady_policy`, `roady_git`) with the CLI verbs as its
+`action`, plus `roady_next`, `roady_status`, `roady_query`, `roady_capture`
+and `roady_init`. `NounActions` in `mcp/nouns.go` is the single table.
+`TestEveryCLICommandHasAnMCPTool` (cli package) walks the command tree and
+fails when a command has no tool or action — add the action when you add a
+command. Host commands (`setup`, `hook`, `mcp`, `completion`, `config`,
+`doctor`) stay CLI-only.
+
+Decisions — plan approve/reject/prune, drift accept, spec
+analyze/import/lock, state rebuild (`GatedActions`) — go through
+`Server.gated`: the server asks the user in their client (MCP elicitation)
+and runs the operation only on an explicit yes, recording
+`approval.confirmed` in the audit log. Declined, cancelled or unsupported
+means nothing changes and the result names the CLI command. An agent may ask;
+only the user decides. `TestGatedActionsNeedTheUser` pins it.
 
 ## Common Workflows
 
@@ -231,8 +237,8 @@ See `.claude/commands/` for pre-configured Claude Code commands:
 ### MCP Server
 
 For projects with Roady MCP configured, the agent works through `roady_next`,
-`roady_capture`, `roady_task_transition` and `roady_task_check`; see
-`docs/mcp-guide.md` for all ten.
+`roady_capture` and `roady_task` (`start`, `check`, `complete`); see
+`docs/mcp-guide.md` for all thirteen tools.
 
 Roady's MCP server works with Claude Code, OpenCode, Claude Desktop, OpenAI Codex, and Google Gemini. Use `roady setup <platform>` to configure.
 

@@ -144,7 +144,7 @@ func majorVersion(v string) string {
 
 // DetectDrift detects discrepancies between spec and plan.
 func (c *Client) DetectDrift(ctx context.Context) (*DriftReport, error) {
-	res, err := c.call(ctx, "roady_drift_detect", nil)
+	res, err := c.call(ctx, "roady_drift", map[string]any{"action": "detect"})
 	if err != nil {
 		return nil, err
 	}
@@ -155,11 +155,11 @@ func (c *Client) DetectDrift(ctx context.Context) (*DriftReport, error) {
 
 // TransitionTask transitions a task to a new state.
 func (c *Client) TransitionTask(ctx context.Context, taskID, event, evidence string) (string, error) {
-	args := map[string]any{"task_id": taskID, "event": event}
+	args := map[string]any{"action": event, "task_id": taskID}
 	if evidence != "" {
 		args["evidence"] = evidence
 	}
-	res, err := c.call(ctx, "roady_task_transition", args)
+	res, err := c.call(ctx, "roady_task", args)
 	if err != nil {
 		return "", err
 	}
@@ -240,12 +240,12 @@ func (c *Client) PlanImport(ctx context.Context, path string, opts map[string]an
 	for k, v := range opts {
 		args[k] = v
 	}
-	return c.text(ctx, "roady_plan_import", args)
+	return c.Plan(ctx, "import", args)
 }
 
 // TaskCheck runs a task's acceptance check and records the result.
 func (c *Client) TaskCheck(ctx context.Context, taskID string) (string, error) {
-	return c.text(ctx, "roady_task_check", map[string]any{"task_id": taskID})
+	return c.Task(ctx, "check", map[string]any{"task_id": taskID})
 }
 
 // DispatchTask hands a ready task to a subagent and claims it unless dryRun.
@@ -254,19 +254,19 @@ func (c *Client) DispatchTask(ctx context.Context, taskID, agent string, dryRun 
 	if dryRun {
 		args["dry_run"] = true
 	}
-	return c.text(ctx, "roady_task_dispatch", args)
+	return c.Task(ctx, "dispatch", args)
 }
 
 // SemanticDrift returns the prompt for judging whether implementations still
 // mean what their requirements say, with the questions it covers.
 func (c *Client) SemanticDrift(ctx context.Context) (string, error) {
-	return c.text(ctx, "roady_drift_detect", map[string]any{"semantic": true})
+	return c.Drift(ctx, "semantic", nil)
 }
 
 // RecordSemanticDrift records judgements on SemanticDrift's questions. Each
 // judgement is {"requirement_id", "agrees", "explanation"}.
 func (c *Client) RecordSemanticDrift(ctx context.Context, judgements []map[string]any) (string, error) {
-	return c.text(ctx, "roady_drift_record_semantic", map[string]any{"judgements": judgements})
+	return c.Drift(ctx, "record", map[string]any{"judgements": judgements})
 }
 
 func (c *Client) text(ctx context.Context, tool string, args map[string]any) (string, error) {
@@ -275,4 +275,68 @@ func (c *Client) text(ctx context.Context, tool string, args map[string]any) (st
 		return "", err
 	}
 	return textResult(res)
+}
+
+// --- One method per CLI noun ---
+//
+// The server has one tool per CLI noun with the CLI's verbs as actions
+// (`roady plan approve` is Plan(ctx, "approve", nil)). args carries the
+// action's other arguments. Decisions (plan approve/reject/prune, drift
+// accept, spec lock/import/analyze, state rebuild) run only after the user
+// confirms in their MCP client; without that the call returns a ToolError.
+
+// Task runs `roady task <action>`: start, complete, block, unblock, stop,
+// reopen, verify, check, dispatch, list.
+func (c *Client) Task(ctx context.Context, action string, args map[string]any) (string, error) {
+	return c.noun(ctx, "roady_task", action, args)
+}
+
+// Plan runs `roady plan <action>`: get, generate, approve, reject, prune,
+// prioritize, decompose, import.
+func (c *Client) Plan(ctx context.Context, action string, args map[string]any) (string, error) {
+	return c.noun(ctx, "roady_plan", action, args)
+}
+
+// Spec runs `roady spec <action>`: get, add, analyze, explain, import, lock,
+// review, validate.
+func (c *Client) Spec(ctx context.Context, action string, args map[string]any) (string, error) {
+	return c.noun(ctx, "roady_spec", action, args)
+}
+
+// Drift runs `roady drift <action>`: detect, accept, explain, semantic, record.
+func (c *Client) Drift(ctx context.Context, action string, args map[string]any) (string, error) {
+	return c.noun(ctx, "roady_drift", action, args)
+}
+
+// Audit runs `roady audit <action>`: verify, trail.
+func (c *Client) Audit(ctx context.Context, action string, args map[string]any) (string, error) {
+	return c.noun(ctx, "roady_audit", action, args)
+}
+
+// State runs `roady state <action>`: get, rebuild.
+func (c *Client) State(ctx context.Context, action string, args map[string]any) (string, error) {
+	return c.noun(ctx, "roady_state", action, args)
+}
+
+// PolicyCheck runs `roady policy check`.
+func (c *Client) PolicyCheck(ctx context.Context) (string, error) {
+	return c.noun(ctx, "roady_policy", "check", nil)
+}
+
+// GitSync runs `roady git sync`.
+func (c *Client) GitSync(ctx context.Context) (string, error) {
+	return c.noun(ctx, "roady_git", "sync", nil)
+}
+
+// Init runs `roady init <name>`.
+func (c *Client) Init(ctx context.Context, name string) (string, error) {
+	return c.text(ctx, "roady_init", map[string]any{"name": name})
+}
+
+func (c *Client) noun(ctx context.Context, tool, action string, args map[string]any) (string, error) {
+	all := map[string]any{"action": action}
+	for k, v := range args {
+		all[k] = v
+	}
+	return c.text(ctx, tool, all)
 }

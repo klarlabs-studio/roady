@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/felixgeelhaar/roady/pkg/application"
-	"github.com/felixgeelhaar/roady/pkg/domain/events"
 	"github.com/felixgeelhaar/roady/pkg/storage"
 )
 
@@ -23,7 +22,6 @@ type AppServices struct {
 	AuditTrail *application.AuditTrailService        // Evidence trails for GRC review
 	Dispatch   *application.DispatchService          // Hands a ready task to a subagent
 	Capture    *application.CaptureService           // One write for intent of any size
-	Publisher  *storage.InMemoryEventPublisher
 }
 
 // BuildAppServices constructs the workbench of services for a repo root.
@@ -53,23 +51,10 @@ func buildServices(workspace *Workspace) (*AppServices, error) {
 	if err != nil {
 		return nil, fmt.Errorf("create event store: %w", err)
 	}
-	publisher := storage.NewInMemoryEventPublisher()
-
-	// Create event-sourced audit service with dispatcher and projections
-	auditSvc, err := application.NewEventSourcedAuditService(eventStore, publisher)
-	if err != nil {
-		return nil, fmt.Errorf("create event-sourced audit: %w", err)
-	}
+	auditSvc := application.NewEventSourcedAuditService(eventStore)
 	// Every event this process records carries the agent and session behind
 	// it, so an audit trail can answer which agent did what.
 	auditSvc.SetProvenance(AmbientProvenance())
-
-	// Create and wire event dispatcher with handlers
-	dispatcher := events.NewEventDispatcher()
-	dispatcher.Register(events.NewLoggingHandler(nil).Registration())
-	dispatcher.Register(events.NewDriftWarningHandler(nil, nil).Registration())
-	dispatcher.Register(events.NewTaskTransitionHandler(nil).Registration())
-	auditSvc.SetDispatcher(dispatcher)
 
 	// Create services in dependency order
 	policySvc := application.NewPolicyService(workspace.Repo)
@@ -100,7 +85,6 @@ func buildServices(workspace *Workspace) (*AppServices, error) {
 		Prompt:     application.NewPromptService(workspace.Repo),
 		AuditTrail: application.NewAuditTrailService(auditSvc, workspace.Audit, planSvc, workspace.Repo),
 		Dispatch:   dispatchSvc,
-		Publisher:  publisher,
 	}
 
 	return services, nil

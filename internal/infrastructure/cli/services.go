@@ -8,10 +8,6 @@ import (
 	"github.com/felixgeelhaar/roady/internal/infrastructure/wiring"
 )
 
-func loadServices(root string) (*wiring.AppServices, error) {
-	return loadServicesForProject(root, currentSubProject())
-}
-
 func loadServicesForProject(root, project string) (*wiring.AppServices, error) {
 	services, loadErr := wiring.BuildAppServicesForProject(root, project)
 	if services == nil {

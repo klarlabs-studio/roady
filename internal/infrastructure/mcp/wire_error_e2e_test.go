@@ -41,8 +41,8 @@ func TestToolErrorOnTheWire(t *testing.T) {
 	c.notify(t, "notifications/initialized")
 
 	raw := c.call(t, "tools/call", map[string]any{
-		"name":      "roady_task_transition",
-		"arguments": map[string]any{"task_id": "no-such-task", "event": "start"},
+		"name":      "roady_task",
+		"arguments": map[string]any{"action": "start", "task_id": "no-such-task"},
 	})
 
 	var envelope struct {

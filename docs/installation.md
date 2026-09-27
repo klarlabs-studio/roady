@@ -82,7 +82,7 @@ roady drift semantic            # prints the semantic-drift question
 ```
 
 Write the answer back with the tool named in the request — `roady capture`
-(MCP: `roady_capture`) or `roady_drift_record_semantic`. See `docs/prompts.md`.
+(MCP: `roady_capture`) or `roady_drift` with action `record`. See `docs/prompts.md`.
 
 ## Shell Completion
 

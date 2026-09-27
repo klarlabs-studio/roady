@@ -108,32 +108,6 @@ func TestAddEvidence_InitializesStatusForNewTask(t *testing.T) {
 	}
 }
 
-func TestExecutionState_SetExternalRef(t *testing.T) {
-	state := NewExecutionState("test")
-
-	ref := ExternalRef{ID: "123", Identifier: "JIRA-123", URL: "https://jira.example.com/123"}
-	state.SetExternalRef("t1", "jira", ref)
-
-	if state.TaskStates["t1"].ExternalRefs["jira"].Identifier != "JIRA-123" {
-		t.Errorf("expected external ref to be set")
-	}
-}
-
-func TestSetExternalRef_InitializesStatusForNewTask(t *testing.T) {
-	state := NewExecutionState("test")
-
-	ref := ExternalRef{ID: "456", Identifier: "LIN-456", URL: "https://linear.app/456"}
-	state.SetExternalRef("new-task", "linear", ref)
-
-	result := state.TaskStates["new-task"]
-	if result.Status != StatusPending {
-		t.Errorf("expected status %q for new task, got %q", StatusPending, result.Status)
-	}
-	if result.ExternalRefs["linear"].Identifier != "LIN-456" {
-		t.Errorf("expected external ref to be set")
-	}
-}
-
 func TestExecutionState_CountByStatus(t *testing.T) {
 	state := NewExecutionState("test")
 	state.TaskStates["t1"] = TaskResult{Status: StatusPending}

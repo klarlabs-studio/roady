@@ -134,37 +134,6 @@ func TestAuditService_VerifyIntegrity_LoadError(t *testing.T) {
 	}
 }
 
-// ---- AuditService: GetVelocity with load error ----
-
-func TestAuditService_GetVelocity_LoadError(t *testing.T) {
-	repo := &MockRepo{LoadError: errors.New("events load fail")}
-	svc := application.NewAuditService(repo)
-
-	_, err := svc.GetVelocity()
-	if err == nil {
-		t.Fatal("expected error when events cannot be loaded")
-	}
-}
-
-// ---- AuditService: GetVelocity with empty events ----
-
-func TestAuditService_GetVelocity_Empty(t *testing.T) {
-	tempDir := t.TempDir()
-	repo := storage.NewFilesystemRepository(tempDir)
-	if err := repo.Initialize(); err != nil {
-		t.Fatalf("Initialize: %v", err)
-	}
-	svc := application.NewAuditService(repo)
-
-	vel, err := svc.GetVelocity()
-	if err != nil {
-		t.Fatalf("GetVelocity: %v", err)
-	}
-	if vel != 0 {
-		t.Errorf("expected 0 velocity for empty events, got %f", vel)
-	}
-}
-
 // ---- DriftService: AcceptDrift error paths ----
 
 func TestDriftService_AcceptDrift_NoSpec(t *testing.T) {
@@ -565,32 +534,6 @@ func TestSpecService_AddFeature_LoadError(t *testing.T) {
 	_, err := svc.AddFeature("New Feature", "Desc")
 	if err == nil {
 		t.Fatal("expected error when spec cannot be loaded")
-	}
-}
-
-// ---- UsageService: additional coverage ----
-
-// ---- WorkspaceSyncService: Push and Pull with real git repo ----
-
-// ---- EventSourcedAuditService: GetVerificationVelocity ----
-
-func TestEventSourcedAuditService_GetVerificationVelocity(t *testing.T) {
-	tmpDir := t.TempDir()
-	store, err := storage.NewFileEventStore(tmpDir)
-	if err != nil {
-		t.Fatalf("NewFileEventStore: %v", err)
-	}
-	publisher := storage.NewInMemoryEventPublisher()
-
-	svc, err := application.NewEventSourcedAuditService(store, publisher)
-	if err != nil {
-		t.Fatalf("NewEventSourcedAuditService: %v", err)
-	}
-
-	// Initially zero
-	vel := svc.GetVerificationVelocity()
-	if vel != 0 {
-		t.Errorf("expected 0 verification velocity, got %f", vel)
 	}
 }
 

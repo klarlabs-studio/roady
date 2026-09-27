@@ -44,13 +44,13 @@ Requests that produce data Roady stores name the tool that accepts it:
 | Operation | Write back with |
 | --- | --- |
 | `decompose_spec` | `roady capture` / `roady_capture` |
-| `semantic_drift` | `roady_drift_record_semantic` |
+| `semantic_drift` | `roady drift` / `roady_drift` action `record` |
 | `explain_spec`, `review_spec`, `query_project`, `explain_drift` | nothing — for the reader |
 | `suggest_priorities` | nothing — applying them is a plan edit |
 
-Over MCP, `roady_query` and `roady_drift_detect` with `semantic: true` return
-requests. The others are CLI commands: an agent with a model of its own
-rarely needs roady to write its prompt, and a person running `--ai` does.
+Over MCP every builder is an action: `roady_query`, `roady_drift` (`semantic`,
+`explain`), `roady_spec` (`explain`, `review`) and `roady_plan` (`prioritize`,
+`decompose`) return requests the same way the CLI prints them.
 
 ## Policy still applies
 

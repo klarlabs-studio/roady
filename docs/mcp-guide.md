@@ -67,28 +67,43 @@ roady mcp --transport ws --addr :8080
 
 ## Available Tools
 
-The server carries the agent loop and nothing else — ten tools, about 3k
-tokens of every agent's prompt:
+Every CLI command that works on a project has an MCP tool: one tool per CLI
+noun, with the CLI verbs as its `action`. Thirteen tools, about 3k tokens of
+every agent's prompt.
 
-| Tool | Does |
-|------|------|
-| `roady_next` | The task in progress, or the one to start: why it exists (doc:line), what done means, dependencies |
-| `roady_capture` | Record features, requirements and tasks in one write, from one task to a whole plan |
-| `roady_plan_import` | Import a plan file an agent wrote (markdown, Kiro `tasks.md`, Codex ExecPlan) as tasks |
-| `roady_task_transition` | start, complete, block, unblock, stop, reopen, verify |
-| `roady_task_check` | Run a task's acceptance check and record the result |
-| `roady_task_dispatch` | Hand a ready task to a subagent with its intent and completion contract |
-| `roady_status` | Progress and tasks, filterable by ready, blocked, active, status and priority |
-| `roady_query` | Project context for a question, for your model to answer |
-| `roady_drift_detect` | Drift between spec, plan, code and policy; `semantic: true` returns the semantic-drift prompt |
-| `roady_drift_record_semantic` | Record the judgements on that prompt |
+| Tool | Actions (CLI) |
+|------|---------------|
+| `roady_next` | — the task in progress, or the one to start: why it exists (doc:line), what done means, dependencies |
+| `roady_capture` | — features, requirements and tasks in one write, from one task to a whole plan (`roady capture`, `add`, `edit`, `split`, `move`) |
+| `roady_task` | `start` `complete` `block` `unblock` `stop` `reopen` `verify` `check` `dispatch` `list` |
+| `roady_plan` | `get` `generate` `import` `prioritize` `decompose` · **`approve` `reject` `prune`** |
+| `roady_spec` | `get` `add` `explain` `review` `validate` · **`analyze` `import` `lock`** |
+| `roady_drift` | `detect` `explain` `semantic` `record` · **`accept`** |
+| `roady_state` | `get` · **`rebuild`** |
+| `roady_audit` | `verify` `trail` |
+| `roady_policy` | `check` |
+| `roady_git` | `sync` |
+| `roady_status` | — progress and tasks; `snapshot: true` for the task ids in each lifecycle bucket |
+| `roady_query` | — project context for a question, for your model to answer |
+| `roady_init` | — a new project |
 
-Everything else is a CLI command for a person: `roady init`, `roady plan
-approve|reject|prune|generate`, `roady drift accept|explain`, `roady spec
-lock|validate|import|analyze|explain|review`, `roady state rebuild`, `roady
-audit verify|trail`, `roady git sync`, `roady policy check`. In particular an
-agent cannot approve its own plan or accept its own drift — deciding what was
-agreed is not the agent's call.
+### Decisions need the user
+
+The actions in bold are decisions: approving or rejecting a plan, pruning it,
+accepting drift, re-baselining the spec, rebuilding state. An agent may ask
+for them, but they run only when **the user** says yes. Roady asks the user
+directly in their client (MCP elicitation), and the confirmation is recorded
+in the audit log as `approval.confirmed` next to the operation it allowed.
+
+If the user declines or cancels — or the client cannot ask — nothing changes,
+and the agent gets a refusal naming the CLI command (`roady plan approve`) so
+the decision still reaches a person. An agent can never approve its own plan
+or accept its own drift on its own say-so.
+
+`TestEveryCLICommandHasAnMCPTool` walks the CLI and fails when a command has
+no MCP tool or action; `TestGatedActionsNeedTheUser` pins the gate. Host
+commands — `setup`, `hook`, `mcp`, `completion`, `config`, `doctor` — are
+about the machine, not the project, and stay CLI-only.
 
 ---
 
@@ -111,14 +126,20 @@ agreed is not the agent's call.
 }
 ```
 
-### roady_task_transition
+### roady_task
 ```json
 {
+  "action": "start",          // start|complete|block|unblock|stop|reopen|verify|check|dispatch|list
   "task_id": "task-jwt",
-  "event": "start",           // start|complete|block|unblock|stop|reopen|verify
-  "evidence": "commit-sha"    // optional: proof of completion
+  "evidence": "commit-sha"    // complete/verify: proof of completion
 }
 ```
+
+### roady_plan (a gated action)
+```json
+{"action": "approve"}
+```
+The user is asked in their client; the plan is approved only on their yes.
 
 ---
 
@@ -130,15 +151,17 @@ brief = await mcp.call("roady_next")
 
 # Record the plan the agent made (all or nothing, idempotent)
 await mcp.call("roady_capture", {"features": [...], "tasks": [...]})
-# ...a person approves new intent: `roady plan approve`
 
-await mcp.call("roady_task_transition", {"task_id": "task-jwt", "event": "start"})
-# ... implement, commit with [roady:task-jwt], `roady git sync` ...
-await mcp.call("roady_task_check", {"task_id": "task-jwt"})
-await mcp.call("roady_task_transition", {"task_id": "task-jwt", "event": "complete", "evidence": "abc123"})
+await mcp.call("roady_plan", {"action": "approve"})   # the user is asked; runs only on their yes
+
+await mcp.call("roady_task", {"action": "start", "task_id": "task-jwt"})
+# ... implement, commit with [roady:task-jwt] ...
+await mcp.call("roady_git", {"action": "sync"})
+await mcp.call("roady_task", {"action": "check", "task_id": "task-jwt"})
+await mcp.call("roady_task", {"action": "complete", "task_id": "task-jwt", "evidence": "abc123"})
 
 # Has reality diverged from intent?
-drift = await mcp.call("roady_drift_detect")
+drift = await mcp.call("roady_drift", {"action": "detect"})
 ```
 
 ---
@@ -171,9 +194,9 @@ Example event:
 
 1. **Start from `roady_next`** at the beginning of a session and after compaction
 2. **Record new work with `roady_capture`**, never in a markdown file
-3. **Run the acceptance check** (`roady_task_check`) before calling a task done
+3. **Run the acceptance check** (`roady_task` action `check`) before calling a task done
 4. **Provide evidence** when completing tasks, and commit with `[roady:task-id]`
-5. **Leave approval and drift acceptance to a person** — the CLI is where they happen
+5. **Let the user decide** — approval, drift acceptance and re-baselining run only on the user's confirmation
 
 ---
 

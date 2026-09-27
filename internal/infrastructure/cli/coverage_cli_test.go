@@ -267,33 +267,6 @@ func TestCov_TaskReadyCmd_JSON(t *testing.T) {
 // ============================================================================
 
 // ============================================================================
-// services.go - loadServices (66.7%) - need to test the warning path
-// ============================================================================
-
-func TestCov_LoadServices_WithWarning(t *testing.T) {
-	_, cleanup := withTempDir(t)
-	defer cleanup()
-
-	// Initialize but leave incomplete to trigger warning
-	repo := storage.NewFilesystemRepository(".")
-	if err := repo.Initialize(); err != nil {
-		t.Fatalf("init repo: %v", err)
-	}
-
-	output := captureStdout(t, func() {
-		services, err := loadServices(".")
-		// Services should be non-nil even with warnings
-		if err != nil && services == nil {
-			_ = err // Expected for some configs
-		}
-		_ = services
-	})
-
-	// loadServices might print a warning
-	_ = output
-}
-
-// ============================================================================
 // sync_configure.go - installPluginCmd (54.5%)
 // ============================================================================
 

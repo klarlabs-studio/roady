@@ -51,11 +51,11 @@ log as `task.check`, which `roady audit trail` shows as passed, failed, or
 confirmed. A failing check exits non-zero but is a recorded result, not an
 error.
 
-Over MCP: `roady_task_check` runs a `run` check. It cannot confirm a manual one.
+Over MCP: `roady_task` with action `check` runs a `run` check. It cannot confirm a manual one.
 
 ## Verification is gated on the check
 
-`roady task verify <id>` (and `roady_task_transition` with `event: verify`) runs
+`roady task verify <id>` (and `roady_task` with action `verify`) runs
 a `run` check against the code as it is now and refuses to verify if it fails.
 It does not trust an earlier pass: verification is a claim about the current
 state. A `manual` check needs a confirmation already recorded with

@@ -12,19 +12,27 @@ tool is called with plausible arguments, and the result is classified as:
 import json
 import subprocess
 import sys
+import tempfile
 
 PROJECT = "."
 
 # Arguments per tool. Anything absent is called with no args beyond defaults.
+# Noun tools take an action; the validator calls a read-only one for each, so
+# running it leaves the project as it was. Decisions (plan approve, drift
+# accept, ...) ask the user and are covered by the Go tests.
 ARGS = {
-    "roady_task_transition": {"task_id": "task-tasks-create", "event": "start",
-                              "actor": "validator", "session_id": "val-1", "agent": "validator"},
-    "roady_task_check": {"task_id": "task-tasks-create"},
-    "roady_task_dispatch": {"task_id": "task-tasks-create", "agent": "validator", "dry_run": True},
+    "roady_task": {"action": "list"},
+    "roady_plan": {"action": "get"},
+    "roady_spec": {"action": "validate"},
+    "roady_drift": {"action": "detect"},
+    "roady_audit": {"action": "verify"},
+    "roady_state": {"action": "get"},
+    "roady_policy": {"action": "check"},
+    "roady_git": {"action": "sync"},
     "roady_capture": {"dry_run": True, "tasks": []},
-    "roady_plan_import": {"path": "README.md", "dry_run": True},
     "roady_query": {"question": "what is left?"},
-    "roady_drift_record_semantic": {"judgements": []},
+    # init writes a new project, so it gets a directory of its own.
+    "roady_init": {"name": "validator", "project_path": tempfile.mkdtemp(prefix="roady-validate-")},
 }
 
 # Substrings that mean "the environment was not set up for this", not a bug.

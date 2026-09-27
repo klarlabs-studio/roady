@@ -100,20 +100,6 @@ func (s *ExecutionState) AddEvidence(taskID string, evidence string) {
 	s.UpdatedAt = time.Now()
 }
 
-// SetExternalRef sets an external reference for a task.
-func (s *ExecutionState) SetExternalRef(taskID string, provider string, ref ExternalRef) {
-	result := s.TaskStates[taskID]
-	if result.Status == "" {
-		result.Status = StatusPending
-	}
-	if result.ExternalRefs == nil {
-		result.ExternalRefs = make(map[string]ExternalRef)
-	}
-	result.ExternalRefs[provider] = ref
-	s.TaskStates[taskID] = result
-	s.UpdatedAt = time.Now()
-}
-
 // CountByStatus returns the count of tasks with the given status.
 func (s *ExecutionState) CountByStatus(status TaskStatus) int {
 	count := 0

@@ -68,8 +68,10 @@ roady mcp --transport http --addr :8080
 roady mcp --transport ws   --addr :8080
 ```
 
-Ten tools — the agent loop; governance and maintenance are CLI commands. See
-[mcp-guide.md](mcp-guide.md).
+One tool per CLI noun, the verbs as actions, so an agent can do anything the
+CLI can. Decisions — plan approve/reject/prune, drift accept, spec
+lock/import/analyze, state rebuild — run only after the user confirms them in
+their client. See [mcp-guide.md](mcp-guide.md).
 
 ## Architecture
 

@@ -149,8 +149,8 @@ The Model Context Protocol (MCP) server exposes Roady's deterministic state to A
 - **`roady_init`**: Allow agents to scaffold new projects.
 - **`roady_spec_get` / `roady_spec_explain`**: Provide structural and architectural context.
 - **`roady_plan_generate` / `roady_plan_approve`**: Orchestrate the planning lifecycle.
-- **`roady_task_transition`**: Enable agents to "check out" and "check in" work.
-- **`roady_drift_detect` / `roady_drift_explain`**: Empower agents to self-correct and identify misalignments.
+- **`roady_task`**: Enable agents to "check out" and "check in" work.
+- **`roady_drift`** (`detect`, `explain`): Empower agents to self-correct and identify misalignments.
 
 ---
 

@@ -212,31 +212,6 @@ func TestTaskService_Transition_NoPlan(t *testing.T) {
 	}
 }
 
-func TestTaskService_LinkTask(t *testing.T) {
-	repo := &MockRepo{
-		State: &planning.ExecutionState{
-			TaskStates: map[string]planning.TaskResult{
-				"t1": {Status: planning.StatusPending},
-			},
-		},
-	}
-	audit := application.NewAuditService(repo)
-	policy := application.NewPolicyService(repo)
-	service := application.NewTaskService(repo, audit, policy)
-
-	ref := planning.ExternalRef{
-		ID:         "123",
-		Identifier: "EXT-1",
-		URL:        "https://example.com/EXT-1",
-	}
-	if err := service.LinkTask("t1", "jira", ref); err != nil {
-		t.Fatalf("LinkTask failed: %v", err)
-	}
-	if repo.State.TaskStates["t1"].ExternalRefs["jira"].Identifier != "EXT-1" {
-		t.Fatalf("expected external ref to be stored")
-	}
-}
-
 func TestTaskService_StartTask_Context(t *testing.T) {
 	repo := &MockRepo{
 		Plan: &planning.Plan{

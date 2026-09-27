@@ -7,18 +7,7 @@ import (
 	"encoding/json"
 	"sort"
 	"time"
-
-	"github.com/felixgeelhaar/roady/pkg/domain/planning"
 )
-
-// DomainEvent is the base interface for all domain events.
-type DomainEvent interface {
-	EventType() string
-	AggregateID() string
-	AggregateType() string
-	OccurredAt() time.Time
-	Version() int
-}
 
 // BaseEvent provides common fields for all events.
 // Action mirrors Type for backward compatibility with domain.Event JSON format.
@@ -110,171 +99,26 @@ func canonicalJSON(m map[string]interface{}) string {
 	return string(ordered)
 }
 
-// =============================================================================
-// Plan Events
-// =============================================================================
-
-// PlanCreated is emitted when a new plan is generated.
-type PlanCreated struct {
-	BaseEvent
-	PlanID    string `json:"plan_id"`
-	SpecID    string `json:"spec_id"`
-	TaskCount int    `json:"task_count"`
-	Source    string `json:"source"` // "ai" or "manual"
-}
-
-// PlanApproved is emitted when a plan is approved.
-type PlanApproved struct {
-	BaseEvent
-	PlanID   string `json:"plan_id"`
-	Approver string `json:"approver"`
-}
-
-// PlanRejected is emitted when a plan is rejected.
-type PlanRejected struct {
-	BaseEvent
-	PlanID string `json:"plan_id"`
-	Reason string `json:"reason"`
-}
-
-// =============================================================================
-// Task Events
-// =============================================================================
-
-// TaskStarted is emitted when work begins on a task.
-type TaskStarted struct {
-	BaseEvent
-	TaskID string `json:"task_id"`
-	Owner  string `json:"owner"`
-}
-
-// TaskCompleted is emitted when a task is marked as done.
-type TaskCompleted struct {
-	BaseEvent
-	TaskID   string `json:"task_id"`
-	Evidence string `json:"evidence,omitempty"`
-}
-
-// TaskVerified is emitted when a task passes verification.
-type TaskVerified struct {
-	BaseEvent
-	TaskID   string `json:"task_id"`
-	Verifier string `json:"verifier"`
-}
-
-// TaskBlocked is emitted when a task becomes blocked.
-type TaskBlocked struct {
-	BaseEvent
-	TaskID string `json:"task_id"`
-	Reason string `json:"reason"`
-}
-
-// TaskUnblocked is emitted when a blocked task is unblocked.
-type TaskUnblocked struct {
-	BaseEvent
-	TaskID string `json:"task_id"`
-}
-
-// TaskTransitioned is emitted for any status change.
-type TaskTransitioned struct {
-	BaseEvent
-	TaskID     string              `json:"task_id"`
-	FromStatus planning.TaskStatus `json:"from_status"`
-	ToStatus   planning.TaskStatus `json:"to_status"`
-}
-
-// =============================================================================
-// Sync Events
-// =============================================================================
-
-// ExternalRefLinked is emitted when a task is linked to an external system.
-type ExternalRefLinked struct {
-	BaseEvent
-	TaskID     string `json:"task_id"`
-	Provider   string `json:"provider"`
-	ExternalID string `json:"external_id"`
-	URL        string `json:"url,omitempty"`
-}
-
-// SyncCompleted is emitted after a successful sync operation.
-type SyncCompleted struct {
-	BaseEvent
-	Provider     string   `json:"provider"`
-	TasksUpdated []string `json:"tasks_updated"`
-	TasksCreated []string `json:"tasks_created"`
-	Errors       []string `json:"errors,omitempty"`
-}
-
-// =============================================================================
-// Drift Events
-// =============================================================================
-
-// DriftDetected is emitted when drift is found between plan and reality.
-type DriftDetected struct {
-	BaseEvent
-	IssueCount int      `json:"issue_count"`
-	Severities []string `json:"severities"`
-}
-
-// DriftResolved is emitted when drift issues are resolved.
-type DriftResolved struct {
-	BaseEvent
-	ResolvedCount int `json:"resolved_count"`
-}
-
-// =============================================================================
-// File Events
-// =============================================================================
-
-// FileChanged is emitted when a watched file is modified.
-type FileChanged struct {
-	BaseEvent
-	FilePath   string `json:"file_path"`
-	ChangeType string `json:"change_type"` // "create", "write", "remove", "rename"
-}
-
-// =============================================================================
-// Event Type Constants
-// =============================================================================
-
+// Event type names.
 const (
-	EventTypePlanCreated       = "plan.created"
-	EventTypePlanApproved      = "plan.approved"
-	EventTypePlanRejected      = "plan.rejected"
-	EventTypeTaskStarted       = "task.started"
-	EventTypeTaskCompleted     = "task.completed"
-	EventTypeTaskVerified      = "task.verified"
-	EventTypeTaskBlocked       = "task.blocked"
-	EventTypeTaskUnblocked     = "task.unblocked"
-	EventTypeTaskTransitioned  = "task.transitioned"
-	EventTypeExternalRefLinked = "external_ref.linked"
-	EventTypeSyncCompleted     = "sync.completed"
-	EventTypeDriftDetected     = "drift.detected"
-	EventTypeDriftAccepted     = "drift.accepted"
-	EventTypeDriftResolved     = "drift.resolved"
-	EventTypeFileChanged       = "file.changed"
-
-	// EventTypeReportDigest carries a prerendered progress summary out to
-	// notification adapters. It is dispatched on demand, never recorded in
-	// the audit log — a digest reports on history rather than making it.
-	EventTypeReportDigest = "report.digest"
-
-	// Billing events
-	EventTypeRateAdded             = "billing.rate_added"
-	EventTypeRateRemoved           = "billing.rate_removed"
-	EventTypeDefaultRateSet        = "billing.default_rate_set"
-	EventTypeTaxConfigured         = "billing.tax_configured"
-	EventTypeTimeLogged            = "billing.time_logged"
-	EventTypeTaskStarted_Billing   = "billing.task_started"
-	EventTypeTaskCompleted_Billing = "billing.task_completed"
+	EventTypePlanCreated      = "plan.created"
+	EventTypePlanApproved     = "plan.approved"
+	EventTypePlanRejected     = "plan.rejected"
+	EventTypeTaskStarted      = "task.started"
+	EventTypeTaskCompleted    = "task.completed"
+	EventTypeTaskVerified     = "task.verified"
+	EventTypeTaskBlocked      = "task.blocked"
+	EventTypeTaskUnblocked    = "task.unblocked"
+	EventTypeTaskTransitioned = "task.transitioned"
+	EventTypeDriftDetected    = "drift.detected"
+	EventTypeDriftAccepted    = "drift.accepted"
+	EventTypeDriftResolved    = "drift.resolved"
 )
 
 // AggregateTypes
 const (
-	AggregateTypePlan    = "plan"
-	AggregateTypeTask    = "task"
-	AggregateTypeSync    = "sync"
-	AggregateTypeBilling = "billing"
+	AggregateTypePlan = "plan"
+	AggregateTypeTask = "task"
 )
 
 // HashAlgoCurrent is the algorithm new events are stamped with. It matches

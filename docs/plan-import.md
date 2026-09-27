@@ -3,7 +3,7 @@
 Agent harnesses already plan, in markdown: Claude Code's plan mode, Cursor,
 Gemini CLI, Devin, a Codex ExecPlan (`PLANS.md`), Kiro's
 `.kiro/specs/<name>/tasks.md`. Those files are written once and drift out of
-date the moment work starts. `roady plan import` (MCP: `roady_plan_import`)
+date the moment work starts. `roady plan import` (MCP: `roady_plan` with action `import`)
 turns one into roady tasks, where progress is tracked, checked and audited.
 
 ```bash

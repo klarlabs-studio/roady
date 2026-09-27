@@ -6,33 +6,53 @@
 - **Minor** (1.x.0): New optional fields (`omitempty`), new tools, fields deprecated
 - **Major** (x.0.0): Required fields added/removed, tool signatures changed
 
-## v5.0.0 — The agent loop
+## v5.0.0 — One tool per CLI noun
 
-**Major**: tools removed and merged.
+**Major**: per-verb tools replaced by noun tools with an `action`.
+
+### Tools
+
+`roady_task`, `roady_plan`, `roady_spec`, `roady_drift`, `roady_audit`,
+`roady_state`, `roady_policy`, `roady_git` take a required `action` — the CLI
+verb — plus that verb's arguments. `roady_next`, `roady_status`,
+`roady_query`, `roady_capture` and `roady_init` keep their shape. Thirteen
+tools in all; every CLI project command has a tool or action.
+
+| Tool | Actions |
+|------|---------|
+| `roady_task` | start, complete, block, unblock, stop, reopen, verify, check, dispatch, list |
+| `roady_plan` | get, generate, approve, reject, prune, prioritize, decompose, import |
+| `roady_spec` | get, add, analyze, explain, import, lock, review, validate |
+| `roady_drift` | detect, accept, explain, semantic, record |
+| `roady_audit` | verify, trail |
+| `roady_state` | get, rebuild |
+| `roady_policy` | check |
+| `roady_git` | sync |
 
 ### Removed
 
-`roady_init`, `roady_spec_get`, `roady_plan_get`, `roady_state_get`,
-`roady_snapshot_get`, `roady_tasks`, `roady_plan_generate`,
-`roady_plan_update`, `roady_plan_approve`, `roady_plan_reject`,
-`roady_plan_prune`, `roady_plan_prioritize`, `roady_plan_decompose`,
-`roady_spec_add`, `roady_spec_explain`, `roady_spec_review`,
-`roady_spec_validate`, `roady_spec_lock`, `roady_spec_import`,
-`roady_spec_analyze`, `roady_state_rebuild`, `roady_drift_accept`,
-`roady_drift_explain`, `roady_policy_check`, `roady_git_sync`,
-`roady_audit_verify`, `roady_audit_trail`, `roady_semantic_drift`. Each
-remains a CLI command.
+Every per-verb tool: `roady_task_transition`, `roady_task_check`,
+`roady_task_dispatch`, `roady_tasks`, `roady_plan_*`, `roady_spec_*`,
+`roady_drift_detect`, `roady_drift_accept`, `roady_drift_explain`,
+`roady_drift_record_semantic`, `roady_semantic_drift`, `roady_state_*`,
+`roady_snapshot_get` (now `roady_status` with `snapshot: true`),
+`roady_audit_*`, `roady_policy_check`, `roady_git_sync`.
 
 ### Changed
 
-- `roady_drift_detect` takes `semantic` (bool): true returns the
-  semantic-drift request and questions that `roady_semantic_drift` returned.
-  It no longer declares an output schema.
-- `roady_drift_record_semantic` takes `judgements` only; `questions` is gone
-  (roady rebuilds them).
+- Decisions — `plan` approve/reject/prune, `drift` accept, `spec`
+  analyze/import/lock, `state` rebuild — ask the user through MCP
+  elicitation and run only on an explicit yes. A decline, a cancel or a
+  client without elicitation returns an error result naming the CLI command;
+  nothing changes. A confirmation is logged as `approval.confirmed`.
+- `roady_task` takes `event` as `action` and `agent` in place of `actor`.
+- `roady_drift` `record` takes `judgements` only (roady rebuilds the
+  questions, so an invented requirement id is refused).
+- Prompt requests name the noun tool in `write_back`: `roady_capture` for
+  `decompose_spec`, `roady_drift` for `semantic_drift`. A dispatch brief's
+  completion contract names `roady_task` with `action: complete`.
 - No tool carries a `ui://roady/*` resource; the MCP App UIs are removed.
 - `ROADY_MCP_TOOLS` and its groups are gone; every tool is listed.
-- The `decompose_spec` prompt's `write_back` is `roady_capture`.
 
 ## v4.0.0 — Narrowed to capture, keep, prove
 

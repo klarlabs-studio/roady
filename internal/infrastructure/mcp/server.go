@@ -47,6 +47,10 @@ type Server struct {
 	svcCache   sync.Map // map[string]*wiring.AppServices
 	svcCacheMu sync.Mutex
 	svcKeys    []string // insertion-order keys for LRU eviction
+
+	// confirm asks the user to approve a gated operation; nil asks through
+	// MCP elicitation. Tests replace it.
+	confirm confirmFunc
 }
 
 var (
@@ -245,7 +249,7 @@ func NewServer(root string) (*Server, error) {
 	// The server is small enough to list whole; the old profiles are gone.
 	// Say so rather than silently ignoring a setting someone relies on.
 	if v := os.Getenv("ROADY_MCP_TOOLS"); v != "" {
-		fmt.Fprintf(os.Stderr, "roady: ROADY_MCP_TOOLS=%q is ignored; the MCP server now serves only the agent loop\n", v)
+		fmt.Fprintf(os.Stderr, "roady: ROADY_MCP_TOOLS=%q is ignored; every tool is always listed\n", v)
 	}
 
 	s.registerTools()
@@ -256,7 +260,7 @@ func NewServer(root string) (*Server, error) {
 // Args structs for handlers that previously used struct{}
 
 type DetectDriftArgs struct {
-	Semantic    bool   `json:"semantic,omitempty" jsonschema:"description=Instead of structural drift, return the prompt for judging whether implementations still mean what their requirements say; record the judgements with roady_drift_record_semantic"`
+	Semantic    bool   `json:"semantic,omitempty" jsonschema:"description=Instead of structural drift, return the prompt for judging whether implementations still mean what their requirements say; record the judgements with roady_drift action record"`
 	ProjectPath string `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
 	Project     string `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
@@ -272,53 +276,58 @@ type DispatchTaskArgs struct {
 }
 
 func (s *Server) registerTools() {
-	// Tool: roady_drift_detect
-	s.tool("roady_drift_detect").
-		Description("Detect drift between spec, plan, code and policy. With semantic, return the prompt for judging whether implementations still mean what their requirements say.").
-		Handler(s.handleDetectDrift)
-
-	// Tool: roady_status
-	s.tool("roady_status").
-		Description("Project progress and tasks, filterable by ready, blocked, active, status and priority.").
-		Handler(s.handleStatus)
-
-	// Tool: roady_task_transition
-	s.tool("roady_task_transition").
-		Description("Move a task: start, complete, block, unblock, stop, reopen, verify (verify re-runs the acceptance check and refuses on failure).").
-		Handler(s.handleTransitionTask)
-
+	// One tool per CLI noun; actions are the CLI's verbs (see nouns.go).
 	s.tool("roady_next").
 		Description("The task you are on, or the next to start: why it exists (doc:line), what done means, last check, dependencies, what it unblocks. Read at session start and after compaction.").
 		Handler(s.handleNext)
 
 	s.tool("roady_capture").
-		Description("Record features, requirements and tasks, one or many, upserted by id (omitted fields keep their value). A requirement gets task-<id>. All or nothing; each rejection is returned. dry_run previews.").
+		Description("Record features, requirements and tasks, one or many, upserted by id (omitted fields keep their value). A requirement gets task-<id>. All or nothing; each rejection is returned. dry_run previews. The CLI's add, edit, split and move are shortcuts for this.").
 		Handler(s.handleCapture)
 
-	s.tool("roady_plan_import").
-		Description("Import a plan file (markdown, Kiro tasks.md, Codex ExecPlan) as tasks citing file:line, chained in order unless parallel. Without feature_id the plan becomes a feature. Re-importing updates the same tasks.").
-		Handler(s.handlePlanImport)
+	s.tool("roady_task").
+		Description("roady task: start, complete, block, unblock, stop, reopen, verify (re-runs the acceptance check), check (run it and record the result), dispatch (hand to a subagent), list.").
+		Handler(s.handleTask)
 
-	s.tool("roady_task_check").
-		Description("Run a task's acceptance check and record the result (passed, exit code, commit, output). A failing check is a result, not an error.").
-		Handler(s.handleTaskCheck)
+	s.tool("roady_plan").
+		Description("roady plan: get, generate, import (a plan file an agent wrote), prioritize and decompose (prompts for your model); approve, reject and prune happen only if the user confirms.").
+		Handler(s.handlePlan)
 
-	// Semantic drift: the question the structural detectors cannot ask.
-	// roady_drift_detect (semantic) frames it; the caller's model answers it.
-	s.tool("roady_drift_record_semantic").
-		Description("Record judgements on roady_drift_detect's semantic prompt. Divergences become drift issues; agreement records nothing.").
-		Handler(s.handleRecordSemanticDrift)
+	s.tool("roady_spec").
+		Description("roady spec: get, add, explain and review (prompts), validate; analyze, import and lock happen only if the user confirms.").
+		Handler(s.handleSpec)
 
-	// Tool: roady_task_dispatch
-	s.tool("roady_task_dispatch").
-		Description("Hand a ready task to a subagent: its requirement, doc:line, what done means, and the call that records completion. Claims the task unless dry_run.").
-		Handler(s.handleDispatchTask)
+	s.tool("roady_drift").
+		Description("roady drift: detect, explain, semantic (prompt for whether implementations still mean their requirements), record (the judgements on it); accept happens only if the user confirms.").
+		Handler(s.handleDrift)
 
-	// Tool: roady_query (v0.8.0)
+	s.tool("roady_status").
+		Description("Project progress and tasks, filterable by ready, blocked, active, status and priority.").
+		Handler(s.handleStatus)
+
 	s.tool("roady_query").
-		Description("Ask a natural language question about the project and get an AI-generated answer").
+		Description("Project context for a question, returned as a prompt for your model.").
 		Handler(s.handleQuery)
 
+	s.tool("roady_audit").
+		Description("roady audit: verify (hash chain and the committed baseline), trail (evidence for a task, agent or session).").
+		Handler(s.handleAudit)
+
+	s.tool("roady_state").
+		Description("roady state: get; rebuild (from the event log) happens only if the user confirms.").
+		Handler(s.handleState)
+
+	s.tool("roady_policy").
+		Description("roady policy check: does the plan comply with policy (WIP limits, evidence).").
+		Handler(s.handlePolicy)
+
+	s.tool("roady_git").
+		Description("roady git sync: move tasks forward from [roady:<task-id>] commit markers.").
+		Handler(s.handleGit)
+
+	s.tool("roady_init").
+		Description("roady init: create a roady project in the server root.").
+		Handler(s.handleInit)
 }
 
 // rootFor resolves the project directory a tool call addresses, mirroring
@@ -444,6 +453,7 @@ type StatusArgs struct {
 	Active      FlexBool `json:"active,omitempty" jsonschema:"description=Only in-progress tasks"`
 	Limit       FlexInt  `json:"limit,omitempty" jsonschema:"description=Maximum tasks returned"`
 	JSON        FlexBool `json:"json,omitempty" jsonschema:"description=Structured output instead of text"`
+	Snapshot    FlexBool `json:"snapshot,omitempty" jsonschema:"description=Progress and task ids by lifecycle stage instead of the task list"`
 	ProjectPath string   `json:"project_path,omitempty" jsonschema:"description=Project directory (default: server root)"`
 	Project     string   `json:"project,omitempty" jsonschema:"description=Sub-project in .roady/projects (default: root)"`
 }
@@ -495,6 +505,9 @@ func (s *Server) handleDetectDrift(ctx context.Context, args DetectDriftArgs) (a
 }
 
 func (s *Server) handleStatus(ctx context.Context, args StatusArgs) (any, error) {
+	if args.Snapshot {
+		return s.handleGetSnapshot(ctx, GetSnapshotArgs{ProjectPath: args.ProjectPath, Project: args.Project})
+	}
 	svc, err := s.servicesForPath(args.ProjectPath, args.Project)
 	if err != nil {
 		return mcpErrCause("Failed to load project at the given path.", err), nil

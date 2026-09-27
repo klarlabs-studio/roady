@@ -356,3 +356,25 @@ func TestClient_AgentLoopCalls(t *testing.T) {
 		}
 	}
 }
+
+func TestClient_NounMethods(t *testing.T) {
+	ctx := context.Background()
+	calls := map[string]func(c *Client) (string, error){
+		"Task":        func(c *Client) (string, error) { return c.Task(ctx, "list", nil) },
+		"Plan":        func(c *Client) (string, error) { return c.Plan(ctx, "get", nil) },
+		"Spec":        func(c *Client) (string, error) { return c.Spec(ctx, "get", nil) },
+		"Drift":       func(c *Client) (string, error) { return c.Drift(ctx, "detect", nil) },
+		"Audit":       func(c *Client) (string, error) { return c.Audit(ctx, "verify", map[string]any{"baseline": "HEAD"}) },
+		"State":       func(c *Client) (string, error) { return c.State(ctx, "get", nil) },
+		"PolicyCheck": func(c *Client) (string, error) { return c.PolicyCheck(ctx) },
+		"GitSync":     func(c *Client) (string, error) { return c.GitSync(ctx) },
+		"Init":        func(c *Client) (string, error) { return c.Init(ctx, "demo") },
+	}
+	for name, call := range calls {
+		mt := newMockTransport()
+		mt.setToolResponse(`{"ok":true}`, false)
+		if out, err := call(newTestClient(t, mt)); err != nil || out == "" {
+			t.Errorf("%s: %q %v", name, out, err)
+		}
+	}
+}

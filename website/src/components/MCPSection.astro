@@ -1,7 +1,7 @@
 ---
 // MCP Integration Section.
 //
-// Tool list mirrors the server's ten tools: the agent loop.
+// Tool list mirrors the server: one tool per CLI noun, verbs as actions.
 ---
 
 <section id="mcp" class="py-24 bg-gradient-to-b from-[#0B0E14] to-violet-900/10">
@@ -12,8 +12,8 @@
       </span>
       <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">Native to Claude Code, Codex, Cursor, Gemini</h2>
       <p class="text-gray-400 max-w-2xl mx-auto">
-        Your agent gets the loop as ten MCP tools and reads and writes the same
-        plan-of-record you see in <code class="mono text-violet-400">roady status</code>. Approving plans and accepting drift stay with you, on the CLI.
+        Your agent can do everything the CLI can — one MCP tool per CLI noun — and reads and writes the same
+        plan-of-record you see in <code class="mono text-violet-400">roady status</code>. Approving plans and accepting drift stay with you: your client asks, and nothing happens without your yes.
         One <code class="mono text-violet-400">roady setup</code> command per supported tool installs the MCP server and session hooks.
       </p>
     </div>
@@ -36,16 +36,20 @@
               <p class="text-xs text-gray-500 mt-1">Record intent of any size in one write</p>
             </div>
             <div class="px-3 py-2 bg-black/30 rounded-lg">
-              <code class="text-violet-300 mono">roady_plan_import</code>
-              <p class="text-xs text-gray-500 mt-1">Turn an agent's plan file into tasks</p>
+              <code class="text-violet-300 mono">roady_task</code>
+              <p class="text-xs text-gray-500 mt-1">start · complete · check · verify · dispatch · list</p>
             </div>
             <div class="px-3 py-2 bg-black/30 rounded-lg">
-              <code class="text-violet-300 mono">roady_task_transition</code>
-              <p class="text-xs text-gray-500 mt-1">Start / complete / block / verify</p>
+              <code class="text-violet-300 mono">roady_plan</code>
+              <p class="text-xs text-gray-500 mt-1">import · generate · decompose · approve*</p>
             </div>
             <div class="px-3 py-2 bg-black/30 rounded-lg">
-              <code class="text-violet-300 mono">roady_task_check</code>
-              <p class="text-xs text-gray-500 mt-1">Run a task's acceptance check</p>
+              <code class="text-violet-300 mono">roady_spec</code>
+              <p class="text-xs text-gray-500 mt-1">add · explain · review · lock*</p>
+            </div>
+            <div class="px-3 py-2 bg-black/30 rounded-lg">
+              <code class="text-violet-300 mono">roady_drift</code>
+              <p class="text-xs text-gray-500 mt-1">detect · semantic · explain · accept*</p>
             </div>
             <div class="px-3 py-2 bg-black/30 rounded-lg">
               <code class="text-violet-300 mono">roady_status</code>
@@ -56,16 +60,16 @@
               <p class="text-xs text-gray-500 mt-1">Question over project state</p>
             </div>
             <div class="px-3 py-2 bg-black/30 rounded-lg">
-              <code class="text-violet-300 mono">roady_task_dispatch</code>
-              <p class="text-xs text-gray-500 mt-1">Hand a task to a subagent</p>
+              <code class="text-violet-300 mono">roady_audit</code>
+              <p class="text-xs text-gray-500 mt-1">verify · trail</p>
             </div>
             <div class="px-3 py-2 bg-black/30 rounded-lg">
-              <code class="text-violet-300 mono">roady_drift_detect</code>
-              <p class="text-xs text-gray-500 mt-1">Has reality diverged from intent?</p>
+              <code class="text-violet-300 mono">roady_state · roady_git · roady_policy</code>
+              <p class="text-xs text-gray-500 mt-1">get · rebuild* / sync / check</p>
             </div>
           </div>
           <p class="text-xs text-gray-500 mt-4">
-            Plus <code class="mono text-violet-400">roady_drift_record_semantic</code> for semantic-drift judgements. That is the whole server: about 3k tokens of your agent's prompt.
+            * A decision: it runs only after you confirm it in your client. Thirteen tools, about 3k tokens of your agent's prompt.
           </p>
         </div>
 

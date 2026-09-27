@@ -421,8 +421,8 @@ func (s *PromptService) SemanticDrift(_ context.Context) (*prompt.Request, []dri
 		Prompt: b.String(),
 		ExpectedFormat: `A JSON array of judgements: ` +
 			`[{"requirement_id": "...", "agrees": true|false, "explanation": "required when agrees is false"}]`,
-		WriteBack: "roady_drift_record_semantic",
-		Guidance: "Run this yourself against the working tree, then send the judgements to roady_drift_record_semantic. " +
+		WriteBack: "roady_drift",
+		Guidance: "Run this yourself against the working tree, then send the judgements to roady_drift with action record. " +
 			"Divergences become drift issues; agreement records nothing.",
 	}, questions, nil
 }

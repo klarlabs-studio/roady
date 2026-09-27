@@ -50,14 +50,14 @@ type TransitionRequest struct {
 
 // TransitionTaskTyped transitions a task using a typed request.
 func (c *Client) TransitionTaskTyped(ctx context.Context, req TransitionRequest) (string, error) {
-	args := map[string]any{"task_id": req.TaskID, "event": req.Event}
+	args := map[string]any{"action": req.Event, "task_id": req.TaskID}
 	if req.Evidence != "" {
 		args["evidence"] = req.Evidence
 	}
 	if req.Actor != "" {
-		args["actor"] = req.Actor
+		args["agent"] = req.Actor
 	}
-	res, err := c.call(ctx, "roady_task_transition", args)
+	res, err := c.call(ctx, "roady_task", args)
 	if err != nil {
 		return "", err
 	}
