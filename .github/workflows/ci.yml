@@ -8,12 +8,11 @@ on:
       - '**.md'
       - 'docs/**'
       - 'LICENSE'
+  # No paths-ignore here: lint, build and Security (nox) are required checks,
+  # and a PR that skips them can never merge. A changelog-only release PR
+  # (v0.27.2) sat blocked with no checks at all.
   pull_request:
     branches: [ main ]
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - 'LICENSE'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
