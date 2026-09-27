@@ -235,6 +235,8 @@ goals:
       description: |
         Dogfooding on nexa (2026-09-27): roady was abandoned in June for a markdown memory system (roadmap.md Now/Next/Later, an append-only decisions log, open threads with block reasons). What was left in .roady had 89 tasks titled "done", 36 orphans from renamed features and 140 unverified completions. Adopting roady in such a project has to be cheaper than keeping the markdown.
       horizon: now
+      status: shipped
+      milestone: v0.26.0
 decisions:
     - id: decision-shared-state
       title: Where execution state lives
