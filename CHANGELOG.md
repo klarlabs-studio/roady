@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.26.0] - 2026-09-27
+
 Adopting roady in a project that already has history. Found by running
 v0.25.0 against a project that had stopped using roady for markdown notes.
 
@@ -1593,7 +1595,8 @@ See [GitHub release notes](https://github.com/felixgeelhaar/roady/releases/tag/v
 - Resilience via `fortify` integration for filesystem retries
 - State management via `statekit` FSM for task transitions
 
-[Unreleased]: https://github.com/felixgeelhaar/roady/compare/v0.25.0...HEAD
+[Unreleased]: https://github.com/felixgeelhaar/roady/compare/v0.26.0...HEAD
+[0.26.0]: https://github.com/felixgeelhaar/roady/compare/v0.25.0...v0.26.0
 [0.25.0]: https://github.com/felixgeelhaar/roady/compare/v0.24.0...v0.25.0
 [0.24.0]: https://github.com/felixgeelhaar/roady/compare/v0.23.0...v0.24.0
 [0.10.0]: https://github.com/felixgeelhaar/roady/compare/v0.9.2...v0.10.0

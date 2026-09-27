@@ -1,4 +1,4 @@
-<!-- roady:roadmap sha256=4de5809104458f67666bd099c36a5960ce22ba129045f298ca599c35fd49b46d — generated from .roady/spec.yaml by `roady goal render`. Change goals with `roady goal`, not this file. -->
+<!-- roady:roadmap sha256=e63b6cb47ea11f7f754532653325d5d2ab8d9b03013ebf8fcc49f841fbfdd0cd — generated from .roady/spec.yaml by `roady goal render`. Change goals with `roady goal`, not this file. -->
 # Roadmap
 
 ## Now
@@ -10,12 +10,6 @@ Roady is the plan an AI agent works from and the proof it did: capture intent at
 The most useful input is field use: v0.18.0 came entirely from one person running Roady on a real 118-feature project for a day.
 
 Features: MCP surface is learnable, trimmable and honest (`mcp-surface`), Trust: done means proven (`trust`), Capture: intent at whatever size it arrives (`capture`), Keep: continuity across sessions, compaction and parallel agents (`keep`), Focus and proof of adoption (`focus`)
-
-### Adopt roady where planning already lives elsewhere
-
-Dogfooding on nexa (2026-09-27): roady was abandoned in June for a markdown memory system (roadmap.md Now/Next/Later, an append-only decisions log, open threads with block reasons). What was left in .roady had 89 tasks titled "done", 36 orphans from renamed features and 140 unverified completions. Adopting roady in such a project has to be cheaper than keeping the markdown.
-
-Features: Adopting roady in a lived-in project (`adoption`)
 
 ## Later
 
@@ -33,6 +27,12 @@ Open-core boundary for a hosted product, no committed date. Intended scope:
 What stays open and free, forever: the full CLI and MCP server, and the `.roady/` file format. If Cloud lands, opting in is a `roady cloud login` away; opting out is the existing local workflow with no behavioural change.
 
 ## Shipped
+
+### Adopt roady where planning already lives elsewhere (v0.26.0)
+
+Dogfooding on nexa (2026-09-27): roady was abandoned in June for a markdown memory system (roadmap.md Now/Next/Later, an append-only decisions log, open threads with block reasons). What was left in .roady had 89 tasks titled "done", 36 orphans from renamed features and 140 unverified completions. Adopting roady in such a project has to be cheaper than keeping the markdown.
+
+Features: Adopting roady in a lived-in project (`adoption`)
 
 ### The planning tool for AI (v0.25.0)
 
