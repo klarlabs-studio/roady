@@ -79,9 +79,17 @@ func TitleLinkedTasks(sp *spec.ProductSpec, plan *planning.Plan) map[string]stri
 	return out
 }
 
+// planRewriter is a store that can save a plan without stamping it as
+// updated, for corrections that do not change what the plan describes.
+type planRewriter interface {
+	RewritePlan(*planning.Plan) error
+}
+
 // RepairFeatureLinks points title-linked tasks at their feature ids and
 // returns what it changed. The feature each task serves is the same before
-// and after, so the plan keeps its approval.
+// and after, so the plan keeps its approval and its updated_at: a repair is
+// not a sign the plan still describes the work, and drift's staleness check
+// must not read it as one.
 func (s *PlanService) RepairFeatureLinks() (map[string]string, error) {
 	sp, err := s.repo.LoadSpec()
 	if err != nil {
@@ -100,7 +108,11 @@ func (s *PlanService) RepairFeatureLinks() (map[string]string, error) {
 			plan.Tasks[i].FeatureID = id
 		}
 	}
-	if err := s.repo.SavePlan(plan); err != nil {
+	save := s.repo.SavePlan
+	if rw, ok := s.repo.(planRewriter); ok {
+		save = rw.RewritePlan
+	}
+	if err := save(plan); err != nil {
 		return nil, fmt.Errorf("save plan: %w", err)
 	}
 	if err := s.audit.Log("plan.links_repaired", "cli", map[string]any{

@@ -27,6 +27,7 @@ func TestRepairTitleLinksKeepsApproval(t *testing.T) {
 		{ID: "c", Title: "C", FeatureID: "Gone"},
 	}})
 	svc := application.NewPlanService(repo, application.NewAuditService(repo))
+	before, _ := repo.LoadPlan()
 
 	fixes, err := svc.RepairFeatureLinks()
 	if err != nil {
@@ -44,6 +45,9 @@ func TestRepairTitleLinksKeepsApproval(t *testing.T) {
 	}
 	if plan.ApprovalStatus != planning.ApprovalApproved {
 		t.Errorf("approval %s after a link repair", plan.ApprovalStatus)
+	}
+	if !plan.UpdatedAt.Equal(before.UpdatedAt) {
+		t.Errorf("updated_at moved from %s to %s: a repair would hide the plan's staleness", before.UpdatedAt, plan.UpdatedAt)
 	}
 	events, _ := repo.LoadEvents()
 	if len(events) == 0 || events[len(events)-1].Action != "plan.links_repaired" {

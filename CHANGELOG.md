@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `roady doctor --fix` no longer marks the plan as updated. Repairing
+  feature links changes nothing the plan describes, but the write stamped
+  `updated_at`, and drift reads that stamp as "the plan is current": on
+  mcp-go it hid 79 days and 71 commits of staleness.
+
 ## [0.27.1] - 2026-09-27
 
 Found by trying roady on mcp-go, a second project that had used it and
