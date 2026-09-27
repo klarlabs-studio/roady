@@ -1,6 +1,6 @@
 {
   "project_id": "agent-handoff",
-  "version": 462,
+  "version": 465,
   "task_states": {
     "task-acceptance-checks": {
       "status": "verified",
@@ -1768,7 +1768,7 @@
       "elapsed_minutes": 0
     },
     "task-roadmap-path-policy": {
-      "status": "done",
+      "status": "verified",
       "path": "",
       "owner": "Claude",
       "evidence": [
@@ -1799,6 +1799,28 @@
           "at": "2026-09-27T18:00:36.502928825+02:00",
           "duration": "24ms",
           "output": "go: downloading go1.26.7 (linux/amd64)\ngo: download go1.26.7: golang.org/toolchain@v0.0.1-go1.26.7.linux-amd64: reading https://proxy.golang.org/golang.org/toolchain/@v/v0.0.1-go1.26.7.linux-amd64.zip: 403 Forbidden\n\tserver response: Host not in allowlist: proxy.golang.org. Add this host to your network egress settings to allow access.\n"
+        },
+        {
+          "kind": "run",
+          "command": "go test ./pkg/application/ ./internal/infrastructure/wiring/ -run TestRoadmapPathFromPolicy -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "b7c685366a3919362c645311600c06459db90485",
+          "by": "Claude",
+          "at": "2026-09-27T18:00:44.914625611+02:00",
+          "duration": "327ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.004s [no tests to run]\nok  \tgithub.com/felixgeelhaar/roady/internal/infrastructure/wiring\t0.008s\n"
+        },
+        {
+          "kind": "run",
+          "command": "go test ./pkg/application/ ./internal/infrastructure/wiring/ -run TestRoadmapPathFromPolicy -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "b7c685366a3919362c645311600c06459db90485",
+          "by": "Claude",
+          "at": "2026-09-27T18:00:45.267696842+02:00",
+          "duration": "344ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.005s [no tests to run]\nok  \tgithub.com/felixgeelhaar/roady/internal/infrastructure/wiring\t0.008s\n"
         }
       ]
     },
@@ -2389,5 +2411,5 @@
       "elapsed_minutes": 4
     }
   },
-  "updated_at": "2026-09-27T18:00:36.40783034+02:00"
+  "updated_at": "2026-09-27T18:00:45.624479314+02:00"
 }
