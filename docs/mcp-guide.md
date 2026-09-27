@@ -68,19 +68,20 @@ roady mcp --transport ws --addr :8080
 ## Available Tools
 
 Every CLI command that works on a project has an MCP tool: one tool per CLI
-noun, with the CLI verbs as its `action`. Thirteen tools, about 3k tokens of
+noun, with the CLI verbs as its `action`. Fourteen tools, under 4k tokens of
 every agent's prompt.
 
 | Tool | Actions (CLI) |
 |------|---------------|
 | `roady_next` | — the task in progress, or the one to start: why it exists (doc:line), what done means, dependencies |
-| `roady_capture` | — features, requirements and tasks in one write, from one task to a whole plan (`roady capture`, `add`, `edit`, `split`, `move`) |
+| `roady_capture` | — goals, features, requirements and tasks in one write, from one task to a whole plan (`roady capture`, `add`, `edit`, `split`, `move`) |
 | `roady_task` | `start` `complete` `block` `unblock` `stop` `reopen` `verify` `check` `dispatch` `list` |
 | `roady_plan` | `get` `generate` `import` `prioritize` `decompose` · **`approve` `reject` `prune`** |
 | `roady_spec` | `get` `add` `explain` `review` `validate` · **`analyze` `import` `lock`** |
 | `roady_drift` | `detect` `explain` `semantic` `record` · **`accept`** |
 | `roady_state` | `get` · **`rebuild`** |
 | `roady_audit` | `verify` `trail` |
+| `roady_goal` | `list` `add` `edit` — the roadmap: goals on now, next or later, shipped or out of scope, with the features serving them |
 | `roady_policy` | `check` |
 | `roady_git` | `sync` |
 | `roady_status` | — progress and tasks; `snapshot: true` for the task ids in each lifecycle bucket |

@@ -8,6 +8,8 @@ import (
 	"testing"
 
 	"github.com/felixgeelhaar/roady/pkg/storage"
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 // runRoady executes the root command with args and returns what it printed.
@@ -22,6 +24,11 @@ func runRoady(t *testing.T, stdin string, args ...string) (string, error) {
 	addAfter, addBefore, addCheckRun, addCheckManual = nil, nil, "", ""
 	splitSequential = false
 	moveReq, moveFeature = "", ""
+	goalID, goalDesc, goalHorizon, goalStatus, goalMilestone, goalTitle = "", "", "", "", "", ""
+	goalFeatures, goalListJSON = nil, false
+	for _, c := range []*cobra.Command{goalAddCmd, goalEditCmd, goalListCmd} {
+		c.Flags().VisitAll(func(f *pflag.Flag) { f.Changed = false })
+	}
 	var err error
 	out := captureStdout(t, func() {
 		RootCmd.SetIn(strings.NewReader(stdin))
@@ -159,5 +166,45 @@ func TestSetupAllTargets(t *testing.T) {
 	setupNoInstructions = false
 	if _, err := runRoady(t, "", "setup", "nope"); err == nil {
 		t.Error("an unknown target must be an error")
+	}
+}
+
+// The roadmap from the terminal: add goals at each horizon, link a feature,
+// move a goal, ship one, and read it back.
+func TestGoalCommands(t *testing.T) {
+	_, cleanup := withPlainTempDir(t)
+	defer cleanup()
+	t.Setenv("ROADY_USER", "tester")
+	if _, err := runRoady(t, "", "init", "roadmap"); err != nil {
+		t.Fatalf("init: %v", err)
+	}
+	doc := "features:\n  - id: sync\n    title: Sync\n"
+	if _, err := runRoady(t, doc, "capture"); err != nil {
+		t.Fatalf("capture: %v", err)
+	}
+	for _, args := range [][]string{
+		{"goal", "add", "Offline mode", "--horizon", "next", "--feature", "sync"},
+		{"goal", "add", "Plugin marketplace", "--status", "idea", "--horizon", "later"},
+		{"goal", "add", "Jira parity", "--status", "out-of-scope"},
+		{"goal", "edit", "goal-offline-mode", "--horizon", "now", "--milestone", "v2"},
+	} {
+		if out, err := runRoady(t, "", args...); err != nil {
+			t.Fatalf("%v: %v\n%s", args, err, out)
+		}
+	}
+	out, err := runRoady(t, "", "goal", "list")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"Now\n  goal-offline-mode  Offline mode  (v2", "features: sync", "Later\n  goal-plugin-marketplace", "Out of scope\n  goal-jira-parity"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("goal list lacks %q:\n%s", want, out)
+		}
+	}
+	if out, err = runRoady(t, "", "goal", "list", "--json"); err != nil || !strings.Contains(out, `"name": "Now"`) {
+		t.Errorf("goal list --json: %v\n%s", err, out)
+	}
+	if _, err = runRoady(t, "", "goal", "edit", "goal-nope", "--horizon", "now"); err == nil {
+		t.Error("editing a missing goal should fail")
 	}
 }

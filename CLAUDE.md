@@ -80,7 +80,8 @@ is pinned.
 ### Data Storage (.roady/)
 
 All artifacts are git-friendly files:
-- `spec.yaml` - Product specification (features, requirements)
+- `spec.yaml` - Product specification (goals, features, requirements). Goals
+  are the roadmap (`roady goal`); ROADMAP.md content belongs there
 - `spec.lock.json` - Pinned spec snapshot for drift detection
 - `plan.json` - Task DAG with approval status
 - `state.json` - Execution state (task statuses, paths)
@@ -136,7 +137,7 @@ roady mcp --transport ws --addr :8080
 
 Every CLI command that works on a project has an MCP tool: one per noun
 (`roady_task`, `roady_plan`, `roady_spec`, `roady_drift`, `roady_audit`,
-`roady_state`, `roady_policy`, `roady_git`) with the CLI verbs as its
+`roady_state`, `roady_policy`, `roady_git`, `roady_goal`) with the CLI verbs as its
 `action`, plus `roady_next`, `roady_status`, `roady_query`, `roady_capture`
 and `roady_init`. `NounActions` in `mcp/nouns.go` is the single table.
 `TestEveryCLICommandHasAnMCPTool` (cli package) walks the command tree and
@@ -238,7 +239,7 @@ See `.claude/commands/` for pre-configured Claude Code commands:
 
 For projects with Roady MCP configured, the agent works through `roady_next`,
 `roady_capture` and `roady_task` (`start`, `check`, `complete`); see
-`docs/mcp-guide.md` for all thirteen tools.
+`docs/mcp-guide.md` for all fourteen tools.
 
 Roady's MCP server works with Claude Code, OpenCode, Claude Desktop, OpenAI Codex, and Google Gemini. Use `roady setup <platform>` to configure.
 

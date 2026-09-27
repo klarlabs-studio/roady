@@ -16,6 +16,10 @@ removed; git history has them.
 - `roady capture` records features, requirements and tasks in one write, from
   a single task to a whole plan ([capture.md](capture.md)). `roady add`,
   `edit`, `split` and `move` do the same for one task at a time.
+- `roady goal` keeps the roadmap: goals on now, next or later (or just
+  ideas), shipped goals with their milestone, and what is out of scope.
+  Features link to the goal they serve; `roady goal list` shows each goal's
+  progress. Goals order work, so moving one never reopens the plan's approval.
 - `roady plan import <file>` turns a plan an agent already wrote — Claude
   Code plan mode, Kiro `tasks.md`, a Codex ExecPlan, any markdown plan — into
   tasks ([plan-import.md](plan-import.md)).

@@ -15,7 +15,7 @@ import (
 
 // The surface is one tool per CLI noun, plus the single-verb commands.
 var surface = []string{
-	"roady_audit", "roady_capture", "roady_drift", "roady_git", "roady_init", "roady_next",
+	"roady_audit", "roady_capture", "roady_drift", "roady_git", "roady_goal", "roady_init", "roady_next",
 	"roady_plan", "roady_policy", "roady_query", "roady_spec", "roady_state", "roady_status", "roady_task",
 }
 
@@ -56,6 +56,9 @@ func TestEveryNounActionDispatches(t *testing.T) {
 		"roady_state":  func(a string) (any, error) { return server.handleState(ctx, StateArgs{Action: a}) },
 		"roady_policy": func(a string) (any, error) { return server.handlePolicy(ctx, VerbArgs{Action: a}) },
 		"roady_git":    func(a string) (any, error) { return server.handleGit(ctx, VerbArgs{Action: a}) },
+		"roady_goal": func(a string) (any, error) {
+			return server.handleGoal(ctx, GoalArgs{Action: a, GoalID: "goal-x", DryRun: true})
+		},
 	}
 	for tool, actions := range NounActions {
 		for _, action := range append(actions, "no-such-action") {
@@ -170,4 +173,34 @@ func resultText(res any) string {
 	}
 	raw, _ := json.Marshal(res)
 	return string(raw)
+}
+
+// Goals go through capture: an agent can put work on the roadmap, move it
+// between horizons and link features, and list the result.
+func TestGoalToolRecordsTheRoadmap(t *testing.T) {
+	server := setupCoordinatorTestServer(t)
+	ctx := context.Background()
+	str := func(s string) *string { return &s }
+
+	res, _ := server.handleGoal(ctx, GoalArgs{Action: "add", Title: str("Offline mode"), Horizon: str("next")})
+	if isToolError(res) {
+		t.Fatalf("add: %s", resultText(res))
+	}
+	res, _ = server.handleGoal(ctx, GoalArgs{Action: "edit", GoalID: "goal-offline-mode", Horizon: str("sideways")})
+	if !strings.Contains(resultText(res), "unknown horizon") {
+		t.Errorf("a bad horizon should be rejected: %s", resultText(res))
+	}
+	res, _ = server.handleGoal(ctx, GoalArgs{Action: "edit", GoalID: "goal-offline-mode", Horizon: str("now")})
+	if isToolError(res) {
+		t.Fatalf("edit: %s", resultText(res))
+	}
+	res, _ = server.handleGoal(ctx, GoalArgs{Action: "edit", GoalID: "goal-nope", Horizon: str("now")})
+	if !isToolError(res) {
+		t.Errorf("editing a goal that does not exist should fail: %s", resultText(res))
+	}
+	res, _ = server.handleGoal(ctx, GoalArgs{Action: "list"})
+	b, _ := json.Marshal(res)
+	if !strings.Contains(string(b), `"name":"Now"`) || !strings.Contains(string(b), "goal-offline-mode") {
+		t.Errorf("list = %s", b)
+	}
 }

@@ -9,9 +9,11 @@ import (
 
 // ProductSpec represents the top-level specification of what is being built.
 type ProductSpec struct {
-	ID          string       `json:"id" yaml:"id"`
-	Title       string       `json:"title" yaml:"title"`
-	Description string       `json:"description" yaml:"description"`
+	ID          string `json:"id" yaml:"id"`
+	Title       string `json:"title" yaml:"title"`
+	Description string `json:"description" yaml:"description"`
+	// Goals are the roadmap: outcomes with a horizon, which features link to.
+	Goals       []Goal       `json:"goals,omitempty" yaml:"goals,omitempty"`
 	Features    []Feature    `json:"features" yaml:"features"`
 	Constraints []Constraint `json:"constraints" yaml:"constraints"`
 	Version     string       `json:"version" yaml:"version"`
@@ -62,6 +64,8 @@ type Feature struct {
 	Description  string        `json:"description" yaml:"description"`
 	Requirements []Requirement `json:"requirements" yaml:"requirements"`
 	Source       Source        `json:"source,omitempty" yaml:"source,omitempty"`
+	// Goal is the ID of the goal this feature serves. Optional.
+	Goal string `json:"goal,omitempty" yaml:"goal,omitempty"`
 }
 
 // Requirement represents a granular condition that a feature must satisfy.
@@ -76,6 +80,8 @@ type Requirement struct {
 	// Check states how the requirement is shown to be met: a command (run)
 	// or a named manual check (manual). Copied onto the task at planning.
 	Check *Check `json:"check,omitempty" yaml:"check,omitempty"`
+	// Goal links the requirement to a goal other than its feature's.
+	Goal string `json:"goal,omitempty" yaml:"goal,omitempty"`
 }
 
 // Check is a requirement's acceptance check. It mirrors planning.Check; the
@@ -153,5 +159,5 @@ func (s *ProductSpec) Validate() []error {
 			}
 		}
 	}
-	return errs
+	return append(errs, s.validateGoals()...)
 }

@@ -11,9 +11,15 @@ run the prompt, `plan_update`, approve — and agents took the cheaper path.
 ## The document
 
 ```yaml
+goals:
+  - id: goal-billing
+    title: Customers can be billed
+    horizon: now            # now | next | later
+    milestone: v1.0
 features:
   - id: invoices
     title: Invoice generation
+    goal: goal-billing
     requirements:
       - id: seq-numbers
         title: Sequential gap-free invoice numbers per year
@@ -56,12 +62,32 @@ roady capture --dry-run < plan.yaml
 - **Unknown keys are refused**, so a misspelt field is an error rather than
   silently dropped.
 
-The result names every item as `feature:`, `requirement:` or `task:` with what
-happened to it, and the plan's approval afterwards.
+The result names every item as `goal:`, `feature:`, `requirement:` or `task:`
+with what happened to it, and the plan's approval afterwards. A feature or
+requirement linked to a different goal shows as `link:feature:<id>`.
+
+## Goals: the roadmap
+
+Goals hold what a ROADMAP.md would: outcomes on the `now`, `next` or `later`
+horizon with an optional `milestone`, and a `status` — `idea` (needs no
+features yet), `planned` (the default), `shipped` or `out_of_scope` (a
+deliberate no, kept so it is not proposed again). Features link to the goal
+they serve with `goal`; a requirement can link to a different one.
+
+```bash
+roady goal add "Offline mode" --horizon next --milestone v2.0
+roady goal edit goal-offline-mode --horizon now --feature sync
+roady goal edit goal-offline-mode --status shipped
+roady goal list        # now / next / later / ideas / shipped / out of scope, with progress
+```
+
+Goals order work; they are not part of the intent a plan is approved for.
+Adding or moving a goal, or linking a feature to one, never returns an
+approved plan to pending, and does not show as spec drift.
 
 ## Approval: which changes need it
 
-An approved plan stays approved when only **tasks** change — adding, splitting
+An approved plan stays approved when only **tasks** (or goals) change — adding, splitting
 or editing work within requirements that were already approved does not change
 what was agreed. A created or edited **feature or requirement**, including its
 acceptance check, changes the intent and returns the plan to pending; the

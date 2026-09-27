@@ -48,6 +48,7 @@ var toolBehaviours = map[string]toolBehaviour{
 	"roady_task": {},
 	// Reads git history; moves tasks it finds markers for.
 	"roady_git":  {idempotent: true},
+	"roady_goal": {idempotent: true},
 	"roady_init": {},
 
 	// These nouns include operations that replace intent or state (approve,

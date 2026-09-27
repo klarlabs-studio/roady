@@ -9,11 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-- **MCP: one tool per CLI noun, with the verbs as actions.** Thirteen tools —
+- **MCP: one tool per CLI noun, with the verbs as actions.** Fourteen tools —
   `roady_task`, `roady_plan`, `roady_spec`, `roady_drift`, `roady_audit`,
-  `roady_state`, `roady_policy`, `roady_git`, plus `roady_next`,
+  `roady_state`, `roady_policy`, `roady_git`, `roady_goal`, plus `roady_next`,
   `roady_status`, `roady_query`, `roady_capture` and `roady_init` — cover
-  every CLI project command in about 3k tokens of an agent's prompt. A test walks the CLI and fails when a
+  every CLI project command in under 4k tokens of an agent's prompt. A test walks the CLI and fails when a
   command has no MCP tool or action. Decisions — approving, rejecting or
   pruning a plan, accepting drift, locking, importing or analyzing the spec,
   rebuilding state — can be asked for by an agent but run only when the user
@@ -52,6 +52,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   no longer drops policy settings it does not ask about.
 
 ### Added
+
+- **Goals: the roadmap lives in roady.** `roady goal add|edit|list` (MCP
+  `roady_goal`, and `goals` in a capture document) keep what a ROADMAP.md
+  held: goals on the now, next or later horizon with an optional milestone,
+  ideas that need no features yet, shipped goals, and deliberate
+  out-of-scope decisions. Features and requirements link to the goal they
+  serve, and `roady goal list` shows each goal's progress from its tasks.
+  Goals order work rather than define it, so they leave the spec hash and
+  the plan's approval alone. Roady's own ROADMAP.md is recorded this way.
 
 - **Setup for Codex, Gemini CLI, Cursor, OpenCode, Copilot and Kiro.** `roady
   setup <agent>` (or `all`) does for each what `setup claude-code` does,

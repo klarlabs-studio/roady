@@ -13,9 +13,9 @@
 ### Tools
 
 `roady_task`, `roady_plan`, `roady_spec`, `roady_drift`, `roady_audit`,
-`roady_state`, `roady_policy`, `roady_git` take a required `action` — the CLI
+`roady_state`, `roady_policy`, `roady_git`, `roady_goal` take a required `action` — the CLI
 verb — plus that verb's arguments. `roady_next`, `roady_status`,
-`roady_query`, `roady_capture` and `roady_init` keep their shape. Thirteen
+`roady_query`, `roady_capture` and `roady_init` keep their shape. Fourteen
 tools in all; every CLI project command has a tool or action.
 
 | Tool | Actions |
@@ -28,6 +28,7 @@ tools in all; every CLI project command has a tool or action.
 | `roady_state` | get, rebuild |
 | `roady_policy` | check |
 | `roady_git` | sync |
+| `roady_goal` | list, add, edit |
 
 ### Removed
 
@@ -53,6 +54,8 @@ Every per-verb tool: `roady_task_transition`, `roady_task_check`,
   completion contract names `roady_task` with `action: complete`.
 - No tool carries a `ui://roady/*` resource; the MCP App UIs are removed.
 - `ROADY_MCP_TOOLS` and its groups are gone; every tool is listed.
+- `roady_capture` takes `goals` (id, title, description, horizon, status,
+  milestone), and features and requirements take `goal`.
 
 ## v4.0.0 — Narrowed to capture, keep, prove
 

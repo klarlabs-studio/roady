@@ -318,6 +318,11 @@ func (c *Client) State(ctx context.Context, action string, args map[string]any) 
 	return c.noun(ctx, "roady_state", action, args)
 }
 
+// Goal runs `roady goal <action>`: list, add or edit a roadmap goal.
+func (c *Client) Goal(ctx context.Context, action string, args map[string]any) (string, error) {
+	return c.noun(ctx, "roady_goal", action, args)
+}
+
 // PolicyCheck runs `roady policy check`.
 func (c *Client) PolicyCheck(ctx context.Context) (string, error) {
 	return c.noun(ctx, "roady_policy", "check", nil)

@@ -43,6 +43,196 @@ description: |
         - Planned (unversioned until it ships): the features below.
         - Direction (2026-09): roady becomes the record agents plan into (capture, keep, prove); see features trust, capture,
           keep and focus.
+goals:
+    - id: goal-planning-for-ai
+      title: 'The planning tool for AI: capture, keep, prove'
+      description: |-
+        Roady is the plan an AI agent works from and the proof it did: capture intent at whatever size it arrives, keep the agent on it across sessions, compaction and parallel agents, and prove work done with acceptance checks and a hash-chained audit log. Everything outside that was removed.
+
+        The most useful input is field use: v0.18.0 came entirely from one person running Roady on a real 118-feature project for a day.
+      horizon: now
+    - id: goal-release-0-22-x
+      title: The MCP surface mirrors the CLI
+      description: |-
+        - **The MCP surface mirrors the CLI.** Twenty tools were renamed from
+          verb-first (`roady_add_feature`) to noun-first (`roady_spec_add`), so
+          knowledge of one surface transfers to the other. Breaking, with no aliases
+          kept — see the table in CHANGELOG.md before upgrading a client with
+          hardcoded names (#87).
+        - **`ROADY_MCP_TOOLS` trims what is advertised.** All ~70 tools were
+          registered on every session and a client paid for each one in its prompt
+          whether or not the project had a rate card or a debt ledger.
+          `ROADY_MCP_TOOLS=core` registers 30 instead. A tool missing from the
+          grouping fails the build, so an unclassified tool cannot silently vanish
+          from every profile.
+        - **Error results survive strict schema validation.** Every error encoded
+          `"structuredContent": null`, which matches no object schema, so a strict
+          client rejected the whole result including the text explaining what went
+          wrong. Fixed upstream in `go.klarlabs.de/mcp` v1.24.1; roady now asserts
+          the wire format itself so a future dependency change cannot reintroduce it
+          invisibly (#92).
+      status: shipped
+      milestone: v0.22.x
+    - id: goal-release-0-21-0
+      title: Derived-state reconciliation
+      description: |-
+        - **Derived-state reconciliation** — `roady spec lock` re-captures the drift
+          baseline from the current spec and reconciles execution state with it, and
+          `spec validate` reports when they disagree instead of answering "valid".
+          Found by adopting Roady in an existing project (#77).
+      status: shipped
+      milestone: v0.21.0
+    - id: goal-release-0-20-0
+      title: Correctness sweep
+      description: |-
+        - **Correctness sweep** — one audit-chain verifier instead of two that
+          disagreed on the same log; `roady_timeline` reading the same source as the
+          CLI; dead AI telemetry removed; and the CLI help and docs corrected to
+          describe a Roady that calls no model.
+      status: shipped
+      milestone: v0.20.0
+    - id: goal-release-0-19-0
+      title: Semantic drift
+      description: |-
+        - **Semantic drift** — `roady drift semantic` frames the question of whether
+          an implementation still means what its requirement says; the caller's model
+          answers it and `roady_record_semantic_drift` records divergence.
+        - **CLI/MCP parity** — 69 tools; every CLI operation an agent should be able
+          to perform is reachable over MCP.
+      status: shipped
+      milestone: v0.19.0
+    - id: goal-release-0-18-0
+      title: Five field-reported defects
+      description: |-
+        - Five field-reported defects: id sanitisation, feature-link resolution,
+          documentation written to the project rather than the server's cwd, paged
+          task listings, and MCP errors carrying the actionable message.
+      status: shipped
+      milestone: v0.18.0
+    - id: goal-release-0-17-0
+      title: '`roady_audit_trail` over MCP'
+      description: |-
+        - **`roady_audit_trail` over MCP** — the evidence trail was CLI-only, so
+          the agents the GRC work targets could not ask "which agent worked on
+          this, and what proves it" without shelling out. MCP schema 3.1.0.
+      status: shipped
+      milestone: v0.17.0
+    - id: goal-release-0-16-0
+      title: Staleness drift
+      description: |-
+        - **Staleness drift** — `roady drift detect` reports a plan the repository
+          has left behind, judged by commit volume rather than file timestamps.
+          Found by running Roady on Roady: 55 commits and seven releases past a
+          plan marked complete, reported as healthy.
+        - **Audit verification correctness** — three distinct causes were all
+          being reported as "possible tampering": two hash functions writing one
+          log, a shell script appending unhashed entries, and a hash-algorithm
+          change that invalidated history. Events now carry `hash_algo`.
+        - **`plan prune` cleans execution state**, which it previously orphaned.
+      status: shipped
+      milestone: v0.16.0
+    - id: goal-release-0-15-0
+      title: Roady runs no inference
+      description: |-
+        - **Roady runs no inference.** The provider clients are gone. The
+          model-assisted operations return the assembled prompt plus the tool
+          that accepts the result; the caller, which already has a model, runs
+          it. No API key is needed for anything. See
+          [`docs/prompts.md`](docs/prompts.md).
+        - **MCP tool errors reach the agent.** Failures are returned as results
+          carrying `isError` with a readable message, rather than as JSON-RPC
+          protocol faults the transport replaced with "internal error".
+        - MCP schema 3.0.0; `pkg/sdk` requires major 3.
+      status: shipped
+      milestone: v0.15.0
+    - id: goal-release-0-14-0
+      title: Coordination
+      description: |-
+        - **Coordination**: owner-scoped task queries (`roady task mine |
+          assigned <name> | unassigned`), per-owner WIP limits
+          (`policy.max_wip_per_owner`), and enforceable `team.yaml` roles
+          (`policy.enforce_team_roles`).
+        - **Stakeholder reporting without a UI**: `roady report` renders
+          progress, forecast, a risk register, ownership, and a change log to
+          Markdown, self-contained HTML, or JSON. `roady notify digest` pushes
+          one chat-sized summary through configured adapters.
+        - **Removed the web dashboard** (BREAKING). Agents render and update a
+          human-readable view from the same data through MCP Apps, and
+          stakeholders get a document rather than a server they must reach.
+          `roady dashboard` remains as the TUI.
+      status: shipped
+      milestone: v0.14.0
+    - id: goal-release-0-11-x
+      title: Nested sub-projects
+      description: |-
+        - **Nested sub-projects** under `.roady/projects/<name>/`. One repo
+          hosts many projects in parallel; coding agents switch context with
+          `--project / -P <name>` (CLI) or `project` (MCP). Existing flat
+          `.roady/` repos unchanged. See
+          [`docs/rfcs/0001-nested-projects.md`](docs/rfcs/0001-nested-projects.md).
+        - `roady discover` and `roady org status` surface sub-projects.
+      status: shipped
+      milestone: v0.11.x
+    - id: goal-release-0-10-x
+      title: Eval harness and task provenance
+      description: |-
+        - Eval harness over heuristic + AI planners + drift corpus
+        - Task provenance: `Origin` (heuristic / ai / human) + source citations
+          back to the doc that motivated each task
+        - Provider streaming end-to-end (Anthropic / OpenAI / Gemini / Ollama)
+          with MCP progress notifications and CLI `withAIProgress` integration
+        - MCP tool consolidation (`roady_tasks` parameterised + deprecation
+          aliases for the legacy task-listing tools)
+        - `roady_cost_estimate` pre-flight token + USD projection per AI op
+        - Unified `roady notify` namespace; `messaging` and `webhook notif`
+          retained as deprecation aliases
+        - AI command progress + clean SIGINT cancellation across the five AI
+          CLI surfaces
+        - `roady demo` for <1s aha; `roady init --interactive` default in TTY;
+          empty-state ladder on `roady status`
+      status: shipped
+      milestone: v0.10.x
+    - id: goal-release-0-6-0
+      title: Multi-repo org dashboard
+      description: Multi-repo org dashboard, plugin contracts, notification webhooks, fsnotify watch, coordinator integration into CLI/MCP with snapshot and task queries.
+      status: shipped
+      milestone: v0.6.0
+    - id: goal-release-0-5-0
+      title: Horizons 5 & 6
+      description: Horizons 5 & 6 — predictive analytics, domain hardening, event sourcing.
+      status: shipped
+      milestone: v0.5.0
+    - id: goal-roady-cloud
+      title: Roady Cloud
+      description: |-
+        Open-core boundary for a hosted product, no committed date. Intended scope:
+
+        - **Hosted MCP**: managed multi-tenant MCP server so teams without a per-developer install can plug their agents into a shared workspace.
+        - **Audit log retention** beyond what fits comfortably in `events.jsonl`, with structured search and export.
+        - **SSO / RBAC / SCIM** for enterprise IdP integrations.
+        - **SOC 2** compliance posture for the hosted plane.
+
+        What stays open and free, forever: the full CLI and MCP server, and the `.roady/` file format. If Cloud lands, opting in is a `roady cloud login` away; opting out is the existing local workflow with no behavioural change.
+      horizon: later
+      status: idea
+    - id: goal-no-tracker-parity
+      title: Matching Linear / Jira feature-for-feature
+      description: No sprints, custom fields, configurable workflows, or non-engineer intake queues. Where non-engineers create and triage work daily, use a tracker.
+      status: out_of_scope
+    - id: goal-no-own-agent
+      title: A web-based code editor or AI agent of our own
+      status: out_of_scope
+    - id: goal-no-hosted-memory
+      title: Hosted general-purpose memory for non-coding workflows
+      status: out_of_scope
+    - id: goal-no-authenticated-identity
+      title: Authenticated identity
+      description: Actors and agents are asserted by the caller and never verified. Roady's audit trail is tamper-evident about what was recorded, not proof of who acted; see docs/audit-grc.md.
+      status: out_of_scope
+    - id: goal-no-plugin-marketplace
+      title: Plugin marketplace
+      description: 'Was on Later: a marketplace for syncers and notifiers with signed binaries and contract tests. Tracker sync, notifications and the plugin system were removed as outside capture, keep and prove.'
+      status: out_of_scope
 features:
     - id: cross-project-deps
       title: Cross-project task dependencies
@@ -66,6 +256,7 @@ features:
           priority: medium
           estimate: 4h
           depends_on: []
+      goal: goal-release-0-19-0
     - id: subagent-dispatch
       title: Per-task subagent dispatch
       description: roady task start can hand a ready task to a subagent with its spec source attached and a deterministic completion hook.
@@ -82,6 +273,7 @@ features:
           priority: high
           estimate: 1d
           depends_on: []
+      goal: goal-release-0-19-0
     - id: spec-to-pr
       title: Spec-to-PR loop
       description: CI detects drift on PR merge and either accepts it or opens a follow-up issue.
@@ -98,6 +290,7 @@ features:
           priority: medium
           estimate: 1d
           depends_on: []
+      goal: goal-release-0-19-0
     - id: drift-patch-prompt
       title: Drift explainer follow-ups
       description: Drift explanation extends to a prompt that asks for a PR-ready diff, consistent with Roady running no inference itself.
@@ -108,6 +301,7 @@ features:
           priority: medium
           estimate: 1d
           depends_on: []
+      goal: goal-release-0-19-0
     - id: cross-repo-planning
       title: Cross-repo planning
       description: A single .roady/ workspace declares member repos, shares spec context, and aggregates plan state.
@@ -124,6 +318,7 @@ features:
           priority: low
           estimate: 2d
           depends_on: []
+      goal: goal-release-0-19-0
     - id: field-reliability
       title: Field-reported reliability
       description: 'Defects found by running Roady on a real 118-feature project and reported as GitHub issues. Four of the five shared a shape: Roady knew enough to get the answer right and stored or reported something else without saying so.'
@@ -158,6 +353,7 @@ features:
           priority: high
           estimate: 0.5d
           depends_on: []
+      goal: goal-release-0-18-0
     - id: mcp-surface
       title: MCP surface is learnable, trimmable and honest
       description: 'The MCP server had grown to ~70 tools named on a different scheme from the CLI, all advertised on every session, and encoding error results in a shape a strict client rejected. Shipped in v0.22.0 and v0.22.1; recorded here because the work landed after the plan was written and no task covered it, which is the condition roady''s own staleness drift exists to report. (#87, #92)'
@@ -180,6 +376,7 @@ features:
           priority: high
           estimate: 0.5d
           depends_on: []
+      goal: goal-planning-for-ai
     - id: trust
       title: 'Trust: done means proven'
       description: 'Roady is only worth planning into if its record can be believed. A task reaches verified on evidence, not assertion, and the audit and MCP surfaces report failures truthfully. Motivated by the September 2026 evaluation: a verified task (#92) had regressed on the live path, and agents in the literature claim done prematurely (ImpossibleBench, Anthropic long-running-agents post).'
@@ -244,6 +441,7 @@ features:
           priority: medium
           estimate: 0.5d
           depends_on: []
+      goal: goal-planning-for-ai
     - id: capture
       title: 'Capture: intent at whatever size it arrives'
       description: Agents plan anywhere; roady records it. One validated, logged write path takes a whole plan, a few tasks, or a single task, and plans produced by harness plan modes flow in without a manual step. Writing to roady must be cheaper than writing plan.md.
@@ -316,6 +514,7 @@ features:
           priority: high
           estimate: 2d
           depends_on: []
+      goal: goal-planning-for-ai
     - id: keep
       title: 'Keep: continuity across sessions, compaction and parallel agents'
       description: 'Everything a ROADMAP.md holds has a home in roady, the current task is pushed into the agent rather than waiting to be asked, and parallel agents cannot collide. Research: plan reminders every few steps improve success; recall tools are rarely called (arXiv 2604.12147, 2609.20804); summarisation compaction destroys long-horizon runs (SWE-Marathon).'
@@ -364,6 +563,7 @@ features:
           priority: medium
           estimate: 1d
           depends_on: []
+      goal: goal-planning-for-ai
     - id: focus
       title: Focus and proof of adoption
       description: Narrow roady to capture, keep and prove, and prove it on roady itself.
@@ -386,6 +586,7 @@ features:
           priority: low
           estimate: 1d
           depends_on: []
+      goal: goal-planning-for-ai
 constraints:
     - id: backward-compat
       description: Maintain backward compatibility with existing spec.yaml and plan.json formats

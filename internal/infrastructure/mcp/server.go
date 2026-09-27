@@ -282,8 +282,12 @@ func (s *Server) registerTools() {
 		Handler(s.handleNext)
 
 	s.tool("roady_capture").
-		Description("Record features, requirements and tasks, one or many, upserted by id (omitted fields keep their value). A requirement gets task-<id>. All or nothing; each rejection is returned. dry_run previews. The CLI's add, edit, split and move are shortcuts for this.").
+		Description("Record goals, features, requirements and tasks, one or many, upserted by id (omitted fields keep their value). A requirement gets task-<id>. All or nothing; each rejection is returned. dry_run previews. The CLI's add, edit, split and move are shortcuts for this.").
 		Handler(s.handleCapture)
+
+	s.tool("roady_goal").
+		Description("roady goal: list (the roadmap: goals by horizon with their features and progress), add, edit (move between now/next/later, ship, link features). A goal can be only an idea.").
+		Handler(s.handleGoal)
 
 	s.tool("roady_task").
 		Description("roady task: start, complete, block, unblock, stop, reopen, verify (re-runs the acceptance check), check (run it and record the result), dispatch (hand to a subagent), list.").
@@ -796,6 +800,7 @@ func (s *Server) handleTaskCheck(ctx context.Context, args TaskCheckArgs) (any, 
 
 // CaptureArgs is a capture document plus the usual project selectors.
 type CaptureArgs struct {
+	Goals       []application.CaptureGoal    `json:"goals,omitempty" jsonschema:"description=Roadmap goals to add or update (horizon now/next/later); features link to them with goal"`
 	Features    []application.CaptureFeature `json:"features,omitempty" jsonschema:"description=Features to add or update; each may carry requirements"`
 	Tasks       []application.CaptureTask    `json:"tasks,omitempty" jsonschema:"description=Tasks to add or update"`
 	DryRun      bool                         `json:"dry_run,omitempty" jsonschema:"description=Report what would change without writing"`
@@ -813,7 +818,7 @@ func (s *Server) handleCapture(ctx context.Context, args CaptureArgs) (any, erro
 	if actor == "" {
 		actor = "ai-agent"
 	}
-	result, err := svc.Capture.Capture(application.CaptureDoc{Features: args.Features, Tasks: args.Tasks},
+	result, err := svc.Capture.Capture(application.CaptureDoc{Goals: args.Goals, Features: args.Features, Tasks: args.Tasks},
 		application.CaptureOptions{Actor: actor, DryRun: args.DryRun, Origin: planning.OriginAI})
 	if err != nil {
 		return mcpErr(fmt.Sprintf("Failed to capture: %v", err)), nil

@@ -2,6 +2,160 @@
   "id": "agent-handoff",
   "title": "Roady: Agent Handoff \u0026 Cross-Project Planning",
   "description": "Roady planning system roadmap:\n- v0.5.0 (complete): Horizons 5 \u0026 6 — predictive analytics, domain hardening, event sourcing.\n- v0.6.0 (complete): Multi-repo org dashboard, plugin contracts, notification webhooks, fsnotify watch,\n  coordinator integration into CLI/MCP with snapshot and task queries.\n- v0.7.0 (complete): Org policy inheritance, cross-project drift, plugin registry and health,\n  Slack/realtime notifications, watch auto-sync and patterns.\n- v0.8.0 (complete): Developer experience polish, API/SDK stability, multi-user collaboration,\n  AI-powered workflows, interactive D3 MCP app visualizations.\n- v0.9.0 (complete): Expert-review-driven refinements — sharpen onboarding, reduce CLI\n  cognitive load, ship a pre-seeded demo, fix empty-state UX.\n- v0.10.0 (complete): AI quality and telemetry — eval harness over the planning\n  pipeline (heuristic + AI mock + drift corpus), Task.Origin provenance, source-doc\n  citations through spec analyze, CompletionResponse confidence + sources +\n  streaming OnToken contract, MCP tool consolidation (roady_tasks +\n  roady_cost_estimate), naming standardisation aliases, roady notify namespace\n  unification, AI command progress feedback with SIGINT cancellation.\n- v0.11.0 (complete): Positioning and narrative cleanup — single ICP picked\n  (devs using AI coding agents), category named (\"Planning memory for AI\n  coding agents\"), README hero rewritten, feature museum moved to\n  docs/advanced.md, docs/vs.md competitive comparison + docs/positioning.md\n  one-pager + ROADMAP.md sketch shipped, Astro website hero / definition /\n  features sections realigned to match.\n    - v0.12.0 (complete): Live Kanban dashboard, cross-project board, SSE updates,\n      dashboard auth token.\n    - v0.13.x (complete): Release pipeline — dedicated release workflow, cask\n      publishing, cleared goreleaser deprecations.\n    - v0.14.0 (complete): Coordination and stakeholder reporting without a UI —\n      owner-scoped task queries, per-owner WIP limits, enforceable team roles,\n      `roady report`, `roady notify digest`, agent/session provenance on every\n      event, `roady audit trail`, bidirectional tracker sync, parallel-safe\n      event logs with `roady state rebuild`. Web dashboard removed.\n    - v0.15.0 (complete): Roady stopped calling language models. Provider clients\n      removed; the model-assisted operations return assembled prompts plus the\n      tool that accepts the result. MCP tool failures became readable results\n      rather than masked protocol faults. MCP schema 3.0.0.\n    - v0.16.0 (complete): staleness drift detection, audit-verification\n      correctness (three causes, none of them tampering), and plan prune\n      cleaning execution state.\n    - v0.17.0 (complete): roady_audit_trail exposed over MCP; schema 3.1.0.\n    - Planned (unversioned until it ships): the features below.\n    - Direction (2026-09): roady becomes the record agents plan into (capture, keep, prove); see features trust, capture,\n      keep and focus.\n",
+  "goals": [
+    {
+      "id": "goal-planning-for-ai",
+      "title": "The planning tool for AI: capture, keep, prove",
+      "description": "Roady is the plan an AI agent works from and the proof it did: capture intent at whatever size it arrives, keep the agent on it across sessions, compaction and parallel agents, and prove work done with acceptance checks and a hash-chained audit log. Everything outside that was removed.\n\nThe most useful input is field use: v0.18.0 came entirely from one person running Roady on a real 118-feature project for a day.",
+      "horizon": "now",
+      "source": {}
+    },
+    {
+      "id": "goal-release-0-22-x",
+      "title": "The MCP surface mirrors the CLI",
+      "description": "- **The MCP surface mirrors the CLI.** Twenty tools were renamed from\n  verb-first (`roady_add_feature`) to noun-first (`roady_spec_add`), so\n  knowledge of one surface transfers to the other. Breaking, with no aliases\n  kept — see the table in CHANGELOG.md before upgrading a client with\n  hardcoded names (#87).\n- **`ROADY_MCP_TOOLS` trims what is advertised.** All ~70 tools were\n  registered on every session and a client paid for each one in its prompt\n  whether or not the project had a rate card or a debt ledger.\n  `ROADY_MCP_TOOLS=core` registers 30 instead. A tool missing from the\n  grouping fails the build, so an unclassified tool cannot silently vanish\n  from every profile.\n- **Error results survive strict schema validation.** Every error encoded\n  `\"structuredContent\": null`, which matches no object schema, so a strict\n  client rejected the whole result including the text explaining what went\n  wrong. Fixed upstream in `go.klarlabs.de/mcp` v1.24.1; roady now asserts\n  the wire format itself so a future dependency change cannot reintroduce it\n  invisibly (#92).",
+      "status": "shipped",
+      "milestone": "v0.22.x",
+      "source": {}
+    },
+    {
+      "id": "goal-release-0-21-0",
+      "title": "Derived-state reconciliation",
+      "description": "- **Derived-state reconciliation** — `roady spec lock` re-captures the drift\n  baseline from the current spec and reconciles execution state with it, and\n  `spec validate` reports when they disagree instead of answering \"valid\".\n  Found by adopting Roady in an existing project (#77).",
+      "status": "shipped",
+      "milestone": "v0.21.0",
+      "source": {}
+    },
+    {
+      "id": "goal-release-0-20-0",
+      "title": "Correctness sweep",
+      "description": "- **Correctness sweep** — one audit-chain verifier instead of two that\n  disagreed on the same log; `roady_timeline` reading the same source as the\n  CLI; dead AI telemetry removed; and the CLI help and docs corrected to\n  describe a Roady that calls no model.",
+      "status": "shipped",
+      "milestone": "v0.20.0",
+      "source": {}
+    },
+    {
+      "id": "goal-release-0-19-0",
+      "title": "Semantic drift",
+      "description": "- **Semantic drift** — `roady drift semantic` frames the question of whether\n  an implementation still means what its requirement says; the caller's model\n  answers it and `roady_record_semantic_drift` records divergence.\n- **CLI/MCP parity** — 69 tools; every CLI operation an agent should be able\n  to perform is reachable over MCP.",
+      "status": "shipped",
+      "milestone": "v0.19.0",
+      "source": {}
+    },
+    {
+      "id": "goal-release-0-18-0",
+      "title": "Five field-reported defects",
+      "description": "- Five field-reported defects: id sanitisation, feature-link resolution,\n  documentation written to the project rather than the server's cwd, paged\n  task listings, and MCP errors carrying the actionable message.",
+      "status": "shipped",
+      "milestone": "v0.18.0",
+      "source": {}
+    },
+    {
+      "id": "goal-release-0-17-0",
+      "title": "`roady_audit_trail` over MCP",
+      "description": "- **`roady_audit_trail` over MCP** — the evidence trail was CLI-only, so\n  the agents the GRC work targets could not ask \"which agent worked on\n  this, and what proves it\" without shelling out. MCP schema 3.1.0.",
+      "status": "shipped",
+      "milestone": "v0.17.0",
+      "source": {}
+    },
+    {
+      "id": "goal-release-0-16-0",
+      "title": "Staleness drift",
+      "description": "- **Staleness drift** — `roady drift detect` reports a plan the repository\n  has left behind, judged by commit volume rather than file timestamps.\n  Found by running Roady on Roady: 55 commits and seven releases past a\n  plan marked complete, reported as healthy.\n- **Audit verification correctness** — three distinct causes were all\n  being reported as \"possible tampering\": two hash functions writing one\n  log, a shell script appending unhashed entries, and a hash-algorithm\n  change that invalidated history. Events now carry `hash_algo`.\n- **`plan prune` cleans execution state**, which it previously orphaned.",
+      "status": "shipped",
+      "milestone": "v0.16.0",
+      "source": {}
+    },
+    {
+      "id": "goal-release-0-15-0",
+      "title": "Roady runs no inference",
+      "description": "- **Roady runs no inference.** The provider clients are gone. The\n  model-assisted operations return the assembled prompt plus the tool\n  that accepts the result; the caller, which already has a model, runs\n  it. No API key is needed for anything. See\n  [`docs/prompts.md`](docs/prompts.md).\n- **MCP tool errors reach the agent.** Failures are returned as results\n  carrying `isError` with a readable message, rather than as JSON-RPC\n  protocol faults the transport replaced with \"internal error\".\n- MCP schema 3.0.0; `pkg/sdk` requires major 3.",
+      "status": "shipped",
+      "milestone": "v0.15.0",
+      "source": {}
+    },
+    {
+      "id": "goal-release-0-14-0",
+      "title": "Coordination",
+      "description": "- **Coordination**: owner-scoped task queries (`roady task mine |\n  assigned \u003cname\u003e | unassigned`), per-owner WIP limits\n  (`policy.max_wip_per_owner`), and enforceable `team.yaml` roles\n  (`policy.enforce_team_roles`).\n- **Stakeholder reporting without a UI**: `roady report` renders\n  progress, forecast, a risk register, ownership, and a change log to\n  Markdown, self-contained HTML, or JSON. `roady notify digest` pushes\n  one chat-sized summary through configured adapters.\n- **Removed the web dashboard** (BREAKING). Agents render and update a\n  human-readable view from the same data through MCP Apps, and\n  stakeholders get a document rather than a server they must reach.\n  `roady dashboard` remains as the TUI.",
+      "status": "shipped",
+      "milestone": "v0.14.0",
+      "source": {}
+    },
+    {
+      "id": "goal-release-0-11-x",
+      "title": "Nested sub-projects",
+      "description": "- **Nested sub-projects** under `.roady/projects/\u003cname\u003e/`. One repo\n  hosts many projects in parallel; coding agents switch context with\n  `--project / -P \u003cname\u003e` (CLI) or `project` (MCP). Existing flat\n  `.roady/` repos unchanged. See\n  [`docs/rfcs/0001-nested-projects.md`](docs/rfcs/0001-nested-projects.md).\n- `roady discover` and `roady org status` surface sub-projects.",
+      "status": "shipped",
+      "milestone": "v0.11.x",
+      "source": {}
+    },
+    {
+      "id": "goal-release-0-10-x",
+      "title": "Eval harness and task provenance",
+      "description": "- Eval harness over heuristic + AI planners + drift corpus\n- Task provenance: `Origin` (heuristic / ai / human) + source citations\n  back to the doc that motivated each task\n- Provider streaming end-to-end (Anthropic / OpenAI / Gemini / Ollama)\n  with MCP progress notifications and CLI `withAIProgress` integration\n- MCP tool consolidation (`roady_tasks` parameterised + deprecation\n  aliases for the legacy task-listing tools)\n- `roady_cost_estimate` pre-flight token + USD projection per AI op\n- Unified `roady notify` namespace; `messaging` and `webhook notif`\n  retained as deprecation aliases\n- AI command progress + clean SIGINT cancellation across the five AI\n  CLI surfaces\n- `roady demo` for \u003c1s aha; `roady init --interactive` default in TTY;\n  empty-state ladder on `roady status`",
+      "status": "shipped",
+      "milestone": "v0.10.x",
+      "source": {}
+    },
+    {
+      "id": "goal-release-0-6-0",
+      "title": "Multi-repo org dashboard",
+      "description": "Multi-repo org dashboard, plugin contracts, notification webhooks, fsnotify watch, coordinator integration into CLI/MCP with snapshot and task queries.",
+      "status": "shipped",
+      "milestone": "v0.6.0",
+      "source": {}
+    },
+    {
+      "id": "goal-release-0-5-0",
+      "title": "Horizons 5 \u0026 6",
+      "description": "Horizons 5 \u0026 6 — predictive analytics, domain hardening, event sourcing.",
+      "status": "shipped",
+      "milestone": "v0.5.0",
+      "source": {}
+    },
+    {
+      "id": "goal-roady-cloud",
+      "title": "Roady Cloud",
+      "description": "Open-core boundary for a hosted product, no committed date. Intended scope:\n\n- **Hosted MCP**: managed multi-tenant MCP server so teams without a per-developer install can plug their agents into a shared workspace.\n- **Audit log retention** beyond what fits comfortably in `events.jsonl`, with structured search and export.\n- **SSO / RBAC / SCIM** for enterprise IdP integrations.\n- **SOC 2** compliance posture for the hosted plane.\n\nWhat stays open and free, forever: the full CLI and MCP server, and the `.roady/` file format. If Cloud lands, opting in is a `roady cloud login` away; opting out is the existing local workflow with no behavioural change.",
+      "horizon": "later",
+      "status": "idea",
+      "source": {}
+    },
+    {
+      "id": "goal-no-tracker-parity",
+      "title": "Matching Linear / Jira feature-for-feature",
+      "description": "No sprints, custom fields, configurable workflows, or non-engineer intake queues. Where non-engineers create and triage work daily, use a tracker.",
+      "status": "out_of_scope",
+      "source": {}
+    },
+    {
+      "id": "goal-no-own-agent",
+      "title": "A web-based code editor or AI agent of our own",
+      "status": "out_of_scope",
+      "source": {}
+    },
+    {
+      "id": "goal-no-hosted-memory",
+      "title": "Hosted general-purpose memory for non-coding workflows",
+      "status": "out_of_scope",
+      "source": {}
+    },
+    {
+      "id": "goal-no-authenticated-identity",
+      "title": "Authenticated identity",
+      "description": "Actors and agents are asserted by the caller and never verified. Roady's audit trail is tamper-evident about what was recorded, not proof of who acted; see docs/audit-grc.md.",
+      "status": "out_of_scope",
+      "source": {}
+    },
+    {
+      "id": "goal-no-plugin-marketplace",
+      "title": "Plugin marketplace",
+      "description": "Was on Later: a marketplace for syncers and notifiers with signed binaries and contract tests. Tracker sync, notifications and the plugin system were removed as outside capture, keep and prove.",
+      "status": "out_of_scope",
+      "source": {}
+    }
+  ],
   "features": [
     {
       "id": "cross-project-deps",
@@ -36,7 +190,8 @@
           "source": {}
         }
       ],
-      "source": {}
+      "source": {},
+      "goal": "goal-release-0-19-0"
     },
     {
       "id": "subagent-dispatch",
@@ -62,7 +217,8 @@
           "source": {}
         }
       ],
-      "source": {}
+      "source": {},
+      "goal": "goal-release-0-19-0"
     },
     {
       "id": "spec-to-pr",
@@ -88,7 +244,8 @@
           "source": {}
         }
       ],
-      "source": {}
+      "source": {},
+      "goal": "goal-release-0-19-0"
     },
     {
       "id": "drift-patch-prompt",
@@ -105,7 +262,8 @@
           "source": {}
         }
       ],
-      "source": {}
+      "source": {},
+      "goal": "goal-release-0-19-0"
     },
     {
       "id": "cross-repo-planning",
@@ -131,7 +289,8 @@
           "source": {}
         }
       ],
-      "source": {}
+      "source": {},
+      "goal": "goal-release-0-19-0"
     },
     {
       "id": "field-reliability",
@@ -184,7 +343,8 @@
           "source": {}
         }
       ],
-      "source": {}
+      "source": {},
+      "goal": "goal-release-0-18-0"
     },
     {
       "id": "mcp-surface",
@@ -219,7 +379,8 @@
           "source": {}
         }
       ],
-      "source": {}
+      "source": {},
+      "goal": "goal-planning-for-ai"
     },
     {
       "id": "trust",
@@ -317,7 +478,8 @@
           "source": {}
         }
       ],
-      "source": {}
+      "source": {},
+      "goal": "goal-planning-for-ai"
     },
     {
       "id": "capture",
@@ -427,7 +589,8 @@
           "source": {}
         }
       ],
-      "source": {}
+      "source": {},
+      "goal": "goal-planning-for-ai"
     },
     {
       "id": "keep",
@@ -501,7 +664,8 @@
           "source": {}
         }
       ],
-      "source": {}
+      "source": {},
+      "goal": "goal-planning-for-ai"
     },
     {
       "id": "focus",
@@ -536,7 +700,8 @@
           "source": {}
         }
       ],
-      "source": {}
+      "source": {},
+      "goal": "goal-planning-for-ai"
     }
   ],
   "constraints": [

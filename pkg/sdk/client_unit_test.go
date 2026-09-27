@@ -366,6 +366,7 @@ func TestClient_NounMethods(t *testing.T) {
 		"Drift":       func(c *Client) (string, error) { return c.Drift(ctx, "detect", nil) },
 		"Audit":       func(c *Client) (string, error) { return c.Audit(ctx, "verify", map[string]any{"baseline": "HEAD"}) },
 		"State":       func(c *Client) (string, error) { return c.State(ctx, "get", nil) },
+		"Goal":        func(c *Client) (string, error) { return c.Goal(ctx, "list", nil) },
 		"PolicyCheck": func(c *Client) (string, error) { return c.PolicyCheck(ctx) },
 		"GitSync":     func(c *Client) (string, error) { return c.GitSync(ctx) },
 		"Init":        func(c *Client) (string, error) { return c.Init(ctx, "demo") },

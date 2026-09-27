@@ -6,7 +6,9 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/felixgeelhaar/roady/pkg/application"
 	"github.com/felixgeelhaar/roady/pkg/domain/drift"
+	"github.com/felixgeelhaar/roady/pkg/domain/planning"
 )
 
 // One tool per CLI noun, with the CLI's verbs as actions: `roady plan approve`
@@ -37,6 +39,7 @@ var NounActions = map[string][]string{
 	"roady_state":  {"get", "rebuild"},
 	"roady_policy": {"check"},
 	"roady_git":    {"sync"},
+	"roady_goal":   {"list", "add", "edit"},
 }
 
 // SingleTools are CLI commands without verbs, served as one tool each.
@@ -264,4 +267,54 @@ func (s *Server) handleGit(ctx context.Context, a VerbArgs) (any, error) {
 		return actionError("roady_git", a.Action)
 	}
 	return s.handleGitSync(ctx, GitSyncArgs{ProjectPath: a.ProjectPath, Project: a.Project})
+}
+
+// --- roady_goal ---------------------------------------------------------------
+
+// GoalArgs is `roady goal <action>`.
+type GoalArgs struct {
+	Action      string   `json:"action" jsonschema:"required,description=list|add|edit"`
+	GoalID      string   `json:"goal_id,omitempty" jsonschema:"description=edit: the goal; add: its id (default goal-<title>)"`
+	Title       *string  `json:"title,omitempty" jsonschema:"description=add: required"`
+	Description *string  `json:"description,omitempty"`
+	Horizon     *string  `json:"horizon,omitempty" jsonschema:"description=now, next or later"`
+	Status      *string  `json:"status,omitempty" jsonschema:"description=idea (needs no features), planned, shipped or out_of_scope"`
+	Milestone   *string  `json:"milestone,omitempty" jsonschema:"description=Release or checkpoint"`
+	Features    []string `json:"features,omitempty" jsonschema:"description=Feature ids to link to the goal"`
+	DryRun      bool     `json:"dry_run,omitempty"`
+	scope
+}
+
+func (s *Server) handleGoal(ctx context.Context, a GoalArgs) (any, error) {
+	svc, err := s.servicesForPath(a.ProjectPath, a.Project)
+	if err != nil {
+		return mcpErrCause("Failed to load project at the given path.", err), nil
+	}
+	sp, err := svc.Workspace.Repo.LoadSpec()
+	if err != nil {
+		return mcpErrCause("Failed to load the spec.", err), nil
+	}
+	e := application.GoalEdit{ID: a.GoalID, Title: a.Title, Description: a.Description, Horizon: a.Horizon,
+		Status: a.Status, Milestone: a.Milestone, Features: a.Features}
+	var doc application.CaptureDoc
+	switch a.Action {
+	case "list":
+		plan, _ := svc.Workspace.Repo.LoadPlan()
+		state, _ := svc.Workspace.Repo.LoadState()
+		return application.BuildRoadmap(sp, plan, state), nil
+	case "add":
+		doc, _, err = application.AddGoalDoc(sp, e)
+	case "edit":
+		doc, _, err = application.EditGoalDoc(sp, e)
+	default:
+		return actionError("roady_goal", a.Action)
+	}
+	if err != nil {
+		return mcpErr(err.Error()), nil
+	}
+	result, err := svc.Capture.Capture(doc, application.CaptureOptions{Actor: "ai-agent", DryRun: a.DryRun, Origin: planning.OriginAI})
+	if err != nil {
+		return mcpErr(fmt.Sprintf("Failed to record the goal: %v", err)), nil
+	}
+	return result, nil
 }

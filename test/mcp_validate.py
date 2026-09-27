@@ -29,6 +29,7 @@ ARGS = {
     "roady_state": {"action": "get"},
     "roady_policy": {"action": "check"},
     "roady_git": {"action": "sync"},
+    "roady_goal": {"action": "list"},
     "roady_capture": {"dry_run": True, "tasks": []},
     "roady_query": {"question": "what is left?"},
     # init writes a new project, so it gets a directory of its own.

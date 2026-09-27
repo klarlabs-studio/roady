@@ -24,8 +24,19 @@ import (
 // Every item is keyed by ID and upserted. Fields left out keep their current
 // value, so the same document shape is also how an item is edited.
 type CaptureDoc struct {
+	Goals    []CaptureGoal    `json:"goals,omitempty" yaml:"goals,omitempty" jsonschema:"description=Roadmap goals to add or update: outcomes with a horizon (now, next, later) that features link to"`
 	Features []CaptureFeature `json:"features,omitempty" yaml:"features,omitempty" jsonschema:"description=Features to add or update; each may carry requirements"`
 	Tasks    []CaptureTask    `json:"tasks,omitempty" yaml:"tasks,omitempty" jsonschema:"description=Tasks to add or update. A requirement already gets a task (task-<requirement id>); list tasks here to add more or to edit one"`
+}
+
+// CaptureGoal upserts a roadmap goal. Title is required for a new goal.
+type CaptureGoal struct {
+	ID          string  `json:"id" yaml:"id" jsonschema:"description=Goal ID"`
+	Title       *string `json:"title,omitempty" yaml:"title,omitempty" jsonschema:"description=Goal title (required for a new goal)"`
+	Description *string `json:"description,omitempty" yaml:"description,omitempty"`
+	Horizon     *string `json:"horizon,omitempty" yaml:"horizon,omitempty" jsonschema:"description=now, next or later; empty for shipped or out-of-scope goals"`
+	Status      *string `json:"status,omitempty" yaml:"status,omitempty" jsonschema:"description=idea (needs no features yet), planned (default), shipped or out_of_scope"`
+	Milestone   *string `json:"milestone,omitempty" yaml:"milestone,omitempty" jsonschema:"description=Release or checkpoint, e.g. v0.22.0"`
 }
 
 // CaptureFeature upserts a feature. Title is required for a new feature.
@@ -33,6 +44,7 @@ type CaptureFeature struct {
 	ID           string               `json:"id" yaml:"id" jsonschema:"description=Feature ID"`
 	Title        *string              `json:"title,omitempty" yaml:"title,omitempty" jsonschema:"description=Feature title (required for a new feature)"`
 	Description  *string              `json:"description,omitempty" yaml:"description,omitempty"`
+	Goal         *string              `json:"goal,omitempty" yaml:"goal,omitempty" jsonschema:"description=ID of the goal this feature serves"`
 	Requirements []CaptureRequirement `json:"requirements,omitempty" yaml:"requirements,omitempty"`
 }
 
@@ -45,6 +57,7 @@ type CaptureRequirement struct {
 	Estimate    *string     `json:"estimate,omitempty" yaml:"estimate,omitempty" jsonschema:"description=e.g. 4h or 1d"`
 	DependsOn   *[]string   `json:"depends_on,omitempty" yaml:"depends_on,omitempty" jsonschema:"description=IDs of requirements this one depends on"`
 	Check       *spec.Check `json:"check,omitempty" yaml:"check,omitempty" jsonschema:"description=How the requirement is shown to be met: run (a command) or manual (a description)"`
+	Goal        *string     `json:"goal,omitempty" yaml:"goal,omitempty" jsonschema:"description=ID of a goal other than its feature's"`
 }
 
 // CaptureTask upserts a task. A new task needs a title and either a
@@ -71,7 +84,8 @@ type CaptureRejection struct {
 }
 
 // CaptureResult reports what a capture changed. Items are named kind:id
-// (feature:, requirement:, task:).
+// (goal:, feature:, requirement:, task:). A goal link changing on a feature
+// or requirement is reported as link:feature:<id> / link:requirement:<id>.
 type CaptureResult struct {
 	Created   []string           `json:"created"`
 	Updated   []string           `json:"updated"`
@@ -130,6 +144,7 @@ func (s *CaptureService) Capture(doc CaptureDoc, opts CaptureOptions) (*CaptureR
 	nextPlan := clonePlan(prevPlan, current.ID)
 
 	tracker := newChangeTracker()
+	applyGoals(doc.Goals, nextSpec, tracker, result)
 	derived := s.applyFeatures(doc.Features, nextSpec, nextPlan, tracker, result)
 	s.applyTasks(doc.Tasks, nextSpec, nextPlan, derived, opts.Origin, tracker, result)
 	validateCapture(nextSpec, nextPlan, result)
@@ -219,7 +234,7 @@ func approvalAfterCapture(prev *planning.Plan, t *changeTracker, mode string) (p
 	if scope := t.scopeChanges(); len(scope) > 0 {
 		return planning.ApprovalPending, "intent changed (" + strings.Join(scope, ", ") + ") and needs re-approval"
 	}
-	return planning.ApprovalApproved, "only tasks changed; the approval stands (plan_approval: scope)"
+	return planning.ApprovalApproved, "only tasks or goals changed; the approval stands (plan_approval: scope)"
 }
 
 func approvalOf(p *planning.Plan) string {
@@ -227,6 +242,55 @@ func approvalOf(p *planning.Plan) string {
 		return ""
 	}
 	return string(p.ApprovalStatus)
+}
+
+// applyGoals upserts roadmap goals. Goals order work rather than define it,
+// so a goal change never reopens the plan's approval.
+func applyGoals(goals []CaptureGoal, sp *spec.ProductSpec, t *changeTracker, result *CaptureResult) {
+	for _, cg := range goals {
+		id := strings.TrimSpace(cg.ID)
+		if id == "" {
+			result.Rejected = append(result.Rejected, CaptureRejection{Item: "goal:", Reason: "a goal needs an id"})
+			continue
+		}
+		var horizon spec.Horizon
+		var status spec.GoalStatus
+		var err error
+		if cg.Horizon != nil {
+			if horizon, err = spec.ParseHorizon(*cg.Horizon); err != nil {
+				result.Rejected = append(result.Rejected, CaptureRejection{Item: "goal:" + id, Reason: err.Error()})
+				continue
+			}
+		}
+		if cg.Status != nil {
+			if status, err = spec.ParseGoalStatus(*cg.Status); err != nil {
+				result.Rejected = append(result.Rejected, CaptureRejection{Item: "goal:" + id, Reason: err.Error()})
+				continue
+			}
+		}
+		gi := sp.GoalIndex(id)
+		if gi < 0 {
+			if cg.Title == nil || strings.TrimSpace(*cg.Title) == "" {
+				result.Rejected = append(result.Rejected, CaptureRejection{Item: "goal:" + id, Reason: "a new goal needs a title"})
+				continue
+			}
+			sp.Goals = append(sp.Goals, spec.Goal{ID: id})
+			gi = len(sp.Goals) - 1
+			t.created("goal:" + id)
+		}
+		g := &sp.Goals[gi]
+		before := *g
+		setStr(&g.Title, cg.Title)
+		setStr(&g.Description, cg.Description)
+		setStr(&g.Milestone, cg.Milestone)
+		if cg.Horizon != nil {
+			g.Horizon = horizon
+		}
+		if cg.Status != nil {
+			g.Status = status
+		}
+		t.compare("goal:"+id, before, *g)
+	}
 }
 
 // applyFeatures upserts features and requirements, and derives a task for
@@ -263,7 +327,15 @@ func (s *CaptureService) applyFeatures(features []CaptureFeature, sp *spec.Produ
 		setStr(&sp.Features[fi].Description, cf.Description)
 		after := sp.Features[fi]
 		after.Requirements = nil
+		// Which goal a feature serves is roadmap order, not intent: a new
+		// link is reported on its own and does not reopen the approval.
+		oldGoal := before.Goal
+		setStr(&sp.Features[fi].Goal, cf.Goal)
+		after.Goal = oldGoal
 		t.compare("feature:"+id, before, after)
+		if !t.isCreated("feature:"+id) && sp.Features[fi].Goal != oldGoal {
+			t.mark("link:feature:"+id, "updated")
+		}
 
 		for _, cr := range cf.Requirements {
 			rid := strings.TrimSpace(cr.ID)
@@ -300,7 +372,14 @@ func (s *CaptureService) applyFeatures(features []CaptureFeature, sp *spec.Produ
 				c := *cr.Check
 				req.Check = &c
 			}
-			if !t.compare("requirement:"+rid, before, *req) && !t.isCreated("requirement:"+rid) {
+			oldGoal := req.Goal
+			setStr(&req.Goal, cr.Goal)
+			if !t.isCreated("requirement:"+rid) && req.Goal != oldGoal {
+				t.mark("link:requirement:"+rid, "updated")
+			}
+			cmp := *req
+			cmp.Goal = oldGoal
+			if !t.compare("requirement:"+rid, before, cmp) && !t.isCreated("requirement:"+rid) {
 				continue
 			}
 			taskID := "task-" + rid
