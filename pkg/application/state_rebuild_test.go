@@ -217,3 +217,17 @@ func TestSaveCarriesDiskVersionForward(t *testing.T) {
 		t.Errorf("saved version = %d, want 7 (disk version carried forward)", repo.saved.Version)
 	}
 }
+
+func TestRebuildReplaysAcceptance(t *testing.T) {
+	st := planning.NewExecutionState("p")
+	replay := func(e domain.Event) { applyEventToState(st, &e) }
+	replay(evt(1, "task.transition", "a", map[string]any{"task_id": "t", "status": "done"}))
+	replay(evt(2, "task.accepted", "felix", map[string]any{"task_id": "t", "reason": "history"}))
+	if a := st.TaskStates["t"].Accepted; a == nil || a.By != "felix" || a.Reason != "history" {
+		t.Fatalf("acceptance not replayed: %+v", a)
+	}
+	replay(evt(3, "task.transition", "a", map[string]any{"task_id": "t", "status": "pending"}))
+	if st.TaskStates["t"].Accepted != nil {
+		t.Error("a reopen kept the acceptance")
+	}
+}

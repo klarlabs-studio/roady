@@ -155,6 +155,8 @@ func eventHistory(e domain.Event) string {
 			verdict = "passed"
 		}
 		return fmt.Sprintf("check %s at %s", verdict, shortCommit(metaString(m, "commit")))
+	case "task.accepted":
+		return "accepted without verification: " + metaString(m, "reason")
 	case "task.claim_expired":
 		return "claim by " + metaString(m, "holder") + " expired; back to pending"
 	case "task.regression":

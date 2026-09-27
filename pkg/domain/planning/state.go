@@ -44,6 +44,25 @@ type TaskResult struct {
 
 	// Block says why a blocked task is blocked; nil when not blocked.
 	Block *Block `json:"block,omitempty"`
+
+	// Accepted records that a person took a finished task as done without
+	// verifying it; nil otherwise, and on any task that is not done.
+	Accepted *Acceptance `json:"accepted,omitempty"`
+}
+
+// Acceptance is a person's word that a finished task is done, given without
+// verification: work finished before roady tracked it, when adopting roady in
+// a project with history. It is not verification. The task stays done, can
+// still be verified, and is no longer reported as awaiting it.
+type Acceptance struct {
+	By     string    `json:"by"`
+	Reason string    `json:"reason"`
+	At     time.Time `json:"at"`
+}
+
+// IsAccepted reports whether the task is done and accepted as it is.
+func (r TaskResult) IsAccepted() bool {
+	return r.Status == StatusDone && r.Accepted != nil
 }
 
 // ExternalRef links a Roady task to an external system (Linear, Jira, etc.)
@@ -87,8 +106,29 @@ func (s *ExecutionState) SetTaskStatus(taskID string, status TaskStatus) {
 	if status != StatusBlocked {
 		result.Block = nil
 	}
+	// An acceptance is of a finished task; reopening or verifying ends it.
+	if status != StatusDone {
+		result.Accepted = nil
+	}
 	s.TaskStates[taskID] = result
 	s.UpdatedAt = time.Now()
+}
+
+// Accept records a person's acceptance of a finished task without
+// verification. Only a done task can be accepted.
+func (s *ExecutionState) Accept(taskID string, a Acceptance) error {
+	result, ok := s.TaskStates[taskID]
+	if !ok || result.Status != StatusDone {
+		status := result.Status
+		if status == "" {
+			status = StatusPending
+		}
+		return fmt.Errorf("%s is %s: only a done task can be accepted without verification", taskID, status)
+	}
+	result.Accepted = &a
+	s.TaskStates[taskID] = result
+	s.UpdatedAt = time.Now()
+	return nil
 }
 
 // SetTaskOwner sets the owner for a task.

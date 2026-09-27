@@ -4,6 +4,7 @@ package project
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -300,6 +301,31 @@ func (c *Coordinator) CompleteTask(ctx context.Context, taskID, evidence string)
 // BlockTask blocks a task with a reason.
 func (c *Coordinator) BlockTask(ctx context.Context, taskID, reason string) error {
 	return c.BlockTaskWith(ctx, taskID, planning.Block{Detail: reason, At: time.Now()})
+}
+
+// AcceptTasks records a person's acceptance of finished tasks without
+// verification. It is all or nothing: if any task cannot be accepted, none is.
+func (c *Coordinator) AcceptTasks(ctx context.Context, taskIDs []string, a planning.Acceptance) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	state, err := c.stateRepo.Load(ctx)
+	if err != nil {
+		return err
+	}
+	if state == nil {
+		return ErrNoState
+	}
+	var refused []string
+	for _, id := range taskIDs {
+		if err := state.Accept(id, a); err != nil {
+			refused = append(refused, err.Error())
+		}
+	}
+	if len(refused) > 0 {
+		return fmt.Errorf("nothing was accepted:\n  %s", strings.Join(refused, "\n  "))
+	}
+	return c.stateRepo.Save(ctx, state)
 }
 
 // BlockTaskWith blocks a task and records why.

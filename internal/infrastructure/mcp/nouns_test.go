@@ -151,6 +151,10 @@ func TestGatedActionsNeedTheUser(t *testing.T) {
 				_, _ = server.handleDrift(ctx, DriftArgs{Action: action})
 			case "roady_state":
 				_, _ = server.handleState(ctx, StateArgs{Action: action})
+			case "roady_task":
+				_, _ = server.handleTask(ctx, TaskArgs{Action: action, AllDone: true, Reason: "history"})
+			default:
+				t.Errorf("%s: this test does not know how to call it", tool)
 			}
 			if asked == "" {
 				t.Errorf("%s %s ran without asking the user", tool, action)
@@ -351,5 +355,39 @@ func TestCaptureFromNotesOverMCP(t *testing.T) {
 	}
 	if res, _ := server.handleCapture(context.Background(), CaptureArgs{FromNotes: []string{"missing.md"}}); !isToolError(res) {
 		t.Error("a missing note should fail")
+	}
+}
+
+// An agent may propose accepting finished work without verification; only the
+// user's yes accepts it.
+func TestTaskAcceptNeedsTheUser(t *testing.T) {
+	server := setupCoordinatorTestServer(t)
+	repo := storage.NewFilesystemRepository(server.root)
+	st, _ := repo.LoadState()
+	st.SetTaskStatus("t1", planning.StatusDone)
+	_ = repo.SaveState(st)
+	ctx := context.Background()
+	args := TaskArgs{Action: "accept", TaskIDs: []string{"t1"}, Reason: "finished before roady"}
+
+	server.confirm = func(context.Context, string) error { return errors.New("you declined the request") }
+	res, _ := server.handleTask(ctx, args)
+	if !isToolError(res) || !strings.Contains(resultText(res), "Nothing was changed") {
+		t.Errorf("declined accept: %s", resultText(res))
+	}
+	if s, _ := repo.LoadState(); s.TaskStates["t1"].Accepted != nil {
+		t.Fatal("t1 was accepted without the user")
+	}
+
+	var asked string
+	server.confirm = func(_ context.Context, msg string) error { asked = msg; return nil }
+	res, _ = server.handleTask(ctx, args)
+	if isToolError(res) {
+		t.Fatalf("confirmed accept failed: %s", resultText(res))
+	}
+	if !strings.Contains(asked, "t1") || !strings.Contains(asked, "finished before roady") || !strings.Contains(asked, "not verification") {
+		t.Errorf("the user was asked %q", asked)
+	}
+	if s, _ := repo.LoadState(); !s.TaskStates["t1"].IsAccepted() {
+		t.Error("a confirmed accept did not accept t1")
 	}
 }

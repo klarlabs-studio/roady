@@ -166,6 +166,15 @@ func applyEventToState(state *planning.ExecutionState, e *domain.Event) bool {
 		setStatus(state, taskID, planning.StatusVerified)
 		return true
 
+	case "task.accepted":
+		result, _ := state.GetTaskResult(taskID)
+		if result.Status == planning.StatusDone {
+			reason, _ := e.Metadata["reason"].(string)
+			result.Accepted = &planning.Acceptance{By: e.Actor, Reason: reason, At: e.Timestamp}
+			state.TaskStates[taskID] = result
+		}
+		return true
+
 	case "task.assign":
 		if assignee, ok := e.Metadata["assignee"].(string); ok && assignee != "" {
 			state.SetTaskOwner(taskID, assignee)
@@ -190,6 +199,9 @@ func applyEventToState(state *planning.ExecutionState, e *domain.Event) bool {
 func setStatus(state *planning.ExecutionState, taskID string, status planning.TaskStatus) {
 	result, _ := state.GetTaskResult(taskID)
 	result.Status = status
+	if status != planning.StatusDone {
+		result.Accepted = nil
+	}
 	state.TaskStates[taskID] = result
 }
 

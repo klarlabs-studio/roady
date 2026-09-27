@@ -6,6 +6,13 @@
 - **Minor** (1.x.0): New optional fields (`omitempty`), new tools, fields deprecated
 - **Major** (x.0.0): Required fields added/removed, tool signatures changed
 
+## v5.2.0 — Accept finished work without verification
+
+**Minor**: `roady_task` gains the `accept` action with optional `task_ids`
+and `all_done`, and a required `reason`. It takes finished tasks as done
+without verification, so they stop being reported as awaiting it. It needs
+the user's confirmation (MCP elicitation), like `drift accept`.
+
 ## v5.1.0 — Import a hand-kept roadmap
 
 **Minor**: `roady_goal` gains the `import` action with an optional `path`:
