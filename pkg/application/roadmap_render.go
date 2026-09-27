@@ -6,9 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 
+	"github.com/felixgeelhaar/roady/pkg/domain"
 	"github.com/felixgeelhaar/roady/pkg/domain/drift"
 	"github.com/felixgeelhaar/roady/pkg/domain/spec"
 )
@@ -133,15 +135,15 @@ func RoadmapDrift(path string, sp *spec.ProductSpec) []drift.Issue {
 	case RoadmapHandEdited:
 		return []drift.Issue{{
 			ID: "roadmap-hand-edited", Type: drift.DriftTypeDoc, Category: drift.CategoryMismatch, Severity: drift.SeverityMedium,
-			ComponentID: RoadmapFile, Path: path,
-			Message: RoadmapFile + " was edited by hand; it is rendered from the goals, so the next render would drop the edit.",
+			ComponentID: filepath.Base(path), Path: path,
+			Message: filepath.Base(path) + " was edited by hand; it is rendered from the goals, so the next render would drop the edit.",
 			Hint:    "Make the change with `roady goal add|edit` (or a capture), then `roady goal render`.",
 		}}
 	case RoadmapOutOfDate:
 		return []drift.Issue{{
 			ID: "roadmap-out-of-date", Type: drift.DriftTypeDoc, Category: drift.CategoryStale, Severity: drift.SeverityLow,
-			ComponentID: RoadmapFile, Path: path,
-			Message: RoadmapFile + " no longer matches the goals.",
+			ComponentID: filepath.Base(path), Path: path,
+			Message: filepath.Base(path) + " no longer matches the goals.",
 			Hint:    "Run `roady goal render`.",
 		}}
 	}
@@ -190,4 +192,21 @@ func WriteRoadmap(path string, sp *spec.ProductSpec, force bool) (RoadmapWrite, 
 	}
 	res.Written = true
 	return res, nil
+}
+
+// RoadmapPath is where the project's roadmap is rendered: the policy's
+// roadmap setting, relative to root, or ROADMAP.md at root. ok is false for
+// a sub-project with no setting — it has no default file.
+func RoadmapPath(root string, pol *domain.PolicyConfig, subProject bool) (path string, ok bool) {
+	if pol != nil && strings.TrimSpace(pol.Roadmap) != "" {
+		p := strings.TrimSpace(pol.Roadmap)
+		if !filepath.IsAbs(p) {
+			p = filepath.Join(root, p)
+		}
+		return p, true
+	}
+	if subProject {
+		return "", false
+	}
+	return filepath.Join(root, RoadmapFile), true
 }

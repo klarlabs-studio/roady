@@ -1,6 +1,6 @@
 {
   "project_id": "agent-handoff",
-  "version": 457,
+  "version": 459,
   "task_states": {
     "task-acceptance-checks": {
       "status": "verified",
@@ -1767,6 +1767,19 @@
       "completed_at": "2026-08-02T13:44:55.038639+02:00",
       "elapsed_minutes": 0
     },
+    "task-roadmap-path-policy": {
+      "status": "in_progress",
+      "path": "",
+      "owner": "Claude",
+      "started_at": "2026-09-27T17:59:14.507135701+02:00",
+      "elapsed_minutes": 0,
+      "lease": {
+        "holder": "Claude",
+        "session": "9f2b4b65-d26f-4795-af73-bbb4738a6dcc",
+        "expires_at": "2026-09-27T19:59:14.507135865+02:00",
+        "renewed_at": "2026-09-27T17:59:14.507135865+02:00"
+      }
+    },
     "task-safe-generated-ids": {
       "status": "verified",
       "path": "",
@@ -2354,5 +2367,5 @@
       "elapsed_minutes": 4
     }
   },
-  "updated_at": "2026-09-27T17:44:01.015175946+02:00"
+  "updated_at": "2026-09-27T17:59:14.507135701+02:00"
 }

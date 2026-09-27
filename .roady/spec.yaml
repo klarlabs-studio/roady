@@ -673,6 +673,14 @@ features:
           depends_on: []
           check:
             run: go test ./pkg/application/ -run TestSyncCompletesUnstartedTask -count=1
+        - id: roadmap-path-policy
+          title: The rendered roadmap can live elsewhere than ROADMAP.md
+          description: 'nexa renders its roadmap to memory/roadmap.md; drift only watched ROADMAP.md at the root, so a stale copy went unreported. policy.yaml roadmap: <path> sets where goal render writes and what drift checks.'
+          priority: medium
+          estimate: ""
+          depends_on: []
+          check:
+            run: go test ./pkg/application/ ./internal/infrastructure/wiring/ -run TestRoadmapPathFromPolicy -count=1
       goal: goal-adopt-existing-projects
 constraints:
     - id: backward-compat

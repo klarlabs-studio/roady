@@ -348,10 +348,11 @@ func (s *Server) handleGoal(ctx context.Context, a GoalArgs) (any, error) {
 // renderRoadmap writes ROADMAP.md. Replacing a file edited by hand throws
 // away what the edit said, so force needs the user's confirmation.
 func (s *Server) renderRoadmap(ctx context.Context, repo *storage.FilesystemRepository, sp *spec.ProductSpec, a GoalArgs) (any, error) {
-	if repo.IsSubProject() {
-		return mcpErr("A sub-project's roadmap has no default file; render it with `roady goal render --out <file>`."), nil
+	pol, _ := repo.LoadPolicy()
+	path, ok := application.RoadmapPath(repo.Root(), pol, repo.IsSubProject())
+	if !ok {
+		return mcpErr("A sub-project's roadmap has no default file; render it with `roady goal render --out <file>`, or set roadmap: in its policy.yaml."), nil
 	}
-	path := filepath.Join(repo.Root(), application.RoadmapFile)
 	if a.DryRun {
 		return application.RenderRoadmapMarkdown(sp), nil
 	}
@@ -363,7 +364,7 @@ func (s *Server) renderRoadmap(ctx context.Context, repo *storage.FilesystemRepo
 		return res, nil
 	}
 	if a.Force {
-		return s.gated(ctx, a.scope, "goal render --force", "Replace ROADMAP.md, including edits made to it by hand, with the roadmap rendered from the goals?", write)
+		return s.gated(ctx, a.scope, "goal render --force", fmt.Sprintf("Replace %s, including edits made to it by hand, with the roadmap rendered from the goals?", filepath.Base(path)), write)
 	}
 	return write()
 }
