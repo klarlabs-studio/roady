@@ -10,11 +10,6 @@ import (
 )
 
 func (r *FilesystemRepository) SavePlan(p *planning.Plan) error {
-	path, err := r.ResolvePath(PlanFile)
-	if err != nil {
-		return err
-	}
-
 	// Stamp the write here, at the one funnel every plan mutation passes
 	// through, rather than leaving each caller to remember. Approving a plan
 	// rewrote plan.json without touching UpdatedAt, so a plan could be modified
@@ -24,7 +19,23 @@ func (r *FilesystemRepository) SavePlan(p *planning.Plan) error {
 	// regeneration they did not need. A field that only some writers maintain
 	// is a field that lies. See issue #76.
 	p.UpdatedAt = time.Now()
+	return r.writePlan(p)
+}
 
+// RewritePlan saves a correction that leaves what the plan describes as it
+// was — repaired feature links — without stamping it as updated. SavePlan's
+// stamp says the plan was touched now, and drift reads it as "the plan still
+// describes the work"; a repair says nothing of the kind, and stamping it hid
+// 79 days of staleness on mcp-go.
+func (r *FilesystemRepository) RewritePlan(p *planning.Plan) error {
+	return r.writePlan(p)
+}
+
+func (r *FilesystemRepository) writePlan(p *planning.Plan) error {
+	path, err := r.ResolvePath(PlanFile)
+	if err != nil {
+		return err
+	}
 	data, err := json.MarshalIndent(p, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal plan: %w", err)
