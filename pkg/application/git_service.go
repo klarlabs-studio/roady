@@ -71,10 +71,24 @@ func (s *GitService) SyncMarkers(n int) ([]string, error) {
 					continue
 				}
 
+				// A commit naming a task nobody started is still the work:
+				// start it first rather than skip it. Dependencies, approval
+				// and claims guard the start as they would any other.
+				started := false
+				if st := s.statusOf(taskID); st == string(planning.StatusPending) {
+					if err := s.taskSvc.TransitionTask(taskID, "start", "git-automation", ""); err != nil {
+						results = append(results, fmt.Sprintf("Task %s: skip (never started, and cannot start: %v)", taskID, err))
+						continue
+					}
+					started = true
+				}
 				err := s.taskSvc.TransitionTask(taskID, "complete", "git-automation", "Commit: "+hash)
-				if err != nil {
+				switch {
+				case err != nil:
 					results = append(results, fmt.Sprintf("Task %s: skip (%v)", taskID, err))
-				} else {
+				case started:
+					results = append(results, fmt.Sprintf("Task %s: started and completed via %s (it was never started)", taskID, hash[:8]))
+				default:
 					results = append(results, fmt.Sprintf("Task %s: completed via %s", taskID, hash[:8]))
 				}
 			}

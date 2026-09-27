@@ -83,3 +83,51 @@ func TestGitService_SyncLinksCommitToFinishedTask(t *testing.T) {
 		t.Fatalf("expected the commit linked exactly once, got %v", got.Evidence)
 	}
 }
+
+// A commit naming a task nobody started used to be skipped ("invalid
+// transition from pending"): the work was in the history and the plan did
+// not know. Sync starts and completes it, unless the start itself is not
+// allowed — then it says why.
+func TestSyncCompletesUnstartedTask(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not available")
+	}
+	dir := t.TempDir()
+	run := func(args ...string) {
+		t.Helper()
+		cmd := exec.Command("git", append([]string{"-C", dir}, args...)...)
+		cmd.Env = append(os.Environ(), "GIT_AUTHOR_NAME=t", "GIT_AUTHOR_EMAIL=t@t", "GIT_COMMITTER_NAME=t", "GIT_COMMITTER_EMAIL=t@t")
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+	}
+	run("init", "-q")
+	run("commit", "-q", "--allow-empty", "-m", "do the first thing [roady:t1]")
+	run("commit", "-q", "--allow-empty", "-m", "jump ahead [roady:t2]")
+	t.Chdir(dir)
+
+	repo := &MockRepo{
+		Plan: &planning.Plan{
+			ID: "p1", ApprovalStatus: planning.ApprovalApproved,
+			Tasks: []planning.Task{{ID: "t1", Title: "One"}, {ID: "t2", Title: "Two", DependsOn: []string{"t3"}}, {ID: "t3", Title: "Three"}},
+		},
+		State:  planning.NewExecutionState("p1"),
+		Policy: &domain.PolicyConfig{MaxWIP: 5},
+	}
+	audit := application.NewAuditService(repo)
+	gitSvc := application.NewGitService(repo, application.NewTaskService(repo, audit, application.NewPolicyService(repo)))
+	results, err := gitSvc.SyncMarkers(5)
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := strings.Join(results, "\n")
+	if got := repo.State.TaskStates["t1"]; got.Status != planning.StatusDone || len(got.Evidence) == 0 {
+		t.Errorf("t1 %+v\n%s", got, out)
+	}
+	if !strings.Contains(out, "Task t1: started and completed via") {
+		t.Errorf("results:\n%s", out)
+	}
+	if repo.State.GetTaskStatus("t2") != planning.StatusPending || !strings.Contains(out, "Task t2: skip (never started, and cannot start:") {
+		t.Errorf("t2 must wait for its dependency:\n%s", out)
+	}
+}
