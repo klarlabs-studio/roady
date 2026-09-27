@@ -731,6 +731,14 @@ features:
           depends_on: []
           check:
             run: go test ./pkg/application ./internal/infrastructure/cli -run 'GoalImport.*Sections'
+        - id: git-sync-every-marker
+          title: git sync completes every task a commit names
+          description: A commit tagged [roady:a] [roady:b] [roady:c] completed only a; git sync read the first marker in the subject. A subject containing | was also cut short.
+          priority: medium
+          estimate: ""
+          depends_on: []
+          check:
+            run: go test ./pkg/application -run 'TestGitService_SyncEveryMarker'
       goal: goal-adopt-existing-projects
 constraints:
     - id: backward-compat
