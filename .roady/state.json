@@ -1,6 +1,6 @@
 {
   "project_id": "agent-handoff",
-  "version": 465,
+  "version": 479,
   "task_states": {
     "task-acceptance-checks": {
       "status": "verified",
@@ -460,6 +460,31 @@
           "at": "2026-09-27T15:31:24.8771573+02:00",
           "duration": "328ms",
           "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.010s\n"
+        }
+      ]
+    },
+    "task-cask-binaries-match-builds": {
+      "status": "verified",
+      "path": "",
+      "owner": "git-automation",
+      "evidence": [
+        "Commit: bd1390aa463a03f63156f6edf3452fb2e64b1990"
+      ],
+      "started_at": "2026-09-27T21:48:17.485291+02:00",
+      "completed_at": "2026-09-27T21:48:17.488718+02:00",
+      "elapsed_minutes": 0,
+      "checks": [
+        {
+          "kind": "run",
+          "command": "go test ./cmd/roady -run TestReleaseCaskShipsOnlyBuiltBinaries",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "bd1390aa463a03f63156f6edf3452fb2e64b1990",
+          "dirty": true,
+          "by": "Felix Geelhaar",
+          "at": "2026-09-27T21:48:24.632617+02:00",
+          "duration": "1.863s",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/cmd/roady\t0.338s\n"
         }
       ]
     },
@@ -1772,7 +1797,8 @@
       "path": "",
       "owner": "Claude",
       "evidence": [
-        "Commit: 5b0617a2385b4ff72fff5ca5e8325ada554a4f87"
+        "Commit: 5b0617a2385b4ff72fff5ca5e8325ada554a4f87",
+        "Commit: 7cfd5b39981c6118bb07bb285ea803d48229939e"
       ],
       "started_at": "2026-09-27T17:59:14.507135701+02:00",
       "completed_at": "2026-09-27T18:00:36.407829532+02:00",
@@ -1973,6 +1999,31 @@
         }
       ]
     },
+    "task-shared-state-canonical-path": {
+      "status": "verified",
+      "path": "",
+      "owner": "Felix Geelhaar",
+      "evidence": [
+        "6bb3d35"
+      ],
+      "started_at": "2026-09-27T21:48:33.192444+02:00",
+      "completed_at": "2026-09-27T21:48:33.21841+02:00",
+      "elapsed_minutes": 0,
+      "checks": [
+        {
+          "kind": "run",
+          "command": "go test ./pkg/storage -run 'TestGitCommonDir|TestStateIsSharedAcrossWorktrees'",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "bd1390aa463a03f63156f6edf3452fb2e64b1990",
+          "dirty": true,
+          "by": "Felix Geelhaar",
+          "at": "2026-09-27T21:48:33.277122+02:00",
+          "duration": "610ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/storage\t0.316s\n"
+        }
+      ]
+    },
     "task-single-task-cli": {
       "status": "verified",
       "path": "",
@@ -2163,7 +2214,8 @@
       "path": "",
       "owner": "Claude",
       "evidence": [
-        "Commit: 02b1c53f4faf2e8303148ad19931464039b390b1"
+        "Commit: 02b1c53f4faf2e8303148ad19931464039b390b1",
+        "Commit: cd191bbeb3834cbdfae3d0b324212e9d781c50d8"
       ],
       "started_at": "2026-09-27T17:43:10.354238091+02:00",
       "completed_at": "2026-09-27T17:43:59.958986491+02:00",
@@ -2411,5 +2463,5 @@
       "elapsed_minutes": 4
     }
   },
-  "updated_at": "2026-09-27T18:00:45.624479314+02:00"
+  "updated_at": "2026-09-27T21:48:33.896319+02:00"
 }
