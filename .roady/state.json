@@ -1,6 +1,6 @@
 {
   "project_id": "agent-handoff",
-  "version": 276,
+  "version": 279,
   "task_states": {
     "task-acceptance-checks": {
       "status": "verified",
@@ -693,9 +693,28 @@
       ]
     },
     "task-render-roadmap": {
-      "status": "pending",
+      "status": "done",
       "path": "",
-      "elapsed_minutes": 0
+      "owner": "Claude",
+      "evidence": [
+        "Commit: 544be1ace4ae4a4de93f2a19851a7dd19b531964"
+      ],
+      "started_at": "2026-09-27T09:22:21.813536757+02:00",
+      "completed_at": "2026-09-27T09:26:20.085613057+02:00",
+      "elapsed_minutes": 3,
+      "checks": [
+        {
+          "kind": "run",
+          "command": "go test ./pkg/application/ -run 'Roadmap' -count=1 \u0026\u0026 go test ./internal/infrastructure/cli/ -run TestGoalRender -count=1 \u0026\u0026 go test ./internal/infrastructure/mcp/ -run TestGoalRenderOverMCP -count=1 \u0026\u0026 go run ./cmd/roady goal render --check",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "544be1ace4ae4a4de93f2a19851a7dd19b531964",
+          "by": "Claude",
+          "at": "2026-09-27T09:26:20.119526355+02:00",
+          "duration": "2.969s",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.005s\nok  \tgithub.com/felixgeelhaar/roady/internal/infrastructure/cli\t0.012s\nok  \tgithub.com/felixgeelhaar/roady/internal/infrastructure/mcp\t0.008s\n/home/claude/felixgeelhaar/roady/ROADMAP.md is up to date.\n"
+        }
+      ]
     },
     "task-resolved-feature-links": {
       "status": "verified",
@@ -898,5 +917,5 @@
       "elapsed_minutes": 4
     }
   },
-  "updated_at": "2026-09-27T09:07:33.947442116+02:00"
+  "updated_at": "2026-09-27T09:26:20.085613703+02:00"
 }
