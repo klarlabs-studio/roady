@@ -6,6 +6,13 @@
 - **Minor** (1.x.0): New optional fields (`omitempty`), new tools, fields deprecated
 - **Major** (x.0.0): Required fields added/removed, tool signatures changed
 
+## v5.1.0 — Import a hand-kept roadmap
+
+**Minor**: `roady_goal` gains the `import` action with an optional `path`:
+it reads goals from a roadmap file kept by hand (`## Now / Next / Later /
+Done` sections, a `###` heading or bullet per goal). A relative path is
+resolved against the project. The result carries `skipped_sections`.
+
 ## v5.0.0 — One tool per CLI noun
 
 **Major**: per-verb tools replaced by noun tools with an `action`.

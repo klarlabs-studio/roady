@@ -3,6 +3,7 @@ package mcp
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -42,7 +43,7 @@ var NounActions = map[string][]string{
 	"roady_state":  {"get", "rebuild"},
 	"roady_policy": {"check"},
 	"roady_git":    {"sync"},
-	"roady_goal":   {"list", "add", "edit", "render"},
+	"roady_goal":   {"list", "add", "edit", "render", "import"},
 }
 
 // SingleTools are CLI commands without verbs, served as one tool each.
@@ -292,7 +293,8 @@ func (s *Server) handleGit(ctx context.Context, a VerbArgs) (any, error) {
 
 // GoalArgs is `roady goal <action>`.
 type GoalArgs struct {
-	Action      string   `json:"action" jsonschema:"required,description=list|add|edit|render (write ROADMAP.md from the goals)"`
+	Action      string   `json:"action" jsonschema:"required,description=list|add|edit|render (write ROADMAP.md from the goals)|import (read goals from a hand-kept roadmap file at path)"`
+	Path        string   `json:"path,omitempty" jsonschema:"description=import: the roadmap file (## Now / Next / Later / Done)"`
 	GoalID      string   `json:"goal_id,omitempty" jsonschema:"description=edit: the goal; add: its id (default goal-<title>)"`
 	Title       *string  `json:"title,omitempty" jsonschema:"description=add: required"`
 	Description *string  `json:"description,omitempty"`
@@ -328,6 +330,8 @@ func (s *Server) handleGoal(ctx context.Context, a GoalArgs) (any, error) {
 		doc, _, err = application.AddGoalDoc(sp, e)
 	case "edit":
 		doc, _, err = application.EditGoalDoc(sp, e)
+	case "import":
+		return s.importRoadmap(svc.Capture, svc.Workspace.Repo.Root(), a)
 	default:
 		return actionError("roady_goal", a.Action)
 	}
@@ -406,4 +410,33 @@ func (s *Server) handleBlockWithReason(a TaskArgs) (any, error) {
 		return mcpErr(err.Error()), nil
 	}
 	return fmt.Sprintf("Task %s blocked (%s). A person will resolve it; it shows in status and drift until then. Pick another task with roady_next.", a.TaskID, a.Reason), nil
+}
+
+// importRoadmap reads goals from a hand-kept roadmap file. It is an
+// ordinary capture — goals order work and do not reopen the plan's approval.
+func (s *Server) importRoadmap(capture *application.CaptureService, root string, a GoalArgs) (any, error) {
+	if strings.TrimSpace(a.Path) == "" {
+		return mcpErr("import needs path: the roadmap file to read"), nil
+	}
+	path := a.Path
+	if !filepath.IsAbs(path) {
+		path = filepath.Join(root, path)
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		return mcpErr(fmt.Sprintf("Cannot read %s: %v", a.Path, err)), nil
+	}
+	defer func() { _ = f.Close() }()
+	imp, err := application.ImportRoadmapMarkdown(f)
+	if err != nil {
+		return mcpErr(err.Error()), nil
+	}
+	if len(imp.Doc.Goals) == 0 {
+		return mcpErr(fmt.Sprintf("No goals found in %s: expected ## Now / Next / Later / Done sections with a ### heading or bullet per goal.", a.Path)), nil
+	}
+	result, err := capture.Capture(imp.Doc, application.CaptureOptions{Actor: "ai-agent", DryRun: a.DryRun, Origin: planning.OriginAI, Via: application.ViaRoadmapImport})
+	if err != nil {
+		return mcpErr(fmt.Sprintf("Failed to record the goals: %v", err)), nil
+	}
+	return map[string]any{"result": result, "skipped_sections": imp.Skipped}, nil
 }

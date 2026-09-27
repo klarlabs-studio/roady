@@ -1,6 +1,6 @@
 {
   "project_id": "agent-handoff",
-  "version": 430,
+  "version": 432,
   "task_states": {
     "task-acceptance-checks": {
       "status": "verified",
@@ -2079,17 +2079,28 @@
       ]
     },
     "task-unlinked-features-capped": {
-      "status": "in_progress",
+      "status": "done",
       "path": "",
       "owner": "Claude",
+      "evidence": [
+        "Commit: 6c00c2f270a42a75d078e2c1b38378088b00f5e1"
+      ],
       "started_at": "2026-09-27T17:01:02.051505598+02:00",
+      "completed_at": "2026-09-27T17:01:27.592431678+02:00",
       "elapsed_minutes": 0,
-      "lease": {
-        "holder": "Claude",
-        "session": "c7fdd252-1fb8-44ab-9186-3ca566969480",
-        "expires_at": "2026-09-27T19:01:02.051505825+02:00",
-        "renewed_at": "2026-09-27T17:01:02.051505825+02:00"
-      }
+      "checks": [
+        {
+          "kind": "run",
+          "command": "go test ./pkg/application/ -run TestRoadmapUnlinkedIsCapped -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "6c00c2f270a42a75d078e2c1b38378088b00f5e1",
+          "by": "Claude",
+          "at": "2026-09-27T17:01:27.615526015+02:00",
+          "duration": "336ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.004s\n"
+        }
+      ]
     },
     "task-unplanned-tasks": {
       "status": "verified",
@@ -2193,5 +2204,5 @@
       "elapsed_minutes": 4
     }
   },
-  "updated_at": "2026-09-27T17:01:02.051505598+02:00"
+  "updated_at": "2026-09-27T17:01:27.592432969+02:00"
 }

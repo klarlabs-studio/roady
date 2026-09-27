@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/felixgeelhaar/roady/pkg/application"
 	"github.com/spf13/cobra"
@@ -190,6 +191,46 @@ without --force: move it into the goals first.
 	},
 }
 
+var goalImportCmd = &cobra.Command{
+	Use:   "import <file>",
+	Short: "Read goals from a roadmap file kept by hand (Now / Next / Later / Done)",
+	Long: `Move a hand-kept roadmap into goals. The file's ## headings name the
+sections — Now, Next, Later, Ideas, Done (or Shipped) and Out of scope — and
+each ### heading or top-level bullet under one is a goal: a bold lead or the
+text before a dash or colon is its title, the rest its description, and a
+trailing "(v1.2)" its milestone. Other sections are skipped and named.
+
+Goal ids are goal-<title>, so importing the same file again changes nothing.
+Afterwards the goals are the roadmap: render the file from them with
+` + "`roady goal render --out <file> --force`" + `, or delete it.
+
+  roady goal import ROADMAP.md --dry-run
+  roady goal import memory/roadmap.md`,
+	Args: cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ws, _, err := loadEditPlan()
+		if err != nil {
+			return err
+		}
+		f, err := os.Open(args[0])
+		if err != nil {
+			return err
+		}
+		defer func() { _ = f.Close() }()
+		imp, err := application.ImportRoadmapMarkdown(f)
+		if err != nil {
+			return err
+		}
+		if len(imp.Doc.Goals) == 0 {
+			return fmt.Errorf("no goals found in %s: expected ## Now / Next / Later / Done sections with a ### heading or bullet per goal", args[0])
+		}
+		if len(imp.Skipped) > 0 && !editJSON {
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Skipped sections that are not a horizon: %s\n", strings.Join(imp.Skipped, ", "))
+		}
+		return applyEditVia(cmd, ws, imp.Doc, false, fmt.Sprintf("Imported %d goal(s) from %s", len(imp.Doc.Goals), args[0]), application.ViaRoadmapImport)
+	},
+}
+
 func addGoalFlags(c *cobra.Command) {
 	c.Flags().StringVar(&goalDesc, "description", "", "What the goal is for")
 	c.Flags().StringVar(&goalHorizon, "horizon", "", "now, next or later")
@@ -209,6 +250,8 @@ func init() {
 	goalRenderCmd.Flags().StringVar(&goalRenderOut, "out", "", "Write here instead of ROADMAP.md at the repository root; - prints it")
 	goalRenderCmd.Flags().BoolVar(&goalRenderCheck, "check", false, "Write nothing; fail unless the file is up to date")
 	goalRenderCmd.Flags().BoolVar(&goalRenderForce, "force", false, "Replace a file that was edited by hand or not written by roady")
-	goalCmd.AddCommand(goalListCmd, goalAddCmd, goalEditCmd, goalRenderCmd)
+	goalImportCmd.Flags().BoolVar(&editDryRun, "dry-run", false, "Show what would change without writing")
+	goalImportCmd.Flags().BoolVar(&editJSON, "json", false, "Print the result as JSON")
+	goalCmd.AddCommand(goalListCmd, goalAddCmd, goalEditCmd, goalRenderCmd, goalImportCmd)
 	RootCmd.AddCommand(goalCmd)
 }
