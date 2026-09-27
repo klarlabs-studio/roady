@@ -504,7 +504,10 @@
       ],
       "feature_id": "keep",
       "origin": "heuristic",
-      "source": {}
+      "source": {},
+      "check": {
+        "run": "go test ./internal/infrastructure/cli/ -run TestDecideAndNext -count=1 \u0026\u0026 go test ./pkg/application/ -run 'TestDecideRecordsAndSupersedes|TestBriefShowsDecisions' -count=1"
+      }
     },
     {
       "id": "task-render-roadmap",
@@ -691,5 +694,5 @@
   ],
   "approval_status": "approved",
   "created_at": "2026-01-31T18:00:00+01:00",
-  "updated_at": "2026-09-27T14:40:40.273443143+02:00"
+  "updated_at": "2026-09-27T14:53:55.463363149+02:00"
 }

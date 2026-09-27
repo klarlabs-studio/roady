@@ -156,6 +156,39 @@
       "source": {}
     }
   ],
+  "decisions": [
+    {
+      "id": "decision-shared-state",
+      "title": "Where execution state lives",
+      "context": "Parallel agents in separate worktrees could not see each other's claims. A git ref would version state but costs a commit per write.",
+      "choice": "The common git directory (.git/roady/), shared by all worktrees; .roady/state.json is a mirror",
+      "consequences": "State does not travel with pushes; the committed event log and roady state rebuild cover other machines. See docs/rfcs/0002-shared-execution-state.md.",
+      "date": "2026-09-27",
+      "requirements": [
+        "shared-execution-state"
+      ]
+    },
+    {
+      "id": "decision-mcp-nouns",
+      "title": "MCP surface shape",
+      "context": "A per-verb surface cost ~16k tokens; an agent-loop-only surface broke CLI/MCP parity.",
+      "choice": "One tool per CLI noun, the CLI verbs as actions; decisions run only after the user confirms in-client (MCP elicitation)",
+      "consequences": "Every CLI project command has a tool or action (TestEveryCLICommandHasAnMCPTool). Clients without elicitation cannot run decisions over MCP.",
+      "date": "2026-09-27",
+      "features": [
+        "mcp-surface"
+      ]
+    },
+    {
+      "id": "decision-roadmap-from-goals",
+      "title": "Roadmap source of truth",
+      "choice": "Goals in spec.yaml; ROADMAP.md is rendered from them and hand edits are drift",
+      "date": "2026-09-27",
+      "requirements": [
+        "render-roadmap"
+      ]
+    }
+  ],
   "features": [
     {
       "id": "cross-project-deps",

@@ -1,6 +1,6 @@
 {
   "project_id": "agent-handoff",
-  "version": 304,
+  "version": 307,
   "task_states": {
     "task-acceptance-checks": {
       "status": "verified",
@@ -236,9 +236,28 @@
       ]
     },
     "task-decisions": {
-      "status": "pending",
+      "status": "done",
       "path": "",
-      "elapsed_minutes": 0
+      "owner": "Claude",
+      "evidence": [
+        "Commit: 01015884d896a56260ae66e170d6e8f61386c06b"
+      ],
+      "started_at": "2026-09-27T14:50:46.882225454+02:00",
+      "completed_at": "2026-09-27T14:53:55.44242573+02:00",
+      "elapsed_minutes": 3,
+      "checks": [
+        {
+          "kind": "run",
+          "command": "go test ./internal/infrastructure/cli/ -run TestDecideAndNext -count=1 \u0026\u0026 go test ./pkg/application/ -run 'TestDecideRecordsAndSupersedes|TestBriefShowsDecisions' -count=1",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "01015884d896a56260ae66e170d6e8f61386c06b",
+          "by": "Claude",
+          "at": "2026-09-27T14:53:55.483264825+02:00",
+          "duration": "1.052s",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/internal/infrastructure/cli\t0.012s\nok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.010s\n"
+        }
+      ]
     },
     "task-dispatch-contract": {
       "status": "verified",
@@ -1132,5 +1151,5 @@
       "elapsed_minutes": 4
     }
   },
-  "updated_at": "2026-09-27T14:40:40.250443945+02:00"
+  "updated_at": "2026-09-27T14:53:55.442426321+02:00"
 }
