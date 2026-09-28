@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.27.3] - 2026-09-28
+
 ### Fixed
 
 - A misspelt field in a capture document names the item and the field
@@ -1664,7 +1666,8 @@ See [GitHub release notes](https://github.com/felixgeelhaar/roady/releases/tag/v
 - Resilience via `fortify` integration for filesystem retries
 - State management via `statekit` FSM for task transitions
 
-[Unreleased]: https://github.com/felixgeelhaar/roady/compare/v0.27.2...HEAD
+[Unreleased]: https://github.com/felixgeelhaar/roady/compare/v0.27.3...HEAD
+[0.27.3]: https://github.com/felixgeelhaar/roady/compare/v0.27.2...v0.27.3
 [0.27.2]: https://github.com/felixgeelhaar/roady/compare/v0.27.1...v0.27.2
 [0.27.1]: https://github.com/felixgeelhaar/roady/compare/v0.27.0...v0.27.1
 [0.27.0]: https://github.com/felixgeelhaar/roady/compare/v0.26.1...v0.27.0
