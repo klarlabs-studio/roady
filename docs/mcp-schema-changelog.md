@@ -6,6 +6,13 @@
 - **Minor** (1.x.0): New optional fields (`omitempty`), new tools, fields deprecated
 - **Major** (x.0.0): Required fields added/removed, tool signatures changed
 
+## v5.3.0 — Accepted tasks in listings
+
+**Minor**: `roady_task` `list` accepts `status` values `done` (awaiting
+verification, as `roady status` counts it), `accepted` and `verified`, and
+each listed task carries an optional `accepted` flag. `status` on a task stays
+its underlying status (`done` for an accepted task).
+
 ## v5.2.0 — Accept finished work without verification
 
 **Minor**: `roady_task` gains the `accept` action with optional `task_ids`

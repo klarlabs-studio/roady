@@ -391,3 +391,36 @@ func TestTaskAcceptNeedsTheUser(t *testing.T) {
 		t.Error("a confirmed accept did not accept t1")
 	}
 }
+
+// roady_task list tells accepted work apart: its own filter, a flag on each
+// task, and done meaning awaiting verification as status counts it.
+func TestTaskListAccepted(t *testing.T) {
+	server := setupCoordinatorTestServer(t)
+	repo := storage.NewFilesystemRepository(server.root)
+	st, _ := repo.LoadState()
+	st.SetTaskStatus("t1", planning.StatusDone)
+	st.SetTaskStatus("t2", planning.StatusDone)
+	_ = st.Accept("t1", planning.Acceptance{By: "felix", Reason: "history"})
+	_ = repo.SaveState(st)
+	ctx := context.Background()
+
+	// The fixture already has t4 done.
+	for status, want := range map[string]string{"accepted": "t1", "done": "t2,t4"} {
+		res, _ := server.handleTask(ctx, TaskArgs{Action: "list", Status: status})
+		page, ok := res.(taskPage)
+		if !ok {
+			t.Fatalf("status=%s: %T", status, res)
+		}
+		var ids []string
+		for _, task := range page.Tasks {
+			ids = append(ids, task.ID)
+			if task.Accepted != (status == "accepted") {
+				t.Errorf("status=%s: %s accepted=%v", status, task.ID, task.Accepted)
+			}
+		}
+		sort.Strings(ids)
+		if got := strings.Join(ids, ","); got != want {
+			t.Errorf("status=%s lists %s, want %s", status, got, want)
+		}
+	}
+}

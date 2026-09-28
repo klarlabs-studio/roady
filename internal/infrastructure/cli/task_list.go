@@ -37,16 +37,16 @@ var taskListCmd = &cobra.Command{
 		case "unassigned":
 			tasks, err = services.Plan.GetTasksByOwner(ctx, "")
 		case string(planning.StatusPending), string(planning.StatusInProgress), string(planning.StatusBlocked),
-			string(planning.StatusDone), string(planning.StatusVerified):
+			string(planning.StatusDone), string(planning.StatusVerified), "accepted":
 			var all []project.TaskSummary
 			all, err = services.Plan.GetTaskSummaries(ctx)
 			for _, t := range all {
-				if string(t.Status) == status {
+				if listStatus(t) == status {
 					tasks = append(tasks, t)
 				}
 			}
 		default:
-			return fmt.Errorf("unknown --status %q: use all, ready, pending, in_progress, blocked, done, verified or unassigned", taskListStatus)
+			return fmt.Errorf("unknown --status %q: use all, ready, pending, in_progress, blocked, done, accepted, verified or unassigned", taskListStatus)
 		}
 		if err != nil {
 			return MapError(fmt.Errorf("list tasks: %w", err))
@@ -62,7 +62,7 @@ var taskListCmd = &cobra.Command{
 		out := cmd.OutOrStdout()
 		_, _ = fmt.Fprintf(out, "%s: %d\n", title, total)
 		for _, t := range tasks {
-			_, _ = fmt.Fprintf(out, "  %-12s %-32s %s\n", "["+string(t.Status)+"]", t.ID, t.Title)
+			_, _ = fmt.Fprintf(out, "  %-12s %-32s %s\n", "["+listStatus(t)+"]", t.ID, t.Title)
 		}
 		if total == 0 {
 			_, _ = fmt.Fprintln(out, "  (none)")
@@ -75,8 +75,18 @@ var taskListCmd = &cobra.Command{
 }
 
 func init() {
-	taskListCmd.Flags().StringVar(&taskListStatus, "status", "all", "all, ready, pending, in_progress, blocked, done, verified or unassigned")
+	taskListCmd.Flags().StringVar(&taskListStatus, "status", "all", "all, ready, pending, in_progress, blocked, done (awaiting verification), accepted, verified or unassigned")
 	taskListCmd.Flags().IntVar(&taskListLimit, "limit", 50, "Show at most this many (0 for all)")
 	taskListCmd.Flags().BoolVar(&taskQueryJSON, "json", false, "Output in JSON format")
 	taskCmd.AddCommand(taskListCmd)
+}
+
+// listStatus is the status task list shows and filters on. An accepted task
+// is done, but not awaiting verification the way done is: status counts them
+// apart, and so does the list.
+func listStatus(t project.TaskSummary) string {
+	if t.Accepted {
+		return "accepted"
+	}
+	return string(t.Status)
 }

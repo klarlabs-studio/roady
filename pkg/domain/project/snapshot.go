@@ -32,6 +32,8 @@ type TaskSummary struct {
 	DependsOn   []string
 	IsBlocked   bool
 	IsUnlocked  bool
+	// Accepted is a done task a person took as done without verification.
+	Accepted bool
 }
 
 // GetProjectSnapshot returns a consistent snapshot of the current project state.
@@ -130,6 +132,7 @@ func (c *Coordinator) GetTaskSummaries(ctx context.Context) ([]TaskSummary, erro
 			DependsOn:   task.DependsOn,
 			IsBlocked:   status.IsBlocked(),
 			IsUnlocked:  status.IsPending() && isUnlocked(task, state, c.externalResolver),
+			Accepted:    result.IsAccepted(),
 		}
 
 		summaries = append(summaries, summary)
