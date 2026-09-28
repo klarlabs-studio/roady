@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/felixgeelhaar/roady/pkg/application"
+	"github.com/felixgeelhaar/roady/pkg/domain/planning"
 	"github.com/felixgeelhaar/roady/pkg/domain/project"
 	"github.com/felixgeelhaar/roady/pkg/storage"
 )
@@ -637,8 +638,18 @@ func (s *Server) handleTasks(ctx context.Context, args TasksArgs) (any, error) {
 		// single set of counts describe the whole answer. Each task carries
 		// its own status, so nothing is lost by flattening.
 		tasks, err2 = svc.Plan.GetTaskSummaries(ctx)
+	case "done", "accepted", "verified":
+		// done means awaiting verification, as roady status counts it: an
+		// accepted task is done but listed under accepted.
+		var all []project.TaskSummary
+		all, err2 = svc.Plan.GetTaskSummaries(ctx)
+		for _, t := range all {
+			if finishedAs(t) == status {
+				tasks = append(tasks, t)
+			}
+		}
 	default:
-		return mcpErr("Invalid status. Use ready, in_progress, blocked, unassigned, or all."), nil
+		return mcpErr("Invalid status. Use ready, in_progress, blocked, done, accepted, verified, unassigned, or all."), nil
 	}
 
 	if err2 != nil {
@@ -652,6 +663,20 @@ func (s *Server) handleTasks(ctx context.Context, args TasksArgs) (any, error) {
 	}
 
 	return paginateTasks(status, tasks, args.Offset, args.Limit, args.Detail), nil
+}
+
+// finishedAs names a finished task's listing: verified, accepted, or done
+// (awaiting verification); "" for a task that is not finished.
+func finishedAs(t project.TaskSummary) string {
+	switch {
+	case t.Status == planning.StatusVerified:
+		return "verified"
+	case t.Accepted:
+		return "accepted"
+	case t.Status == planning.StatusDone:
+		return "done"
+	}
+	return ""
 }
 
 // filterByAssignee narrows tasks to those owned by assignee. An empty assignee

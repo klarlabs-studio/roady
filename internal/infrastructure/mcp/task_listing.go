@@ -39,6 +39,8 @@ type taskView struct {
 	DependsOn  []string `json:"depends_on,omitempty"`
 	IsBlocked  bool     `json:"is_blocked,omitempty"`
 	IsUnlocked bool     `json:"is_unlocked,omitempty"`
+	// Accepted marks a done task taken as done without verification.
+	Accepted bool `json:"accepted,omitempty"`
 
 	// Description is present only when the caller passed detail=true.
 	Description string `json:"description,omitempty"`
@@ -145,6 +147,7 @@ func projectTask(t project.TaskSummary, detail bool) taskView {
 		DependsOn:  t.DependsOn,
 		IsBlocked:  t.IsBlocked,
 		IsUnlocked: t.IsUnlocked,
+		Accepted:   t.Accepted,
 	}
 	if detail {
 		view.Description = t.Description

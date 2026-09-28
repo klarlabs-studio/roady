@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `roady task list` shows accepted tasks as `[accepted]` and filters them
+  with `--status accepted`; `--status done` now means awaiting verification,
+  as `roady status` counts it. Over MCP, `roady_task` `list` takes `done`,
+  `accepted` and `verified`, and marks each accepted task. MCP schema 5.3.0.
+
 ## [0.27.3] - 2026-09-28
 
 ### Fixed

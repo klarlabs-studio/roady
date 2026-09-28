@@ -78,7 +78,7 @@ type TaskArgs struct {
 	Agent     string   `json:"agent,omitempty" jsonschema:"description=Acting agent; for dispatch, the subagent taking the task"`
 	SessionID string   `json:"session_id,omitempty" jsonschema:"description=Session ID recorded in the audit trail"`
 	DryRun    bool     `json:"dry_run,omitempty" jsonschema:"description=dispatch: build the brief without claiming"`
-	Status    string   `json:"status,omitempty" jsonschema:"description=list: ready (default), in_progress, blocked, unassigned or all"`
+	Status    string   `json:"status,omitempty" jsonschema:"description=list: ready (default), in_progress, blocked, done (awaiting verification), accepted, verified, unassigned or all"`
 	Owner     string   `json:"owner,omitempty" jsonschema:"description=list: only this owner's tasks"`
 	Limit     int      `json:"limit,omitempty" jsonschema:"description=list: page size"`
 	Offset    int      `json:"offset,omitempty" jsonschema:"description=list: page start"`
