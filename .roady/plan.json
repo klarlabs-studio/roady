@@ -914,9 +914,23 @@
       "check": {
         "run": "go test ./pkg/application -run 'TestGitService_SyncEveryMarker'"
       }
+    },
+    {
+      "id": "task-capture-unknown-field-hint",
+      "title": "A misspelt capture field names the field meant (Capture: intent at whatever size it arrives)",
+      "description": "Writing feature on a task (the field is feature_id) failed with \"field feature not found in type application.CaptureTask\". Name the item, suggest the nearest field, list the ones it takes.",
+      "priority": "low",
+      "estimate": "",
+      "depends_on": [],
+      "feature_id": "capture",
+      "origin": "heuristic",
+      "source": {},
+      "check": {
+        "run": "go test ./internal/infrastructure/cli -run TestCaptureUnknownFieldNamesTheFieldMeant"
+      }
     }
   ],
-  "approval_status": "approved",
+  "approval_status": "pending",
   "created_at": "2026-01-31T18:00:00+01:00",
-  "updated_at": "2026-09-27T22:49:26.750356+02:00"
+  "updated_at": "2026-09-28T08:06:49.328101+02:00"
 }

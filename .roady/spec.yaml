@@ -557,6 +557,14 @@ features:
           priority: high
           estimate: 2d
           depends_on: []
+        - id: capture-unknown-field-hint
+          title: A misspelt capture field names the field meant
+          description: Writing feature on a task (the field is feature_id) failed with "field feature not found in type application.CaptureTask". Name the item, suggest the nearest field, list the ones it takes.
+          priority: low
+          estimate: ""
+          depends_on: []
+          check:
+            run: go test ./internal/infrastructure/cli -run TestCaptureUnknownFieldNamesTheFieldMeant
       goal: goal-planning-for-ai
     - id: keep
       title: 'Keep: continuity across sessions, compaction and parallel agents'
