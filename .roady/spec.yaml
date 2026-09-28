@@ -9,6 +9,8 @@ goals:
 
         The most useful input is field use: v0.18.0 came entirely from one person running Roady on a real 118-feature project for a day.
       horizon: now
+      status: shipped
+      milestone: v0.25.0
     - id: goal-release-0-22-x
       title: The MCP surface mirrors the CLI
       description: |-
@@ -237,6 +239,10 @@ goals:
       horizon: now
       status: shipped
       milestone: v0.26.0
+    - id: goal-history
+      title: Roady describes work done before or outside it
+      description: 'Trying roady on nexa and mcp-go showed where it misreads a project with history: finished work it cannot verify, planned work committed without markers, and roadmaps organised by phase rather than horizon.'
+      horizon: now
 decisions:
     - id: decision-shared-state
       title: Where execution state lives
@@ -748,6 +754,35 @@ features:
           check:
             run: go test ./pkg/application -run 'TestGitService_SyncEveryMarker'
       goal: goal-adopt-existing-projects
+    - id: history
+      title: Work done before or outside roady
+      description: Show and link work that happened without roady watching, instead of reporting it as outstanding or unplanned.
+      requirements:
+        - id: accepted-in-task-list
+          title: task list shows accepted tasks as accepted and can filter them
+          description: roady task list printed accepted tasks as plain [done] and had no --status accepted, so the one command agents try first could not tell accepted from awaiting verification.
+          priority: medium
+          estimate: ""
+          depends_on: []
+          check:
+            run: go test ./internal/infrastructure/cli -run TestTaskListShowsAccepted
+        - id: link-untagged-commits
+          title: Link planned work committed without a roady marker
+          description: mcp-go committed its planned work without [roady:] markers, so staleness counted 71 commits as unplanned. roady git suggest names the task each unmarked commit most likely served; roady git link records it as evidence; staleness counts only commits no task claims.
+          priority: high
+          estimate: ""
+          depends_on: []
+          check:
+            run: go test ./pkg/application ./internal/infrastructure/cli ./internal/infrastructure/mcp -run UntaggedCommit
+        - id: goal-import-section-map
+          title: goal import maps roadmap sections to horizons
+          description: A roadmap organised by phase imported nothing. --section "Phase 4=now" (MCP sections) says which horizon or status a section is, matched by heading prefix.
+          priority: medium
+          estimate: ""
+          depends_on: []
+          check:
+            run: go test ./pkg/application ./internal/infrastructure/cli -run GoalImportSectionMap
+      goal: goal-history
 constraints:
     - id: backward-compat
       description: Maintain backward compatibility with existing spec.yaml and plan.json formats

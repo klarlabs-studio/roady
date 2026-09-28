@@ -928,9 +928,51 @@
       "check": {
         "run": "go test ./internal/infrastructure/cli -run TestCaptureUnknownFieldNamesTheFieldMeant"
       }
+    },
+    {
+      "id": "task-accepted-in-task-list",
+      "title": "task list shows accepted tasks as accepted and can filter them (Work done before or outside roady)",
+      "description": "roady task list printed accepted tasks as plain [done] and had no --status accepted, so the one command agents try first could not tell accepted from awaiting verification.",
+      "priority": "medium",
+      "estimate": "",
+      "depends_on": [],
+      "feature_id": "history",
+      "origin": "heuristic",
+      "source": {},
+      "check": {
+        "run": "go test ./internal/infrastructure/cli -run TestTaskListShowsAccepted"
+      }
+    },
+    {
+      "id": "task-link-untagged-commits",
+      "title": "Link planned work committed without a roady marker (Work done before or outside roady)",
+      "description": "mcp-go committed its planned work without [roady:] markers, so staleness counted 71 commits as unplanned. roady git suggest names the task each unmarked commit most likely served; roady git link records it as evidence; staleness counts only commits no task claims.",
+      "priority": "high",
+      "estimate": "",
+      "depends_on": [],
+      "feature_id": "history",
+      "origin": "heuristic",
+      "source": {},
+      "check": {
+        "run": "go test ./pkg/application ./internal/infrastructure/cli ./internal/infrastructure/mcp -run UntaggedCommit"
+      }
+    },
+    {
+      "id": "task-goal-import-section-map",
+      "title": "goal import maps roadmap sections to horizons (Work done before or outside roady)",
+      "description": "A roadmap organised by phase imported nothing. --section \"Phase 4=now\" (MCP sections) says which horizon or status a section is, matched by heading prefix.",
+      "priority": "medium",
+      "estimate": "",
+      "depends_on": [],
+      "feature_id": "history",
+      "origin": "heuristic",
+      "source": {},
+      "check": {
+        "run": "go test ./pkg/application ./internal/infrastructure/cli -run GoalImportSectionMap"
+      }
     }
   ],
   "approval_status": "approved",
   "created_at": "2026-01-31T18:00:00+01:00",
-  "updated_at": "2026-09-28T08:08:52.92535+02:00"
+  "updated_at": "2026-09-28T13:46:29.799786+02:00"
 }
