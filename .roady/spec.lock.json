@@ -8,6 +8,8 @@
       "title": "The planning tool for AI: capture, keep, prove",
       "description": "Roady is the plan an AI agent works from and the proof it did: capture intent at whatever size it arrives, keep the agent on it across sessions, compaction and parallel agents, and prove work done with acceptance checks and a hash-chained audit log. Everything outside that was removed.\n\nThe most useful input is field use: v0.18.0 came entirely from one person running Roady on a real 118-feature project for a day.",
       "horizon": "now",
+      "status": "shipped",
+      "milestone": "v0.25.0",
       "source": {}
     },
     {
@@ -225,6 +227,13 @@
       "horizon": "now",
       "status": "shipped",
       "milestone": "v0.26.0",
+      "source": {}
+    },
+    {
+      "id": "goal-history",
+      "title": "Roady describes work done before or outside it",
+      "description": "Trying roady on nexa and mcp-go showed where it misreads a project with history: finished work it cannot verify, planned work committed without markers, and roadmaps organised by phase rather than horizon.",
+      "horizon": "now",
       "source": {}
     }
   ],
@@ -1010,6 +1019,51 @@
       ],
       "source": {},
       "goal": "goal-adopt-existing-projects"
+    },
+    {
+      "id": "history",
+      "title": "Work done before or outside roady",
+      "description": "Show and link work that happened without roady watching, instead of reporting it as outstanding or unplanned.",
+      "requirements": [
+        {
+          "id": "accepted-in-task-list",
+          "title": "task list shows accepted tasks as accepted and can filter them",
+          "description": "roady task list printed accepted tasks as plain [done] and had no --status accepted, so the one command agents try first could not tell accepted from awaiting verification.",
+          "priority": "medium",
+          "estimate": "",
+          "depends_on": [],
+          "source": {},
+          "check": {
+            "run": "go test ./internal/infrastructure/cli -run TestTaskListShowsAccepted"
+          }
+        },
+        {
+          "id": "link-untagged-commits",
+          "title": "Link planned work committed without a roady marker",
+          "description": "mcp-go committed its planned work without [roady:] markers, so staleness counted 71 commits as unplanned. roady git suggest names the task each unmarked commit most likely served; roady git link records it as evidence; staleness counts only commits no task claims.",
+          "priority": "high",
+          "estimate": "",
+          "depends_on": [],
+          "source": {},
+          "check": {
+            "run": "go test ./pkg/application ./internal/infrastructure/cli ./internal/infrastructure/mcp -run UntaggedCommit"
+          }
+        },
+        {
+          "id": "goal-import-section-map",
+          "title": "goal import maps roadmap sections to horizons",
+          "description": "A roadmap organised by phase imported nothing. --section \"Phase 4=now\" (MCP sections) says which horizon or status a section is, matched by heading prefix.",
+          "priority": "medium",
+          "estimate": "",
+          "depends_on": [],
+          "source": {},
+          "check": {
+            "run": "go test ./pkg/application ./internal/infrastructure/cli -run GoalImportSectionMap"
+          }
+        }
+      ],
+      "source": {},
+      "goal": "goal-history"
     }
   ],
   "constraints": [

@@ -1,6 +1,6 @@
 {
   "project_id": "agent-handoff",
-  "version": 507,
+  "version": 508,
   "task_states": {
     "task-accept-finished-without-verification": {
       "status": "verified",
@@ -118,6 +118,11 @@
           "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.129s\nok  \tgithub.com/felixgeelhaar/roady/pkg/domain/planning\t0.004s\nok  \tgithub.com/felixgeelhaar/roady/pkg/domain/spec\t0.003s\n"
         }
       ]
+    },
+    "task-accepted-in-task-list": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
     },
     "task-adoption-metrics": {
       "status": "verified",
@@ -979,6 +984,11 @@
         }
       ]
     },
+    "task-goal-import-section-map": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
+    },
     "task-goals-horizons": {
       "status": "verified",
       "path": "",
@@ -1300,6 +1310,11 @@
           "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t1.432s\nok  \tgithub.com/felixgeelhaar/roady/pkg/domain/planning\t0.002s\n"
         }
       ]
+    },
+    "task-link-untagged-commits": {
+      "status": "pending",
+      "path": "",
+      "elapsed_minutes": 0
     },
     "task-markdown-importer": {
       "status": "verified",

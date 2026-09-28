@@ -1,15 +1,13 @@
-<!-- roady:roadmap sha256=e63b6cb47ea11f7f754532653325d5d2ab8d9b03013ebf8fcc49f841fbfdd0cd — generated from .roady/spec.yaml by `roady goal render`. Change goals with `roady goal`, not this file. -->
+<!-- roady:roadmap sha256=c5f40bfa433623a4a33d4669c9d04ee531149096e17c06da6b44675050d1f85b — generated from .roady/spec.yaml by `roady goal render`. Change goals with `roady goal`, not this file. -->
 # Roadmap
 
 ## Now
 
-### The planning tool for AI: capture, keep, prove
+### Roady describes work done before or outside it
 
-Roady is the plan an AI agent works from and the proof it did: capture intent at whatever size it arrives, keep the agent on it across sessions, compaction and parallel agents, and prove work done with acceptance checks and a hash-chained audit log. Everything outside that was removed.
+Trying roady on nexa and mcp-go showed where it misreads a project with history: finished work it cannot verify, planned work committed without markers, and roadmaps organised by phase rather than horizon.
 
-The most useful input is field use: v0.18.0 came entirely from one person running Roady on a real 118-feature project for a day.
-
-Features: MCP surface is learnable, trimmable and honest (`mcp-surface`), Trust: done means proven (`trust`), Capture: intent at whatever size it arrives (`capture`), Keep: continuity across sessions, compaction and parallel agents (`keep`), Focus and proof of adoption (`focus`)
+Features: Work done before or outside roady (`history`)
 
 ## Later
 
@@ -33,6 +31,14 @@ What stays open and free, forever: the full CLI and MCP server, and the `.roady/
 Dogfooding on nexa (2026-09-27): roady was abandoned in June for a markdown memory system (roadmap.md Now/Next/Later, an append-only decisions log, open threads with block reasons). What was left in .roady had 89 tasks titled "done", 36 orphans from renamed features and 140 unverified completions. Adopting roady in such a project has to be cheaper than keeping the markdown.
 
 Features: Adopting roady in a lived-in project (`adoption`)
+
+### The planning tool for AI: capture, keep, prove (v0.25.0)
+
+Roady is the plan an AI agent works from and the proof it did: capture intent at whatever size it arrives, keep the agent on it across sessions, compaction and parallel agents, and prove work done with acceptance checks and a hash-chained audit log. Everything outside that was removed.
+
+The most useful input is field use: v0.18.0 came entirely from one person running Roady on a real 118-feature project for a day.
+
+Features: MCP surface is learnable, trimmable and honest (`mcp-surface`), Trust: done means proven (`trust`), Capture: intent at whatever size it arrives (`capture`), Keep: continuity across sessions, compaction and parallel agents (`keep`), Focus and proof of adoption (`focus`)
 
 ### The planning tool for AI (v0.25.0)
 
