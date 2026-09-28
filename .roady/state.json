@@ -1,6 +1,6 @@
 {
   "project_id": "agent-handoff",
-  "version": 502,
+  "version": 507,
   "task_states": {
     "task-accept-finished-without-verification": {
       "status": "verified",
@@ -395,6 +395,31 @@
       "started_at": "2026-08-02T13:44:54.797911+02:00",
       "completed_at": "2026-08-02T13:44:54.849875+02:00",
       "elapsed_minutes": 0
+    },
+    "task-capture-unknown-field-hint": {
+      "status": "verified",
+      "path": "",
+      "owner": "git-automation",
+      "evidence": [
+        "Commit: 43771f07028c5ead8f10014c85039c7bd3823f24"
+      ],
+      "started_at": "2026-09-28T08:08:52.949049+02:00",
+      "completed_at": "2026-09-28T08:08:52.951222+02:00",
+      "elapsed_minutes": 0,
+      "checks": [
+        {
+          "kind": "run",
+          "command": "go test ./internal/infrastructure/cli -run TestCaptureUnknownFieldNamesTheFieldMeant",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "43771f07028c5ead8f10014c85039c7bd3823f24",
+          "dirty": true,
+          "by": "Felix Geelhaar",
+          "at": "2026-09-28T08:08:52.986811+02:00",
+          "duration": "682ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/internal/infrastructure/cli\t0.175s\n"
+        }
+      ]
     },
     "task-capture-upsert": {
       "status": "verified",
@@ -2588,5 +2613,5 @@
       "elapsed_minutes": 4
     }
   },
-  "updated_at": "2026-09-27T22:49:29.962268+02:00"
+  "updated_at": "2026-09-28T08:08:53.674971+02:00"
 }
