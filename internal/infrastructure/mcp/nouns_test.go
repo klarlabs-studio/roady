@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
 	"testing"
 
+	"github.com/felixgeelhaar/roady/pkg/application"
 	"github.com/felixgeelhaar/roady/pkg/domain/planning"
 	"github.com/felixgeelhaar/roady/pkg/storage"
 	mcpserver "go.klarlabs.de/mcp/server"
@@ -57,7 +59,7 @@ func TestEveryNounActionDispatches(t *testing.T) {
 		"roady_audit":  func(a string) (any, error) { return server.handleAudit(ctx, AuditArgs{Action: a, TaskID: "t1"}) },
 		"roady_state":  func(a string) (any, error) { return server.handleState(ctx, StateArgs{Action: a}) },
 		"roady_policy": func(a string) (any, error) { return server.handlePolicy(ctx, VerbArgs{Action: a}) },
-		"roady_git":    func(a string) (any, error) { return server.handleGit(ctx, VerbArgs{Action: a}) },
+		"roady_git":    func(a string) (any, error) { return server.handleGit(ctx, GitArgs{Action: a}) },
 		"roady_goal": func(a string) (any, error) {
 			return server.handleGoal(ctx, GoalArgs{Action: a, GoalID: "goal-x", DryRun: true})
 		},
@@ -422,5 +424,51 @@ func TestTaskListAccepted(t *testing.T) {
 		if got := strings.Join(ids, ","); got != want {
 			t.Errorf("status=%s lists %s, want %s", status, got, want)
 		}
+	}
+}
+
+// roady_git suggest and link, as an agent calls them.
+func TestUntaggedCommitThroughMCP(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not available")
+	}
+	server := setupCoordinatorTestServer(t)
+	git := func(args ...string) {
+		t.Helper()
+		cmd := exec.Command("git", append([]string{"-C", server.root, "-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false"}, args...)...)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+	}
+	git("init", "-q")
+	if err := os.WriteFile(filepath.Join(server.root, "ready.go"), []byte("package x\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	git("add", "ready.go")
+	git("commit", "-q", "-m", "feat: the ready task done")
+	t.Chdir(server.root)
+	ctx := context.Background()
+
+	res, _ := server.handleGit(ctx, GitArgs{Action: "suggest"})
+	out, ok := res.(map[string]any)
+	if !ok {
+		t.Fatalf("suggest: %s", resultText(res))
+	}
+	sugs, _ := out["unclaimed"].([]application.CommitSuggestion)
+	// One word in common with "Ready Task" is too little to guess on; the
+	// commit is listed without a task (matching is tested in application).
+	if len(sugs) != 1 || sugs[0].TaskID != "" {
+		t.Fatalf("suggest: %+v", out)
+	}
+	res, _ = server.handleGit(ctx, GitArgs{Action: "link", Commit: sugs[0].Commit.Hash, TaskID: "t1"})
+	if isToolError(res) {
+		t.Fatalf("link: %s", resultText(res))
+	}
+	if linked, _ := res.(map[string]any)["linked"].(bool); !linked {
+		t.Errorf("link: %+v", res)
+	}
+	res, _ = server.handleGit(ctx, GitArgs{Action: "suggest"})
+	if sugs, _ := res.(map[string]any)["unclaimed"].([]application.CommitSuggestion); len(sugs) != 0 {
+		t.Errorf("after link: %+v", sugs)
 	}
 }

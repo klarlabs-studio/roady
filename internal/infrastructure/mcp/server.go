@@ -327,7 +327,7 @@ func (s *Server) registerTools() {
 		Handler(s.handlePolicy)
 
 	s.tool("roady_git").
-		Description("roady git sync: move tasks forward from [roady:<task-id>] commit markers.").
+		Description("roady git: sync moves tasks forward from [roady:<task-id>] commit markers; suggest lists commits no task claims with the task each likely served; link records a commit as a task's evidence.").
 		Handler(s.handleGit)
 
 	s.tool("roady_init").

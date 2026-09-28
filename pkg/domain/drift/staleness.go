@@ -20,6 +20,19 @@ type RepoActivity struct {
 	// shallow clone, a detached history. Callers must report nothing rather
 	// than guess.
 	Unavailable bool
+	// Commits are the commits CommitsSincePlan counted, newest first, when
+	// the inspector lists them; nil when it only counts.
+	Commits []Commit
+	// Claimed counts commits since the plan that a task claims — by a
+	// [roady:<task>] marker or as linked evidence — and so are not the plan
+	// falling behind. CommitsSincePlan excludes them once they are counted.
+	Claimed int
+}
+
+// Commit is a commit named by hash and subject.
+type Commit struct {
+	Hash    string `json:"hash"`
+	Subject string `json:"subject"`
 }
 
 // Staleness thresholds. A plan is called stale when the repository has moved
@@ -83,18 +96,28 @@ func (d *DriftDetector) DetectStalenessDrift(plan *planning.Plan, activity RepoA
 		// here is a timestamp, so "has not changed" was a claim the check could
 		// not support — and one the operator could disprove by looking at the
 		// file they had just edited.
-		Message: fmt.Sprintf(
-			"The plan was last updated %d days ago; %d commits have landed since. It may no longer describe the work being done.",
-			days, activity.CommitsSincePlan),
+		Message: staleMessage(days, activity),
 		// The non-destructive routes come first. Regenerating is listed last
 		// and with its cost stated: the reconciler keeps tasks it did not
 		// propose, but a task whose id matches a spec requirement is replaced
 		// wholesale, so hand-written titles, descriptions and estimates on
 		// those are lost. A curated plan is exactly the case where that is the
 		// wrong move, and it was previously the only advice offered.
-		Hint: "If the work is finished, verify the remaining tasks or archive the plan. " +
+		Hint: "If the commits are planned work committed without a [roady:<task>] marker, `roady git suggest` names the task each most likely served and `roady git link <commit> <task>` records it. " +
+			"If the work is finished, verify the remaining tasks or archive the plan. " +
 			"If work landed that no task covers, add it to the spec and reconcile — note that " +
 			"'roady plan generate' keeps tasks it does not propose but overwrites any task whose id " +
 			"matches a spec requirement, so curated titles and descriptions on those are lost.",
 	}}
+}
+
+// staleMessage says what was counted: commits no task claims, and how many
+// others were left out because one does.
+func staleMessage(days int, a RepoActivity) string {
+	if a.Claimed == 0 {
+		return fmt.Sprintf("The plan was last updated %d days ago; %d commits have landed since. It may no longer describe the work being done.",
+			days, a.CommitsSincePlan)
+	}
+	return fmt.Sprintf("The plan was last updated %d days ago; %d commits no task claims have landed since (%d more are linked to tasks). It may no longer describe the work being done.",
+		days, a.CommitsSincePlan, a.Claimed)
 }

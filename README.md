@@ -62,6 +62,8 @@ roady add "Handle empty file" --after task-pdf-gen   # or edit / split / move
 roady next                        # the task, why it exists, what done means
 # ...agent implements, commits with [roady:task-id] marker...
 roady git sync                    # state moves forward automatically
+roady git suggest                 # commits made without a marker, and their likely task
+roady git link <commit> <task-id> # ...record one as that task's evidence
 roady task check <task-id>        # done means the acceptance check passes
 
 # 5. Ask the question that matters

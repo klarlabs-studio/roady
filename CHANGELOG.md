@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `roady git suggest` lists commits since the plan was last updated that no
+  task claims, each with the task whose id and title share most words with
+  its subject; `roady git link <commit> <task>` records a commit as a task's
+  evidence. Staleness drift now counts only commits no task claims — by a
+  `[roady:<task>]` marker or as linked evidence — and says how many others
+  are linked. On mcp-go, whose planned work was committed without markers,
+  drift called the plan 71 commits behind. MCP `roady_git` gains `suggest`
+  and `link`.
 - `roady goal import` reads roadmaps organised by something other than
   horizons. `--section "Phase 5=now"` reads a section as a horizon;
   `--section-goal "Phase=shipped"` makes each matching section one goal,
