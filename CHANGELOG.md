@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.28.0] - 2026-09-28
+
+Roady describes work done before or outside it: planned work committed
+without markers, roadmaps organised by phase, and accepted tasks in the
+listing agents read first.
+
 ### Added
 
 - `roady git suggest` lists commits since the plan was last updated that no
@@ -1687,7 +1693,8 @@ See [GitHub release notes](https://github.com/felixgeelhaar/roady/releases/tag/v
 - Resilience via `fortify` integration for filesystem retries
 - State management via `statekit` FSM for task transitions
 
-[Unreleased]: https://github.com/felixgeelhaar/roady/compare/v0.27.3...HEAD
+[Unreleased]: https://github.com/felixgeelhaar/roady/compare/v0.28.0...HEAD
+[0.28.0]: https://github.com/felixgeelhaar/roady/compare/v0.27.3...v0.28.0
 [0.27.3]: https://github.com/felixgeelhaar/roady/compare/v0.27.2...v0.27.3
 [0.27.2]: https://github.com/felixgeelhaar/roady/compare/v0.27.1...v0.27.2
 [0.27.1]: https://github.com/felixgeelhaar/roady/compare/v0.27.0...v0.27.1

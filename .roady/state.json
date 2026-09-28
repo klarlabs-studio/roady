@@ -1,6 +1,6 @@
 {
   "project_id": "agent-handoff",
-  "version": 508,
+  "version": 520,
   "task_states": {
     "task-accept-finished-without-verification": {
       "status": "verified",
@@ -120,9 +120,29 @@
       ]
     },
     "task-accepted-in-task-list": {
-      "status": "pending",
+      "status": "verified",
       "path": "",
-      "elapsed_minutes": 0
+      "owner": "Felix Geelhaar",
+      "evidence": [
+        "Commit: 6c725693e5abaea65fe03f59a5744f1e01f6c935"
+      ],
+      "started_at": "2026-09-28T13:46:37.183495+02:00",
+      "completed_at": "2026-09-28T14:03:49.07037+02:00",
+      "elapsed_minutes": 17,
+      "checks": [
+        {
+          "kind": "run",
+          "command": "go test ./internal/infrastructure/cli -run TestTaskListShowsAccepted",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "cf475a02ebc389c27b46f5ceee5ca886ba211f77",
+          "dirty": true,
+          "by": "Felix Geelhaar",
+          "at": "2026-09-28T14:03:49.110329+02:00",
+          "duration": "967ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/internal/infrastructure/cli\t0.308s\n"
+        }
+      ]
     },
     "task-adoption-metrics": {
       "status": "verified",
@@ -985,9 +1005,29 @@
       ]
     },
     "task-goal-import-section-map": {
-      "status": "pending",
+      "status": "verified",
       "path": "",
-      "elapsed_minutes": 0
+      "owner": "Felix Geelhaar",
+      "evidence": [
+        "Commit: c05482d19ec4a19773d2db452ac8ae6e414884d6"
+      ],
+      "started_at": "2026-09-28T13:50:50.238215+02:00",
+      "completed_at": "2026-09-28T14:03:49.067643+02:00",
+      "elapsed_minutes": 12,
+      "checks": [
+        {
+          "kind": "run",
+          "command": "go test ./pkg/application ./internal/infrastructure/cli -run GoalImportSectionMap",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "cf475a02ebc389c27b46f5ceee5ca886ba211f77",
+          "dirty": true,
+          "by": "Felix Geelhaar",
+          "at": "2026-09-28T14:03:50.122594+02:00",
+          "duration": "596ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.101s\nok  \tgithub.com/felixgeelhaar/roady/internal/infrastructure/cli\t0.182s\n"
+        }
+      ]
     },
     "task-goals-horizons": {
       "status": "verified",
@@ -1312,9 +1352,29 @@
       ]
     },
     "task-link-untagged-commits": {
-      "status": "pending",
+      "status": "verified",
       "path": "",
-      "elapsed_minutes": 0
+      "owner": "Felix Geelhaar",
+      "evidence": [
+        "Commit: cf475a02ebc389c27b46f5ceee5ca886ba211f77"
+      ],
+      "started_at": "2026-09-28T13:55:22.552302+02:00",
+      "completed_at": "2026-09-28T14:03:49.06432+02:00",
+      "elapsed_minutes": 8,
+      "checks": [
+        {
+          "kind": "run",
+          "command": "go test ./pkg/application ./internal/infrastructure/cli ./internal/infrastructure/mcp -run UntaggedCommit",
+          "passed": true,
+          "exit_code": 0,
+          "commit": "cf475a02ebc389c27b46f5ceee5ca886ba211f77",
+          "dirty": true,
+          "by": "Felix Geelhaar",
+          "at": "2026-09-28T14:03:50.760403+02:00",
+          "duration": "902ms",
+          "output": "ok  \tgithub.com/felixgeelhaar/roady/pkg/application\t0.237s\nok  \tgithub.com/felixgeelhaar/roady/internal/infrastructure/cli\t0.213s\nok  \tgithub.com/felixgeelhaar/roady/internal/infrastructure/mcp\t0.334s\n"
+        }
+      ]
     },
     "task-markdown-importer": {
       "status": "verified",
@@ -2628,5 +2688,5 @@
       "elapsed_minutes": 4
     }
   },
-  "updated_at": "2026-09-28T08:08:53.674971+02:00"
+  "updated_at": "2026-09-28T14:03:51.667683+02:00"
 }
