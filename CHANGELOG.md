@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `roady goal import` reads roadmaps organised by something other than
+  horizons. `--section "Phase 5=now"` reads a section as a horizon;
+  `--section-goal "Phase=shipped"` makes each matching section one goal,
+  titled by its heading with a trailing `(v1.2)` as its milestone. Found on
+  mcp-go, whose phase roadmap now imports as five shipped goals. MCP
+  `roady_goal` `import` takes `sections` and `section_goals`.
 - `roady task list` shows accepted tasks as `[accepted]` and filters them
   with `--status accepted`; `--status done` now means awaiting verification,
   as `roady status` counts it. Over MCP, `roady_task` `list` takes `done`,

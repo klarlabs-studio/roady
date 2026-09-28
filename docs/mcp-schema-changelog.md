@@ -6,7 +6,12 @@
 - **Minor** (1.x.0): New optional fields (`omitempty`), new tools, fields deprecated
 - **Major** (x.0.0): Required fields added/removed, tool signatures changed
 
-## v5.3.0 — Accepted tasks in listings
+## v5.3.0 — Accepted tasks in listings; roadmap section mappings
+
+`roady_goal` `import` takes optional `sections` and `section_goals`
+(`"<heading prefix>=<horizon or status>"`): the first reads a section as a
+horizon, the second makes each matching section one goal. A mapping that
+matches no heading is an error.
 
 **Minor**: `roady_task` `list` accepts `status` values `done` (awaiting
 verification, as `roady status` counts it), `accepted` and `verified`, and
