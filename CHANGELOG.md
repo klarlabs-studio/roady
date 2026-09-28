@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- A misspelt field in a capture document names the item and the field
+  meant: `line 4: a task has no field "feature" (did you mean
+  "feature_id"?); it takes id, title, …` instead of `field feature not
+  found in type application.CaptureTask`. `roady capture --help` shows a
+  task linked with `feature_id`.
+
 ## [0.27.2] - 2026-09-27
 
 ### Fixed

@@ -51,6 +51,9 @@ Reads from --file, or stdin when no file is given:
       title: Migrate existing invoice numbers
       requirement: seq-numbers
       depends_on: [task-seq-numbers]
+    - id: task-invoice-docs
+      title: Document the numbering scheme
+      feature_id: invoices
   EOF
 
 Planning kept in prose — a decisions log, open threads, a status page — is
@@ -121,7 +124,7 @@ func parseCaptureDoc(raw []byte) (application.CaptureDoc, error) {
 	dec := yaml.NewDecoder(strings.NewReader(string(raw)))
 	dec.KnownFields(true)
 	if err := dec.Decode(&doc); err != nil {
-		return doc, fmt.Errorf("parse capture document: %w", err)
+		return doc, fmt.Errorf("parse capture document: %w", explainCaptureError(err))
 	}
 	return doc, nil
 }
