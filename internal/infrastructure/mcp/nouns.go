@@ -42,7 +42,7 @@ var NounActions = map[string][]string{
 	"roady_audit":  {"verify", "trail"},
 	"roady_state":  {"get", "rebuild"},
 	"roady_policy": {"check"},
-	"roady_git":    {"sync"},
+	"roady_git":    {"sync", "suggest", "link"},
 	"roady_goal":   {"list", "add", "edit", "render", "import"},
 }
 
@@ -287,11 +287,47 @@ func (s *Server) handlePolicy(ctx context.Context, a VerbArgs) (any, error) {
 	return s.handleCheckPolicy(ctx, CheckPolicyArgs{ProjectPath: a.ProjectPath, Project: a.Project})
 }
 
-func (s *Server) handleGit(ctx context.Context, a VerbArgs) (any, error) {
-	if a.Action != "" && a.Action != "sync" {
-		return actionError("roady_git", a.Action)
+// GitArgs is `roady git <action>`.
+type GitArgs struct {
+	Action string `json:"action,omitempty" jsonschema:"description=sync (default: move tasks forward from [roady:<task>] markers)|suggest (commits no task claims, with the task each most likely served)|link (record commit as task_id's evidence)"`
+	Commit string `json:"commit,omitempty" jsonschema:"description=link: the commit (hash or ref)"`
+	TaskID string `json:"task_id,omitempty" jsonschema:"description=link: the task the commit served"`
+	Limit  int    `json:"limit,omitempty" jsonschema:"description=suggest: at most this many commits (default 50)"`
+	Agent  string `json:"agent,omitempty" jsonschema:"description=link: acting agent, recorded in the audit trail"`
+	scope
+}
+
+func (s *Server) handleGit(ctx context.Context, a GitArgs) (any, error) {
+	switch a.Action {
+	case "", "sync":
+		return s.handleGitSync(ctx, GitSyncArgs{ProjectPath: a.ProjectPath, Project: a.Project})
+	case "suggest", "link":
+		svc, err := s.servicesForPath(a.ProjectPath, a.Project)
+		if err != nil {
+			return mcpErrCause("Failed to load project at the given path.", err), nil
+		}
+		if a.Action == "suggest" {
+			limit := a.Limit
+			if limit <= 0 {
+				limit = 50
+			}
+			sugs, err := svc.Git.Suggest(limit)
+			if err != nil {
+				return mcpErr(err.Error()), nil
+			}
+			return map[string]any{"unclaimed": sugs, "hint": "Link a commit to the task it served with action link (commit, task_id); drift stops counting it."}, nil
+		}
+		actor := a.Agent
+		if actor == "" {
+			actor = "ai-agent"
+		}
+		hash, linked, err := svc.Git.Link(a.Commit, a.TaskID, actor)
+		if err != nil {
+			return mcpErr(err.Error()), nil
+		}
+		return map[string]any{"commit": hash, "task_id": a.TaskID, "linked": linked}, nil
 	}
-	return s.handleGitSync(ctx, GitSyncArgs{ProjectPath: a.ProjectPath, Project: a.Project})
+	return actionError("roady_git", a.Action)
 }
 
 // --- roady_goal ---------------------------------------------------------------

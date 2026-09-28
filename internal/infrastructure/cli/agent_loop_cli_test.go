@@ -27,6 +27,7 @@ func runRoady(t *testing.T, stdin string, args ...string) (string, error) {
 	doctorFix = false
 	taskListStatus, taskListLimit, taskQueryJSON = "all", 50, false
 	goalImportSections, goalImportSectionGoals = nil, nil
+	gitSuggestLimit, gitSuggestJSON = 50, false
 	moveReq, moveFeature = "", ""
 	goalID, goalDesc, goalHorizon, goalStatus, goalMilestone, goalTitle = "", "", "", "", "", ""
 	goalFeatures, goalListJSON, taskHistoryJSON, statsJSON = nil, false, false, false

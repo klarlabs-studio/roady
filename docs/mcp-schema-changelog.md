@@ -8,6 +8,10 @@
 
 ## v5.3.0 — Accepted tasks in listings; roadmap section mappings
 
+`roady_git` gains `suggest` (commits no task claims, each with the task it
+most likely served) and `link` (optional `commit`, `task_id`, `agent`:
+record a commit as a task's evidence); `action` still defaults to `sync`.
+
 `roady_goal` `import` takes optional `sections` and `section_goals`
 (`"<heading prefix>=<horizon or status>"`): the first reads a section as a
 horizon, the second makes each matching section one goal. A mapping that

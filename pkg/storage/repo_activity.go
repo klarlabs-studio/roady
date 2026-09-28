@@ -46,6 +46,13 @@ func (g *GitActivityInspector) ActivitySince(since time.Time) drift.RepoActivity
 
 	activity := drift.RepoActivity{CommitsSincePlan: n}
 
+	// The commits themselves, so a caller can leave out the ones a task
+	// claims. Without them the count stands as it is.
+	if out, logErr := g.run("log", "--format=%H%x1f%s",
+		"--since="+since.Format(time.RFC3339), "HEAD", "--", ".", ":(exclude).roady"); logErr == nil {
+		activity.Commits = parseCommitLog(out)
+	}
+
 	if out, lastErr := g.run("log", "-1", "--format=%cI"); lastErr == nil {
 		if ts, parseErr := time.Parse(time.RFC3339, strings.TrimSpace(out)); parseErr == nil {
 			activity.LastCommitAt = ts
@@ -60,4 +67,16 @@ func (g *GitActivityInspector) run(args ...string) (string, error) {
 	cmd.Dir = g.root
 	out, err := cmd.Output()
 	return string(out), err
+}
+
+// parseCommitLog reads "hash<US>subject" lines.
+func parseCommitLog(out string) []drift.Commit {
+	commits := []drift.Commit{}
+	for _, line := range strings.Split(strings.TrimSpace(out), "\n") {
+		hash, subject, ok := strings.Cut(line, "\x1f")
+		if ok && hash != "" {
+			commits = append(commits, drift.Commit{Hash: hash, Subject: subject})
+		}
+	}
+	return commits
 }

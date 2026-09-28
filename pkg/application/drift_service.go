@@ -110,7 +110,7 @@ func (s *DriftService) DetectDrift(ctx context.Context) (*drift.Report, error) {
 	// Every other check compares Roady's artifacts against each other, so a
 	// plan nobody edits stays internally consistent while the code moves on.
 	if s.activity != nil {
-		if staleIssues := s.detector.DetectStalenessDrift(plan, s.activity.ActivitySince(planUpdatedAt(plan)), time.Now()); len(staleIssues) > 0 {
+		if staleIssues := s.detector.DetectStalenessDrift(plan, countUnclaimed(s.activity.ActivitySince(planUpdatedAt(plan)), NewCommitClaims(plan, state)), time.Now()); len(staleIssues) > 0 {
 			report.Issues = append(report.Issues, staleIssues...)
 		}
 	}
