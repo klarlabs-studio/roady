@@ -28,3 +28,26 @@ func TestGoalImportNamesTheSectionsItFound(t *testing.T) {
 		}
 	}
 }
+
+// The same phase roadmap imports once the phases are mapped.
+func TestGoalImportSectionMapThroughTheCLI(t *testing.T) {
+	_, cleanup := withPlainTempDir(t)
+	defer cleanup()
+	if _, err := runRoady(t, "", "init", "phases"); err != nil {
+		t.Fatal(err)
+	}
+	roadmap := "# Roadmap\n\n## Phase 0 — Foundation (v1.22.0)\n\nNegotiation first.\n\n- [x] Negotiation layer\n\n## Phase 1 — Certify 2025-03-26 (v1.23.0)\n\n- [x] Streamable HTTP\n"
+	if err := os.WriteFile("roadmap.md", []byte(roadmap), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	out, err := runRoady(t, "", "goal", "import", "roadmap.md", "--section-goal", "Phase=shipped")
+	if err != nil || !strings.Contains(out, "Imported 2 goal(s)") {
+		t.Fatalf("import: %v\n%s", err, out)
+	}
+	out, _ = runRoady(t, "", "goal", "list")
+	for _, want := range []string{"Phase 0 — Foundation  (v1.22.0)", "Phase 1 — Certify 2025-03-26  (v1.23.0)"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("goal list lacks %q:\n%s", want, out)
+		}
+	}
+}

@@ -31,6 +31,94 @@ type RoadmapImport struct {
 type importSection struct {
 	horizon string
 	status  string
+	// whole makes the section itself one goal, titled by its heading,
+	// instead of reading goals from its ### headings or bullets.
+	whole bool
+}
+
+// SectionMapping tells the importer where a ## section's goals go, for a
+// roadmap organised by something other than horizons (phases, quarters).
+// Prefix matches the start of a heading, ignoring case; Target is a horizon
+// or status word as a section would be named (now, next, later, ideas, done,
+// shipped, out of scope). Whole makes each matching section one goal.
+type SectionMapping struct {
+	Prefix string
+	Target string
+	Whole  bool
+}
+
+// ParseSectionMapping reads "Prefix=target", as the CLI and MCP take it.
+func ParseSectionMapping(s string, whole bool) (SectionMapping, error) {
+	prefix, target, ok := strings.Cut(s, "=")
+	prefix, target = strings.TrimSpace(prefix), strings.TrimSpace(target)
+	if !ok || prefix == "" || target == "" {
+		return SectionMapping{}, fmt.Errorf("section mapping %q: want \"Heading prefix=horizon\", e.g. \"Phase 4=now\"", s)
+	}
+	if _, known := sectionFor(target); !known {
+		return SectionMapping{}, fmt.Errorf("section mapping %q: %q is not a horizon or status; use now, next, later, ideas, done (shipped) or out of scope", s, target)
+	}
+	return SectionMapping{Prefix: prefix, Target: target, Whole: whole}, nil
+}
+
+// RoadmapImportOptionsFrom builds options from "Prefix=target" strings:
+// sections read their goals as a horizon section would, sectionGoals make
+// each matching section one goal.
+func RoadmapImportOptionsFrom(sections, sectionGoals []string) (RoadmapImportOptions, error) {
+	var opts RoadmapImportOptions
+	for _, group := range []struct {
+		values []string
+		whole  bool
+	}{{sections, false}, {sectionGoals, true}} {
+		for _, v := range group.values {
+			m, err := ParseSectionMapping(v, group.whole)
+			if err != nil {
+				return opts, err
+			}
+			opts.Sections = append(opts.Sections, m)
+		}
+	}
+	return opts, nil
+}
+
+// NoGoalsError explains an import that found no goal. A roadmap organised
+// some other way has sections, just not horizons: naming them shows what to
+// map.
+func NoGoalsError(file string, skipped []string) error {
+	const want = "goals go under ## Now, Next, Later, Ideas, Done (or Shipped) or Out of scope, a ### heading or bullet each"
+	if len(skipped) == 0 {
+		return fmt.Errorf("no goals found in %s: %s", file, want)
+	}
+	named := skipped
+	more := ""
+	if len(named) > 5 {
+		named, more = named[:5], fmt.Sprintf(", … %d more", len(skipped)-5)
+	}
+	return fmt.Errorf("no goals found in %s: its sections (%s%s) are not horizons; %s. Map them with --section \"<heading prefix>=now\", make each one goal with --section-goal \"<prefix>=shipped\", or add goals with `roady goal add`",
+		file, strings.Join(named, ", "), more, want)
+}
+
+// RoadmapImportOptions adjust how a roadmap's sections are read.
+type RoadmapImportOptions struct {
+	Sections []SectionMapping
+}
+
+// sectionOf resolves a heading: the longest matching mapping first, then the
+// built-in horizon names. used records which mappings matched.
+func (o RoadmapImportOptions) sectionOf(heading string, used map[int]bool) (importSection, bool) {
+	best := -1
+	h := strings.ToLower(strings.TrimSpace(heading))
+	for i, m := range o.Sections {
+		if strings.HasPrefix(h, strings.ToLower(m.Prefix)) && (best < 0 || len(m.Prefix) > len(o.Sections[best].Prefix)) {
+			best = i
+		}
+	}
+	if best >= 0 {
+		used[best] = true
+		s, _ := sectionFor(o.Sections[best].Target)
+		s.whole = o.Sections[best].Whole
+		return s, true
+	}
+	return sectionFor(heading)
 }
 
 // sectionFor maps a ## heading to where its goals go; ok is false for a
@@ -115,6 +203,30 @@ type importedGoal struct {
 	bullet bool
 	raw    string
 	open   bool
+	// whole: the goal is a ## section; its first paragraph is read as the
+	// description and the rest of the section is not.
+	whole     bool
+	wholeDone bool
+}
+
+// addWholeLine reads a whole-section goal's description: the first
+// paragraph of prose under its heading, not lists, tables or later text.
+func (g *importedGoal) addWholeLine(trimmed string) {
+	if g.wholeDone {
+		return
+	}
+	switch {
+	case trimmed == "":
+		if len(g.desc) > 0 {
+			g.wholeDone = true
+		}
+	case bulletLine.MatchString(trimmed) || strings.HasPrefix(trimmed, "|"):
+		if len(g.desc) > 0 {
+			g.wholeDone = true
+		}
+	default:
+		g.desc = append(g.desc, cleanInline(roadmapInline(trimmed)))
+	}
 }
 
 // finish splits a bullet's title from its text once the bullet is read.
@@ -131,6 +243,14 @@ func (g *importedGoal) finish() {
 // ImportRoadmapMarkdown parses a roadmap file into goals. Goal ids are
 // goal-<title>, so importing the same file again changes nothing.
 func ImportRoadmapMarkdown(r io.Reader) (RoadmapImport, error) {
+	return ImportRoadmapMarkdownWith(r, RoadmapImportOptions{})
+}
+
+// ImportRoadmapMarkdownWith parses a roadmap file with section mappings. A
+// mapping that matches no heading is an error: a misspelt prefix would
+// otherwise import less, silently.
+func ImportRoadmapMarkdownWith(r io.Reader, opts RoadmapImportOptions) (RoadmapImport, error) {
+	used := map[int]bool{}
 	var (
 		out     RoadmapImport
 		goals   []*importedGoal
@@ -170,7 +290,13 @@ func ImportRoadmapMarkdown(r io.Reader) (RoadmapImport, error) {
 				cur.finish()
 			}
 			cur = nil
-			if s, ok := sectionFor(heading); ok {
+			if s, ok := opts.sectionOf(heading, used); ok && s.whole {
+				// The section is the goal; its first paragraph describes it.
+				title, milestone := splitMilestone(cleanInline(roadmapInline(heading)))
+				cur = &importedGoal{title: title, milestone: milestone, horizon: s.horizon, status: s.status, whole: true}
+				goals = append(goals, cur)
+				sec = nil
+			} else if ok {
 				sec = &s
 			} else {
 				sec = nil
@@ -189,6 +315,10 @@ func ImportRoadmapMarkdown(r io.Reader) (RoadmapImport, error) {
 			goals = append(goals, cur)
 			continue
 		case strings.HasPrefix(trimmed, "#"):
+			continue
+		}
+		if cur != nil && cur.whole {
+			cur.addWholeLine(trimmed)
 			continue
 		}
 		if sec == nil {
@@ -224,6 +354,15 @@ func ImportRoadmapMarkdown(r io.Reader) (RoadmapImport, error) {
 	}
 	if err := sc.Err(); err != nil {
 		return out, fmt.Errorf("read roadmap: %w", err)
+	}
+	var unmatched []string
+	for i, m := range opts.Sections {
+		if !used[i] {
+			unmatched = append(unmatched, fmt.Sprintf("%q", m.Prefix))
+		}
+	}
+	if len(unmatched) > 0 {
+		return out, fmt.Errorf("no ## section starts with %s", strings.Join(unmatched, ", "))
 	}
 
 	if cur != nil {

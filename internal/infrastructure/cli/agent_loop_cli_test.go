@@ -26,13 +26,14 @@ func runRoady(t *testing.T, stdin string, args ...string) (string, error) {
 	taskAcceptAllDone, taskAcceptReason = false, ""
 	doctorFix = false
 	taskListStatus, taskListLimit, taskQueryJSON = "all", 50, false
+	goalImportSections, goalImportSectionGoals = nil, nil
 	moveReq, moveFeature = "", ""
 	goalID, goalDesc, goalHorizon, goalStatus, goalMilestone, goalTitle = "", "", "", "", "", ""
 	goalFeatures, goalListJSON, taskHistoryJSON, statsJSON = nil, false, false, false
 	goalRenderOut, goalRenderCheck, goalRenderForce = "", false, false
 	decideID, decideChoice, decideContext, decideConsequences, decideSupersedes = "", "", "", "", ""
 	decideGoals, decideFeatures, decideReqs, decideList = nil, nil, nil, false
-	for _, c := range []*cobra.Command{goalAddCmd, goalEditCmd, goalListCmd, goalRenderCmd, decideCmd} {
+	for _, c := range []*cobra.Command{goalAddCmd, goalEditCmd, goalListCmd, goalRenderCmd, goalImportCmd, decideCmd} {
 		c.Flags().VisitAll(func(f *pflag.Flag) { f.Changed = false })
 	}
 	var err error

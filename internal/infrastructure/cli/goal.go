@@ -201,12 +201,18 @@ each ### heading or top-level bullet under one is a goal: a bold lead or the
 text before a dash or colon is its title, the rest its description, and a
 trailing "(v1.2)" its milestone. Other sections are skipped and named.
 
+A roadmap organised another way — by phase, by quarter — says where its
+sections go: --section reads a section as a horizon, --section-goal makes
+each matching section one goal, titled by its heading. Prefixes match the
+start of a heading, ignoring case; the longest match wins.
+
 Goal ids are goal-<title>, so importing the same file again changes nothing.
 Afterwards the goals are the roadmap: render the file from them with
 ` + "`roady goal render --out <file> --force`" + `, or delete it.
 
   roady goal import ROADMAP.md --dry-run
-  roady goal import memory/roadmap.md`,
+  roady goal import memory/roadmap.md
+  roady goal import docs/roadmap.md --section-goal "Phase=shipped" --section "Phase 5=now"`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ws, _, err := loadEditPlan()
@@ -218,12 +224,16 @@ Afterwards the goals are the roadmap: render the file from them with
 			return err
 		}
 		defer func() { _ = f.Close() }()
-		imp, err := application.ImportRoadmapMarkdown(f)
+		opts, err := application.RoadmapImportOptionsFrom(goalImportSections, goalImportSectionGoals)
+		if err != nil {
+			return err
+		}
+		imp, err := application.ImportRoadmapMarkdownWith(f, opts)
 		if err != nil {
 			return err
 		}
 		if len(imp.Doc.Goals) == 0 {
-			return noGoalsError(args[0], imp.Skipped)
+			return application.NoGoalsError(args[0], imp.Skipped)
 		}
 		if len(imp.Skipped) > 0 && !editJSON {
 			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Skipped sections that are not a horizon: %s\n", strings.Join(imp.Skipped, ", "))
@@ -232,17 +242,7 @@ Afterwards the goals are the roadmap: render the file from them with
 	},
 }
 
-// noGoalsError explains an import that found no goal. A roadmap organised
-// some other way — by phase, by quarter — has sections, just not horizons, and
-// naming the ones it has shows what to rename.
-func noGoalsError(file string, skipped []string) error {
-	const want = "goals go under ## Now, Next, Later, Ideas, Done (or Shipped) or Out of scope, a ### heading or bullet each"
-	if len(skipped) == 0 {
-		return fmt.Errorf("no goals found in %s: %s", file, want)
-	}
-	return fmt.Errorf("no goals found in %s: its sections (%s) are not horizons; %s. Rename the sections to horizons, or add goals with `roady goal add`",
-		file, sampleIDs(skipped, 5), want)
-}
+var goalImportSections, goalImportSectionGoals []string
 
 func addGoalFlags(c *cobra.Command) {
 	c.Flags().StringVar(&goalDesc, "description", "", "What the goal is for")
@@ -263,6 +263,8 @@ func init() {
 	goalRenderCmd.Flags().StringVar(&goalRenderOut, "out", "", "Write here instead of ROADMAP.md at the repository root; - prints it")
 	goalRenderCmd.Flags().BoolVar(&goalRenderCheck, "check", false, "Write nothing; fail unless the file is up to date")
 	goalRenderCmd.Flags().BoolVar(&goalRenderForce, "force", false, "Replace a file that was edited by hand or not written by roady")
+	goalImportCmd.Flags().StringArrayVar(&goalImportSections, "section", nil, "Read a section as a horizon: \"<heading prefix>=now|next|later|ideas|done|out of scope\" (repeatable)")
+	goalImportCmd.Flags().StringArrayVar(&goalImportSectionGoals, "section-goal", nil, "Make each section whose heading starts with the prefix one goal: \"Phase=shipped\" (repeatable)")
 	goalImportCmd.Flags().BoolVar(&editDryRun, "dry-run", false, "Show what would change without writing")
 	goalImportCmd.Flags().BoolVar(&editJSON, "json", false, "Print the result as JSON")
 	goalCmd.AddCommand(goalListCmd, goalAddCmd, goalEditCmd, goalRenderCmd, goalImportCmd)

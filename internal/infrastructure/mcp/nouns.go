@@ -298,17 +298,19 @@ func (s *Server) handleGit(ctx context.Context, a VerbArgs) (any, error) {
 
 // GoalArgs is `roady goal <action>`.
 type GoalArgs struct {
-	Action      string   `json:"action" jsonschema:"required,description=list|add|edit|render (write ROADMAP.md from the goals)|import (read goals from a hand-kept roadmap file at path)"`
-	Path        string   `json:"path,omitempty" jsonschema:"description=import: the roadmap file (## Now / Next / Later / Done)"`
-	GoalID      string   `json:"goal_id,omitempty" jsonschema:"description=edit: the goal; add: its id (default goal-<title>)"`
-	Title       *string  `json:"title,omitempty" jsonschema:"description=add: required"`
-	Description *string  `json:"description,omitempty"`
-	Horizon     *string  `json:"horizon,omitempty" jsonschema:"description=now, next or later"`
-	Status      *string  `json:"status,omitempty" jsonschema:"description=idea (needs no features), planned, shipped or out_of_scope"`
-	Milestone   *string  `json:"milestone,omitempty" jsonschema:"description=Release or checkpoint"`
-	Features    []string `json:"features,omitempty" jsonschema:"description=Feature ids to link to the goal"`
-	DryRun      bool     `json:"dry_run,omitempty"`
-	Force       bool     `json:"force,omitempty" jsonschema:"description=render: replace a ROADMAP.md edited by hand (needs the user's confirmation)"`
+	Action       string   `json:"action" jsonschema:"required,description=list|add|edit|render (write ROADMAP.md from the goals)|import (read goals from a hand-kept roadmap file at path)"`
+	Path         string   `json:"path,omitempty" jsonschema:"description=import: the roadmap file (## Now / Next / Later / Done)"`
+	Sections     []string `json:"sections,omitempty" jsonschema:"description=import: read a section as a horizon, \"<heading prefix>=now|next|later|ideas|done|out of scope\""`
+	SectionGoals []string `json:"section_goals,omitempty" jsonschema:"description=import: make each section whose heading starts with the prefix one goal, e.g. \"Phase=shipped\""`
+	GoalID       string   `json:"goal_id,omitempty" jsonschema:"description=edit: the goal; add: its id (default goal-<title>)"`
+	Title        *string  `json:"title,omitempty" jsonschema:"description=add: required"`
+	Description  *string  `json:"description,omitempty"`
+	Horizon      *string  `json:"horizon,omitempty" jsonschema:"description=now, next or later"`
+	Status       *string  `json:"status,omitempty" jsonschema:"description=idea (needs no features), planned, shipped or out_of_scope"`
+	Milestone    *string  `json:"milestone,omitempty" jsonschema:"description=Release or checkpoint"`
+	Features     []string `json:"features,omitempty" jsonschema:"description=Feature ids to link to the goal"`
+	DryRun       bool     `json:"dry_run,omitempty"`
+	Force        bool     `json:"force,omitempty" jsonschema:"description=render: replace a ROADMAP.md edited by hand (needs the user's confirmation)"`
 	scope
 }
 
@@ -433,12 +435,16 @@ func (s *Server) importRoadmap(capture *application.CaptureService, root string,
 		return mcpErr(fmt.Sprintf("Cannot read %s: %v", a.Path, err)), nil
 	}
 	defer func() { _ = f.Close() }()
-	imp, err := application.ImportRoadmapMarkdown(f)
+	opts, err := application.RoadmapImportOptionsFrom(a.Sections, a.SectionGoals)
+	if err != nil {
+		return mcpErr(err.Error()), nil
+	}
+	imp, err := application.ImportRoadmapMarkdownWith(f, opts)
 	if err != nil {
 		return mcpErr(err.Error()), nil
 	}
 	if len(imp.Doc.Goals) == 0 {
-		return mcpErr(fmt.Sprintf("No goals found in %s: expected ## Now / Next / Later / Done sections with a ### heading or bullet per goal.", a.Path)), nil
+		return mcpErr(application.NoGoalsError(a.Path, imp.Skipped).Error()), nil
 	}
 	result, err := capture.Capture(imp.Doc, application.CaptureOptions{Actor: "ai-agent", DryRun: a.DryRun, Origin: planning.OriginAI, Via: application.ViaRoadmapImport})
 	if err != nil {
