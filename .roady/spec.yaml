@@ -243,6 +243,8 @@ goals:
       title: Roady describes work done before or outside it
       description: 'Trying roady on nexa and mcp-go showed where it misreads a project with history: finished work it cannot verify, planned work committed without markers, and roadmaps organised by phase rather than horizon.'
       horizon: now
+      status: shipped
+      milestone: v0.28.0
 decisions:
     - id: decision-shared-state
       title: Where execution state lives

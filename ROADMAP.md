@@ -1,13 +1,5 @@
-<!-- roady:roadmap sha256=c5f40bfa433623a4a33d4669c9d04ee531149096e17c06da6b44675050d1f85b — generated from .roady/spec.yaml by `roady goal render`. Change goals with `roady goal`, not this file. -->
+<!-- roady:roadmap sha256=4d1583fb33be182e57c5453ca65e4fb3b37604ac08e80c0417d27cb74ea965bd — generated from .roady/spec.yaml by `roady goal render`. Change goals with `roady goal`, not this file. -->
 # Roadmap
-
-## Now
-
-### Roady describes work done before or outside it
-
-Trying roady on nexa and mcp-go showed where it misreads a project with history: finished work it cannot verify, planned work committed without markers, and roadmaps organised by phase rather than horizon.
-
-Features: Work done before or outside roady (`history`)
 
 ## Later
 
@@ -25,6 +17,12 @@ Open-core boundary for a hosted product, no committed date. Intended scope:
 What stays open and free, forever: the full CLI and MCP server, and the `.roady/` file format. If Cloud lands, opting in is a `roady cloud login` away; opting out is the existing local workflow with no behavioural change.
 
 ## Shipped
+
+### Roady describes work done before or outside it (v0.28.0)
+
+Trying roady on nexa and mcp-go showed where it misreads a project with history: finished work it cannot verify, planned work committed without markers, and roadmaps organised by phase rather than horizon.
+
+Features: Work done before or outside roady (`history`)
 
 ### Adopt roady where planning already lives elsewhere (v0.26.0)
 
