@@ -60,7 +60,7 @@ jobs:
       # the tool's own signal, and it covers OSV lookups and lockfile parses,
       # not just plugins.
       - name: Scan
-        uses: nox-hq/nox@62ee1aac6d8d75c4c097b792cc4331dce338f8f5 # v1.55.11
+        uses: nox-hq/nox@3623c6f39bd3d8f4290e6f22dfc68d6d5dd5c3ee # v1.62.0
         with:
           path: .
           format: json,sarif
@@ -71,7 +71,7 @@ jobs:
 
       - name: Upload SARIF to code scanning
         if: always() && hashFiles('nox-results/results.sarif') != ''
-        uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         with:
           sarif_file: nox-results/results.sarif
       - name: Gate on net-new critical/high findings
