@@ -1,133 +1,17 @@
-# Security (nox) — standardized on the klarlabs-studio engineering bar.
-#
-# nox is the single security scanner / dependency-CVE source of truth for
-# this repo (secrets, IaC/workflow hygiene, privacy/PII, AI-security rules,
-# and dependency vulnerabilities via OSV.dev). This mirrors the reusable
-# `Security (nox)` job in klarlabs-studio/.github (.github/workflows/go-ci.yml)
-# inlined here because roady runs a hand-rolled CI rather than consuming that
-# reusable workflow. Bump NOX_VERSION + NOX_SHA256 together (verify the new
-# sha256 against the published tarball) when raising the pin.
-#
-# Self-adjusting gate: report-only until a nox baseline is committed (run
-# `nox baseline add` and commit .nox/), after which it fails on net-new
-# critical/high findings. Adoption never breaks a red build.
 name: Security
 
 on:
   push:
     branches: [main]
-    paths-ignore: ["**.md", "docs/**", "LICENSE"]
-  # No paths-ignore on PRs: Security (nox) is a required check (see ci.yml).
   pull_request:
-    branches: [main]
-
-concurrency:
-  group: security-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
 
 permissions:
   contents: read
   security-events: write
+  pull-requests: write
 
 jobs:
-  security:
-    name: Security (nox)
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      security-events: write
-      pull-requests: write   # nox annotate
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          # Full history: the changed-files gate below diffs against
-          # origin/<base_ref>, which a depth-1 clone does not contain.
-          fetch-depth: 0
-      # Scanning is delegated to the SHA-pinned nox-hq/nox action, which is
-      # what every plugin repository in the fleet already uses. It replaces six
-      # hand-rolled steps here — tarball download, sha256 verification, cosign
-      # install, plugins.required parsing, the scan itself and the SARIF upload
-      # — each of which was a local reimplementation of something the action
-      # does, and two of which were wrong at some point: the SARIF upload
-      # guarded on a filename nox never writes, and the plugin list was parsed
-      # out of .nox.yaml with sed.
-      #
-      # `nox install` inside the action reads plugins.required, so taint-analysis
-      # and reachability still run — that capability landed in nox 1.27.0
-      # (nox-hq/nox#447) and is why this adoption was not possible before.
-      #
-      # fail-on-degraded replaces grepping the scan log for "[degraded]": it is
-      # the tool's own signal, and it covers OSV lookups and lockfile parses,
-      # not just plugins.
-      - name: Scan
-        uses: nox-hq/nox@3623c6f39bd3d8f4290e6f22dfc68d6d5dd5c3ee # v1.62.0
-        with:
-          path: .
-          format: json,sarif
-          output: nox-results
-          fail-on-findings: 'false'
-          fail-on-degraded: 'true'
-          annotate: ${{ github.event_name == 'pull_request' }}
-
-      - name: Upload SARIF to code scanning
-        if: always() && hashFiles('nox-results/results.sarif') != ''
-        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
-        with:
-          sarif_file: nox-results/results.sarif
-      - name: Gate on net-new critical/high findings
-        # Enforces unconditionally.
-        #
-        # This step used to be self-adjusting: report-only until at least one
-        # finding was marked "baselined", so that adopting nox could not turn a
-        # red build red on day one. That heuristic reads baseline entries as
-        # proof adoption finished, and it is wrong for a repo that waives
-        # findings with a `nox:ignore` directive at the site instead — waive
-        # everything inline and the baselined count stays zero, so the gate
-        # reports forever. A gate whose off-switch is "you cleaned up properly"
-        # is worse than no gate.
-        #
-        # A finding counts as live only when it carries no status at all, so an
-        # inline-suppressed finding is waived rather than fatal. Under the old
-        # condition a suppressed critical would have failed the build, since
-        # anything not literally "baselined" was treated as net-new.
-        if: always() && hashFiles('nox-results/findings.json') != ''
-        run: |
-          f=nox-results/findings.json
-          waived=$(jq '[.findings[]? | select(.Status=="baselined" or .Status=="suppressed")] | length' "$f" 2>/dev/null || echo 0)
-          new=$(jq '[.findings[]? | select((.Severity=="critical" or .Severity=="high") and ((.Status // "") == ""))] | length' "$f" 2>/dev/null || echo 0)
-          echo "net-new critical/high: $new (waived findings: $waived)"
-          if [ "$new" -gt 0 ]; then
-            echo "::error::Net-new critical/high findings. Remediate, or waive at the site with a nox:ignore directive stating why."
-            jq '.findings[] | select((.Severity=="critical" or .Severity=="high") and ((.Status // "") == "")) | {severity:.Severity, rule:.RuleID, file:.Location.FilePath, line:.Location.StartLine}' "$f"
-            exit 1
-          fi
-      - name: Gate on changed files (pull requests)
-        # Asks the question the baseline gate above is a proxy for: does this
-        # change introduce a high or critical finding? Scoped to files the PR
-        # touches, so a pre-existing finding elsewhere neither blocks the PR
-        # nor needs a baseline entry to stay quiet.
-        #
-        # This matters here specifically. Accepting a single reviewed finding
-        # via the baseline does not work for plugin rules: nox/taint-analysis
-        # derives its fingerprint partly from the scan directory, so an entry
-        # generated anywhere but this runner does not match
-        # (nox-hq/nox-plugin-taint-analysis#37). A changed-files gate never
-        # needs the fingerprint to be stable, because it never has to
-        # recognise the same finding across two runs.
-        #
-        # -fail-on-degraded is set: a check that could not complete is not a
-        # clean result, and this is the gate that blocks.
-        if: github.event_name == 'pull_request'
-        run: |
-          nox scan . \
-            -changed-since "origin/${{ github.base_ref }}" \
-            -severity-threshold high \
-            -fail-on-degraded \
-            -format json -output nox-pr
-      - name: Upload nox artifacts
-        if: always() && hashFiles('nox-results/**') != ''
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: nox-results
-          path: nox-results/
-          retention-days: 7
+  nox:
+    uses: klarlabs-studio/.github/.github/workflows/nox.yml@main
+    with:
+      nox-strict: true
