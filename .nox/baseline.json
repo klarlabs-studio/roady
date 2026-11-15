@@ -522417,6 +522417,70 @@
       "file_path": "internal/infrastructure/cli/stderr.go",
       "severity": "high",
       "created_at": "2026-08-08T06:46:09.951241Z"
+    },
+    {
+      "fingerprint": "fb13bc5060adf5989079b74a2406c2e5e03c893d991e72cc53ed4c59b49cdc62",
+      "rule_id": "TAINT-004",
+      "file_path": "internal/infrastructure/cli/stderr.go",
+      "severity": "high",
+      "reason": "Reviewed false positive: ROADY_MCP_LOG is operator-supplied configuration for a local CLI log path, not attacker-controlled input; no privilege boundary is crossed.",
+      "created_at": "2026-11-15T11:04:41.180487Z"
+    },
+    {
+      "fingerprint": "fc62d3416d1d25d75e363004ee368caaf3760077ecb0fba020e749d31e910a5d",
+      "rule_id": "IAC-155",
+      "file_path": ".github/roady-sync.example.yml",
+      "severity": "medium",
+      "reason": "Reviewed: workflow_dispatch is deliberate (release re-drive, scheduled remediation, example sync); it needs no environment approval and the token scopes are bounded by the workflow permissions.",
+      "created_at": "2026-11-15T11:04:57.333394Z"
+    },
+    {
+      "fingerprint": "efffd45e45bdf218052ebd23a0a2fc2295219290f6341d868fed455c871b6993",
+      "rule_id": "IAC-155",
+      "file_path": ".github/workflows/nox-remediate.yml",
+      "severity": "medium",
+      "reason": "Reviewed: workflow_dispatch is deliberate (release re-drive, scheduled remediation, example sync); it needs no environment approval and the token scopes are bounded by the workflow permissions.",
+      "created_at": "2026-11-15T11:04:57.333394Z"
+    },
+    {
+      "fingerprint": "09d79998b5c7424a284b643b53815f6c9ba525b7adfd07bbadfde073aac67c21",
+      "rule_id": "IAC-155",
+      "file_path": ".github/workflows/release.yml",
+      "severity": "medium",
+      "reason": "Reviewed: workflow_dispatch is deliberate (release re-drive, scheduled remediation, example sync); it needs no environment approval and the token scopes are bounded by the workflow permissions.",
+      "created_at": "2026-11-15T11:04:57.333394Z"
+    },
+    {
+      "fingerprint": "cdd0911727d1f037d8614648d52ba35b74cd902777c3c8a0eeb313ae1bd5b02c",
+      "rule_id": "AI-006",
+      "file_path": "internal/infrastructure/cli/plan.go",
+      "severity": "medium",
+      "created_at": "2026-11-15T11:10:00Z",
+      "reason": "Reviewed false positive: the command's purpose is to print the generated prompt to stdout for the user's own model; it is output, not a log of an LLM response, and contains project spec only."
+    },
+    {
+      "fingerprint": "a7f9dfe95dceffc8ff533f7ae1d7bf97c85536ecfaf07741587c63e50196c01c",
+      "rule_id": "AI-006",
+      "file_path": "internal/infrastructure/cli/spec.go",
+      "severity": "medium",
+      "created_at": "2026-11-15T11:10:00Z",
+      "reason": "Reviewed false positive: the command's purpose is to print the generated prompt to stdout for the user's own model; it is output, not a log of an LLM response, and contains project spec only."
+    },
+    {
+      "fingerprint": "c354ff660019778942ff1d7a65958b3b46875c214a66d09a66ddb57df1d1d60f",
+      "rule_id": "MCP-020",
+      "file_path": "pkg/infrastructure/report/trail_test.go",
+      "severity": "low",
+      "created_at": "2026-11-15T11:10:00Z",
+      "reason": "Reviewed false positive: fixed session id literal inside a test fixture, not a session id generator."
+    },
+    {
+      "fingerprint": "cdd0911727d1f037d8614648d52ba35b74cd902777c3c8a0eeb313ae1bd5b02c",
+      "rule_id": "AI-006",
+      "file_path": "internal/infrastructure/cli/plan.go",
+      "severity": "medium",
+      "created_at": "2026-11-15T11:10:00Z",
+      "reason": "Reviewed false positive: the command's purpose is to print the generated prompt to stdout for the user's own model; it is output, not a log of an LLM response, and contains project spec only."
     }
   ]
 }
