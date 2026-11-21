@@ -160,19 +160,43 @@ func ImportPlanFile(path string, current *spec.ProductSpec, opts PlanImportOptio
 	return imp, err
 }
 
-// citePath is the path a task's source cites: relative to root when the plan
-// lives inside the project, as given otherwise (a plan in ~/.claude/plans).
+// citePath is the path a task's source and the feature's description cite.
+// Both are committed (plan.json, spec.yaml), so the citation must not name the
+// machine it was imported on (#139): relative to root when the plan lives
+// inside the project; "~/..." when it lives under the home directory (a plan
+// in ~/.claude/plans reads the same to its author, without their user name);
+// otherwise its file name alone, since a temp directory or another checkout
+// points at nothing for anyone else. Roady only displays the citation.
 func citePath(path, root string) string {
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return filepath.Base(path)
+	}
 	if root != "" {
-		absRoot, err1 := filepath.Abs(root)
-		absPath, err2 := filepath.Abs(path)
-		if err1 == nil && err2 == nil {
-			if rel, err := filepath.Rel(absRoot, absPath); err == nil && !strings.HasPrefix(rel, "..") {
-				return filepath.ToSlash(rel)
-			}
+		if rel, ok := within(root, absPath); ok {
+			return rel
 		}
 	}
-	return filepath.ToSlash(path)
+	if home, err := os.UserHomeDir(); err == nil && home != "" {
+		if rel, ok := within(home, absPath); ok {
+			return "~/" + rel
+		}
+	}
+	return filepath.Base(absPath)
+}
+
+// within returns absPath relative to dir, slash-separated, when it lies inside
+// it.
+func within(dir, absPath string) (string, bool) {
+	absDir, err := filepath.Abs(dir)
+	if err != nil {
+		return "", false
+	}
+	rel, err := filepath.Rel(absDir, absPath)
+	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return "", false
+	}
+	return filepath.ToSlash(rel), true
 }
 
 // PlanTitle names a plan: its first "# " heading without a "Plan:" prefix, or
@@ -403,6 +427,19 @@ func checklistOnly(steps []planStep) []planStep {
 	return out
 }
 
+// hasFeature reports whether the spec has a feature with id.
+func hasFeature(current *spec.ProductSpec, id string) bool {
+	if current == nil {
+		return false
+	}
+	for _, f := range current.Features {
+		if f.ID == id {
+			return true
+		}
+	}
+	return false
+}
+
 func buildPlanImport(format, title, path string, steps []planStep, current *spec.ProductSpec, opts PlanImportOptions) (*PlanImport, error) {
 	out := &PlanImport{Format: format, Title: title}
 	planSlug := shortSlug(title)
@@ -412,22 +449,20 @@ func buildPlanImport(format, title, path string, steps []planStep, current *spec
 
 	featureID := opts.FeatureID
 	if featureID != "" {
-		found := false
-		if current != nil {
-			for _, f := range current.Features {
-				if f.ID == featureID {
-					found = true
-				}
-			}
-		}
-		if !found {
+		if !hasFeature(current, featureID) {
 			return nil, fmt.Errorf("feature %q does not exist", featureID)
 		}
 	} else {
 		featureID = planSlug
-		t := title
-		desc := fmt.Sprintf("Imported from %s (%s).", filepath.ToSlash(path), format)
-		out.Doc.Features = append(out.Doc.Features, CaptureFeature{ID: featureID, Title: &t, Description: &desc})
+		// A re-import of a plan whose feature exists leaves the feature alone.
+		// Its "Imported from ..." description is provenance, not intent:
+		// rewriting it on a re-import from another path marked the intent
+		// changed and reset plan approval for a path-only change (#139).
+		if !hasFeature(current, featureID) {
+			t := title
+			desc := fmt.Sprintf("Imported from %s (%s).", path, format)
+			out.Doc.Features = append(out.Doc.Features, CaptureFeature{ID: featureID, Title: &t, Description: &desc})
+		}
 	}
 
 	ids := make([]string, len(steps))
@@ -465,7 +500,7 @@ func buildPlanImport(format, title, path string, steps []planStep, current *spec
 			Title:     &title,
 			FeatureID: &fid,
 			DependsOn: &deps,
-			Source:    &planning.TaskSource{Doc: filepath.ToSlash(path), Line: st.line},
+			Source:    &planning.TaskSource{Doc: path, Line: st.line},
 		}
 		// The step's own line is only worth repeating when the title had to
 		// shorten it; nested lines always carry.

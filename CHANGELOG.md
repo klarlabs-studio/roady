@@ -26,6 +26,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   marks its steps as `- [ ]` items imports those, not the plain bullets
   beside them. The plain items left out are counted, on the CLI and as
   `skipped_bullets` over MCP, instead of disappearing silently.
+- `roady plan import` no longer writes where a plan was imported from on your
+  machine into committed files. A plan outside the project was cited by its
+  absolute path, in the feature's description (spec.yaml) and each task's
+  source (plan.json), naming the home directory or a session's temp
+  directory (#139). It is now cited relative to the project, as `~/...` under
+  the home directory, or by file name. Re-importing a plan whose feature
+  exists no longer rewrites that feature's description: the "Imported from"
+  line is provenance, and rewriting it reset plan approval for a path-only
+  change.
 
 ## [0.28.0] - 2026-09-28
 
