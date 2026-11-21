@@ -9,6 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Approving a plan, accepting drift and the other gated decisions now reach
+  the user over MCP. roady 0.28.0 was built with go.klarlabs.de/mcp v1.28.2,
+  which wrote an `input_required` result's `inputRequests` as an array;
+  the 2026-07-28 spec requires an object keyed by request id, and Claude Code
+  rejected the result as carrying "neither inputRequests nor requestState",
+  so the confirmation never appeared (#137). The dependency is now v1.30.1,
+  and an end-to-end test drives the built binary through ask, accept and
+  decline on the wire.
+- `roady plan import` reads a checklist grouped under sub-headings. A section
+  was its nearest heading only, so `### Docs` under `## Tasks` was not a
+  steps section and every item in it was dropped, while a bulleted list
+  under `## Milestones` elsewhere was imported instead: a 28-task plan came
+  in as 3 tasks (#138). A sub-heading now belongs to the section it sits in
+  (a narrative one such as `### Notes` stays narrative), and a plan that
+  marks its steps as `- [ ]` items imports those, not the plain bullets
+  beside them. The plain items left out are counted, on the CLI and as
+  `skipped_bullets` over MCP, instead of disappearing silently.
 - `roady plan import` no longer writes where a plan was imported from on your
   machine into committed files. A plan outside the project was cited by its
   absolute path, in the feature's description (spec.yaml) and each task's

@@ -52,6 +52,9 @@ type PlanImport struct {
 	Title   string     `json:"title"`
 	Doc     CaptureDoc `json:"doc"`
 	Skipped int        `json:"skipped_done"`
+	// SkippedBullets counts the plain list items not imported because the
+	// plan marks its steps as a checklist (see markdownPlanSteps).
+	SkippedBullets int `json:"skipped_bullets,omitempty"`
 }
 
 type planStep struct {
@@ -59,6 +62,8 @@ type planStep struct {
 	desc  []string
 	line  int
 	done  bool
+	// checkbox marks a "- [ ]" item, as opposed to a plain bullet.
+	checkbox bool
 	// parent is the index of the enclosing step (Kiro sub-tasks), or -1.
 	parent int
 }
@@ -134,20 +139,25 @@ func ImportPlanFile(path string, current *spec.ProductSpec, opts PlanImportOptio
 
 	title := PlanTitle(lines, path)
 	var steps []planStep
+	bullets := 0
 	switch format {
 	case PlanFormatKiro:
 		steps = kiroSteps(lines)
 	case PlanFormatExecPlan:
 		steps = execPlanSteps(lines)
 	case PlanFormatMarkdown:
-		steps = markdownPlanSteps(lines)
+		steps, bullets = markdownPlanSteps(lines)
 	default:
 		return nil, fmt.Errorf("unknown plan format %q (kiro, execplan or markdown)", format)
 	}
 	if len(steps) == 0 {
 		return nil, fmt.Errorf("no steps found in %s (format %s)", path, format)
 	}
-	return buildPlanImport(format, title, citePath(path, opts.Root), steps, current, opts)
+	imp, err := buildPlanImport(format, title, citePath(path, opts.Root), steps, current, opts)
+	if imp != nil {
+		imp.SkippedBullets = bullets
+	}
+	return imp, err
 }
 
 // citePath is the path a task's source and the feature's description cite.
@@ -209,11 +219,27 @@ func PlanTitle(lines []string, path string) string {
 	return strings.ReplaceAll(base, "-", " ")
 }
 
-// collectItems reads list items under the given predicate on the section
-// title, folding nested lines into the item above.
-func collectItems(lines []string, inSection func(title string) bool, nested bool) []planStep {
+// collectItems reads list items under the given predicate on the section,
+// folding nested lines into the item above. The predicate sees the heading
+// path, outermost first: "### Docs" under "## Tasks" is ["tasks", "docs"], so
+// a sub-heading belongs to the section it sits in. Reading the nearest heading
+// alone dropped every checklist grouped under sub-headings of "## Tasks"
+// (#138).
+func collectItems(lines []string, inSection func(path []string) bool, nested bool) []planStep {
 	var steps []planStep
-	section := ""
+	type heading struct {
+		level int
+		title string
+	}
+	var stack []heading
+	path := func() []string {
+		out := make([]string, len(stack))
+		for i, h := range stack {
+			out[i] = h.title
+		}
+		return out
+	}
+	section := []string{}
 	inFence := false
 	baseIndent := -1
 	for i, l := range lines {
@@ -225,7 +251,12 @@ func collectItems(lines []string, inSection func(title string) bool, nested bool
 			continue
 		}
 		if m := mdHeading.FindStringSubmatch(l); m != nil {
-			section = normalisedTitle(m[2])
+			level := len(m[1])
+			for len(stack) > 0 && stack[len(stack)-1].level >= level {
+				stack = stack[:len(stack)-1]
+			}
+			stack = append(stack, heading{level, normalisedTitle(m[2])})
+			section = path()
 			baseIndent = -1
 			continue
 		}
@@ -258,10 +289,11 @@ func collectItems(lines []string, inSection func(title string) bool, nested bool
 			}
 		}
 		steps = append(steps, planStep{
-			title:  text,
-			line:   i + 1,
-			done:   m[2] == "x" || m[2] == "X",
-			parent: parent,
+			title:    text,
+			line:     i + 1,
+			done:     m[2] == "x" || m[2] == "X",
+			checkbox: m[2] != "",
+			parent:   parent,
 		})
 	}
 	return steps
@@ -271,7 +303,7 @@ func collectItems(lines []string, inSection func(title string) bool, nested bool
 // ("2.1") nested under their parent, and "_Requirements: 1.1_" lines kept as
 // description.
 func kiroSteps(lines []string) []planStep {
-	steps := collectItems(lines, func(string) bool { return true }, true)
+	steps := collectItems(lines, func([]string) bool { return true }, true)
 	// A sub-task numbered "2.1" belongs to "2" even when Kiro writes it at the
 	// same indent as its parent.
 	byNumber := map[string]int{}
@@ -293,9 +325,9 @@ func kiroSteps(lines []string) []planStep {
 // carry timestamps, or — before any progress is recorded — the numbered steps
 // of Concrete Steps / Plan of Work.
 func execPlanSteps(lines []string) []planStep {
-	steps := collectItems(lines, func(s string) bool { return s == "progress" }, false)
+	steps := collectItems(lines, func(p []string) bool { return innermost(p) == "progress" }, false)
 	if len(steps) == 0 {
-		steps = collectItems(lines, func(s string) bool { return s == "concrete steps" || s == "plan of work" }, false)
+		steps = collectItems(lines, func(p []string) bool { s := innermost(p); return s == "concrete steps" || s == "plan of work" }, false)
 	}
 	for i := range steps {
 		steps[i].title = strings.TrimSpace(planTimestamp.ReplaceAllString(steps[i].title, ""))
@@ -304,15 +336,36 @@ func execPlanSteps(lines []string) []planStep {
 }
 
 // markdownPlanSteps reads a free-form plan (Claude Code, Cursor, Gemini CLI,
-// Devin): list items under a steps-like section; failing that, list items
-// anywhere outside narrative sections; failing that, each sub-heading as a
-// step with its text as description.
-func markdownPlanSteps(lines []string) []planStep {
-	if steps := collectItems(lines, func(s string) bool { return planStepSections[s] }, false); len(steps) > 0 {
-		return steps
-	}
-	if steps := collectItems(lines, func(s string) bool { return !planNarrative[s] }, false); len(steps) > 0 {
-		return steps
+// Devin). A checklist is the strongest signal of what the steps are: a plan
+// that writes "- [ ]" items means those, and plain bullets beside them (a
+// milestones list, rules, notes) are commentary. So, in order: checklist items
+// under a steps-like section; checklist items anywhere outside narrative
+// sections; list items under a steps-like section; list items outside
+// narrative sections; failing all of that, each sub-heading as a step with its
+// text as description. When a checklist wins, it also returns how many plain
+// list items outside narrative sections it left out, so the import can say so.
+func markdownPlanSteps(lines []string) ([]planStep, int) {
+	outsideNarrative := func(p []string) bool { return !planNarrative[innermost(p)] }
+	for _, pass := range []struct {
+		in        func([]string) bool
+		checklist bool
+	}{{inStepSection, true}, {outsideNarrative, true}, {inStepSection, false}, {outsideNarrative, false}} {
+		steps := collectItems(lines, pass.in, false)
+		if pass.checklist {
+			steps = checklistOnly(steps)
+		}
+		if len(steps) > 0 {
+			if !pass.checklist {
+				return steps, 0
+			}
+			left := 0
+			for _, st := range collectItems(lines, outsideNarrative, false) {
+				if !st.checkbox {
+					left++
+				}
+			}
+			return steps, left
+		}
 	}
 	var steps []planStep
 	inFence := false
@@ -337,7 +390,41 @@ func markdownPlanSteps(lines []string) []planStep {
 			steps[len(steps)-1].desc = append(steps[len(steps)-1].desc, cleanInline(strings.TrimSpace(l)))
 		}
 	}
-	return steps
+	return steps, 0
+}
+
+// innermost is the nearest heading of a section path, "" before any heading.
+func innermost(path []string) string {
+	if len(path) == 0 {
+		return ""
+	}
+	return path[len(path)-1]
+}
+
+// inStepSection reports a section that holds steps: a steps-like heading, or a
+// sub-heading of one that is not itself narrative ("### Notes" under "##
+// Tasks" stays notes).
+func inStepSection(path []string) bool {
+	if planNarrative[innermost(path)] {
+		return false
+	}
+	for _, t := range path {
+		if planStepSections[t] {
+			return true
+		}
+	}
+	return false
+}
+
+// checklistOnly keeps the checklist items of steps, or none when it has none.
+func checklistOnly(steps []planStep) []planStep {
+	var out []planStep
+	for _, st := range steps {
+		if st.checkbox {
+			out = append(out, st)
+		}
+	}
+	return out
 }
 
 // hasFeature reports whether the spec has a feature with id.
