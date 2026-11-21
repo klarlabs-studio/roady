@@ -84,6 +84,9 @@ the plan updates the same tasks instead of adding new ones.`,
 			if imp.Skipped > 0 {
 				_, _ = fmt.Fprintf(out, ", %d already checked off and skipped", imp.Skipped)
 			}
+			if imp.SkippedBullets > 0 {
+				_, _ = fmt.Fprintf(out, ", %d plain list item(s) beside the checklist not imported", imp.SkippedBullets)
+			}
 			_, _ = fmt.Fprintln(out)
 			printCaptureResult(out, result)
 		}
