@@ -916,11 +916,12 @@ func (s *Server) handlePlanImport(ctx context.Context, args PlanImportArgs) (any
 		return mcpErr(fmt.Sprintf("Failed to import plan: %v", err)), nil
 	}
 	return map[string]any{
-		"format":       imp.Format,
-		"title":        imp.Title,
-		"steps":        len(imp.Doc.Tasks),
-		"skipped_done": imp.Skipped,
-		"result":       result,
+		"format":          imp.Format,
+		"title":           imp.Title,
+		"steps":           len(imp.Doc.Tasks),
+		"skipped_done":    imp.Skipped,
+		"skipped_bullets": imp.SkippedBullets,
+		"result":          result,
 	}, nil
 }
 

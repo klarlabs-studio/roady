@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `roady plan import` reads a checklist grouped under sub-headings. A section
+  was its nearest heading only, so `### Docs` under `## Tasks` was not a
+  steps section and every item in it was dropped, while a bulleted list
+  under `## Milestones` elsewhere was imported instead: a 28-task plan came
+  in as 3 tasks (#138). A sub-heading now belongs to the section it sits in
+  (a narrative one such as `### Notes` stays narrative), and a plan that
+  marks its steps as `- [ ]` items imports those, not the plain bullets
+  beside them. The plain items left out are counted, on the CLI and as
+  `skipped_bullets` over MCP, instead of disappearing silently.
+
 ## [0.28.0] - 2026-09-28
 
 Roady describes work done before or outside it: planned work committed
