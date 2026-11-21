@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.29.0] - 2026-11-21
+
+Gated decisions reach the user over MCP again, and plan import reads the
+plans people write without dropping their checklists or committing where they
+were imported from.
+
 ### Fixed
 
 - Approving a plan, accepting drift and the other gated decisions now reach
@@ -1722,7 +1728,8 @@ See [GitHub release notes](https://github.com/felixgeelhaar/roady/releases/tag/v
 - Resilience via `fortify` integration for filesystem retries
 - State management via `statekit` FSM for task transitions
 
-[Unreleased]: https://github.com/felixgeelhaar/roady/compare/v0.28.0...HEAD
+[Unreleased]: https://github.com/felixgeelhaar/roady/compare/v0.29.0...HEAD
+[0.29.0]: https://github.com/felixgeelhaar/roady/compare/v0.28.0...v0.29.0
 [0.28.0]: https://github.com/felixgeelhaar/roady/compare/v0.27.3...v0.28.0
 [0.27.3]: https://github.com/felixgeelhaar/roady/compare/v0.27.2...v0.27.3
 [0.27.2]: https://github.com/felixgeelhaar/roady/compare/v0.27.1...v0.27.2
