@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.29.1] - 2026-11-24
+
+A dependency security fix, and the Homebrew cask stops warning on every
+`brew` command.
+
+### Security
+
+- Bump `github.com/gorilla/websocket` from v1.5.3 to
+  v1.5.4-0.20240701034025-d67f41855da4 for GO-2026-6278 (#147).
+
+### Fixed
+
+- The Homebrew cask removes the Gatekeeper quarantine with declarative
+  `postflight_steps` instead of a raw Ruby `postflight` block, which
+  Homebrew deprecated: every `brew` command printed a deprecation warning
+  for the cask (#146).
+
 ## [0.29.0] - 2026-11-21
 
 Gated decisions reach the user over MCP again, and plan import reads the
